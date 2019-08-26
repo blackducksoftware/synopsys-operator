@@ -33,20 +33,18 @@ type AlertSpec struct {
 	// Set the namespace where you want to deploy alert. [dev-note]: this is strictly needed to handle cluster scope
 	Namespace string `json:"namespace,omitempty"`
 	// Set the version of the alert
-	Version string `json:"version,omitempty"` // TODO:
+	Version string `json:"version,omitempty"`
 	// Set the type for the service. [dev-note]: LOADBALANCER, NODEPORT allowed so far
 	ExposeService string `json:"exposeService"`
 	// Deploy alert in standalone mode. [dev-note]: this does not need to be a pointer
 	StandAlone *bool `json:"standAlone"` // TODO: check with mphammer
 	// Set Port for alert rc and service. [dev-note]: this does not need to be a pointer
 	Port *int32 `json:"port"`
-	// Base64Encoded string for ALERT_ENCRYPTION_PASSWORD. [dev-note]: this should be a pointer, also json should not be capitalized.
-	// Also previously this was plain text, so TODO: migrate, either take this out from the api, or convert from plain to encoded
+	// plaintext string for ALERT_ENCRYPTION_PASSWORD. [dev-note]: this should be a pointer, also json should not be capitalized. Also TODO: either convert these from plan to encoded, or take this out from the api and move it to the list of secrets below; both cases, you need to write a migrate
 	EncryptionPassword string `json:"EncryptionPassword"`
-	// Base64Encoded string for ALERT_ENCRYPTION_GLOBAL_SALT. [dev-note]: this should be a pointer, also json should not be capitalized.
-	// Also previously this was plain text, so TODO: migrate, either take this out from the api, or convert from plain to encoded
+	// plaintext string for ALERT_ENCRYPTION_GLOBAL_SALT. [dev-note]: this should be a pointer, also json should not be capitalized. Also TODO: either convert these from plan to encoded, or take this out from the api and move it to the list of secrets below; both cases, you need to write a migrate
 	EncryptionGlobalSalt string `json:"EncryptionGlobalSalt"`
-	// add data to secret as a slice of "key:base64encodedvalue". [dev-note]: another implementation to consider is a map or a field per variable
+	// add data to secret as a slice of "key:plaintextvalue". [dev-note]: another implementation to consider is a map or a field per variable
 	Secrets []*string `json:"secrets,omitempty"` // TODO: not in previous API, make an api-change note
 	// add data to environment variables config map as a slice of "key:value". [dev-note]: another implementation to consider is a map or a field per variable
 	Environs []string `json:"environs,omitempty"`
@@ -56,15 +54,15 @@ type AlertSpec struct {
 	PVCStorageClass   string `json:"pvcStorageClass"`
 	PVCSize           string `json:"pvcSize"`
 	// set min and max memory for alert rc. [dev-note]: again, different implementation than Black Duck, also why min and max set to be the same?
-	AlertMemory string `json:"alertMemory,omitempty"` // TODO: make this consistent with Black Duck, how "sizes" are handled
+	AlertMemory string `json:"alertMemory,omitempty"`
 	// set min and max memory for cfssl rc. [dev-note]: again, different implementation than Black Duck, also why min and max set to be the same?
-	CfsslMemory string `json:"cfsslMemory,omitempty"` // TODO: make this consistent with Black Duck, how "sizes" are handled
+	CfsslMemory string `json:"cfsslMemory,omitempty"`
 	// set the desired state of the alert. [dev-note]: currently, only "STOP"
 	DesiredState string `json:"desiredState,omitempty"`
 	// slice of "key:value" for images, takes precedence over registryConfiguration [dev-note]: make explicit precedence over registryConfiguration
 	ImageRegistries []string `json:"imageRegistries,omitempty"`
 	// [dev-note]: this does not need to be a pointer
-	RegistryConfiguration *RegistryConfiguration `json:"registryConfiguration,omitempty"` // TODO:
+	RegistryConfiguration *RegistryConfiguration `json:"registryConfiguration,omitempty"`
 }
 
 // AlertStatus defines the observed state of Alert

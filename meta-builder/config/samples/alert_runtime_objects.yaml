@@ -37,7 +37,7 @@ spec:
             initialDelaySeconds: 240
             periodSeconds: 30
             timeoutSeconds: 10
-          name: alert
+          name: blackduck-alert
           ports:
             - containerPort: 8443
               protocol: TCP

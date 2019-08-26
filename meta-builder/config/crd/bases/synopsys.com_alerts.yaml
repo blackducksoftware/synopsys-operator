@@ -31,16 +31,18 @@ spec:
           description: AlertSpec defines the desired state of Alert
           properties:
             EncryptionGlobalSalt:
-              description: 'Base64Encoded string for ALERT_ENCRYPTION_GLOBAL_SALT.
-                [dev-note]: this should be a pointer, also json should not be capitalized.
-                Also previously this was plain text, so TODO: migrate, either take
-                this out from the api, or convert from plain to encoded'
+              description: 'plaintext string for ALERT_ENCRYPTION_GLOBAL_SALT. [dev-note]:
+                this should be a pointer, also json should not be capitalized. Also
+                TODO: either convert these from plan to encoded, or take this out
+                from the api and move it to the list of secrets below; both cases,
+                you need to write a migrate'
               type: string
             EncryptionPassword:
-              description: 'Base64Encoded string for ALERT_ENCRYPTION_PASSWORD. [dev-note]:
+              description: 'plaintext string for ALERT_ENCRYPTION_PASSWORD. [dev-note]:
                 this should be a pointer, also json should not be capitalized. Also
-                previously this was plain text, so TODO: migrate, either take this
-                out from the api, or convert from plain to encoded'
+                TODO: either convert these from plan to encoded, or take this out
+                from the api and move it to the list of secrets below; both cases,
+                you need to write a migrate'
               type: string
             alertMemory:
               description: 'set min and max memory for alert rc. [dev-note]: again,
@@ -107,7 +109,7 @@ spec:
               - registry
               type: object
             secrets:
-              description: 'add data to secret as a slice of "key:base64encodedvalue".
+              description: 'add data to secret as a slice of "key:plaintextvalue".
                 [dev-note]: another implementation to consider is a map or a field
                 per variable'
               items:

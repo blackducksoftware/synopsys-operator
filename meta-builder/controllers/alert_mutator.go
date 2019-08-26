@@ -63,6 +63,7 @@ func (p *AlertPatcher) patch() map[string]runtime.Object {
 		p.patchPort,
 		p.patchStorage,
 		p.patchStandAlone,
+		p.patchVersion,
 	}
 	for _, f := range patches {
 		err := f()
@@ -114,6 +115,46 @@ func (p *AlertPatcher) patchNamespace() error {
 	return nil
 }
 
+// imageTags is a map of the Alert versions to it's images and tags
+var IMAGE_TAGS = map[string]map[string]string{
+	"3.1.0": {
+		"blackduck-alert": "3.1.0",
+		"blackduck-cfssl": "1.0.0",
+	},
+	"4.0.0": {
+		"blackduck-alert": "4.0.0",
+		"blackduck-cfssl": "1.0.0",
+	},
+	"4.1.0": {
+		"blackduck-alert": "4.1.0",
+		"blackduck-cfssl": "1.0.0",
+	},
+	"4.2.0": {
+		"blackduck-alert": "4.2.0",
+		"blackduck-cfssl": "1.0.0",
+	},
+}
+
+// GetImageTag returns the url for an image
+func GetImageTag(version, name string) string {
+	return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, IMAGE_TAGS[version][name])
+}
+
+// TODO: should we use group-id or another label?
+func (p *AlertPatcher) patchVersion() error {
+
+	for _, baseRuntimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+		switch baseRuntimeObject.(type) {
+		case *corev1.ReplicationController:
+			baseReplicationControllerRuntimeObject := baseRuntimeObject.(*corev1.ReplicationController)
+			for _, container := range baseReplicationControllerRuntimeObject.Spec.Template.Spec.Containers {
+				container.Image = GetImageTag(p.alertCr.Spec.Version, container.Name)
+			}
+		}
+	}
+	return nil
+}
+
 // TODO: common with Black Duck
 func (p *AlertPatcher) patchEnvirons() error {
 	configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-blackduck-alert-config", p.alertCr.Name)]
@@ -142,7 +183,6 @@ func (p *AlertPatcher) patchSecrets() error {
 	secret := secretRuntimeObject.(*corev1.Secret)
 	for _, s := range p.alertCr.Spec.Secrets {
 		vals := strings.Split(*s, ":") // TODO - doesn't handle multiple colons
-		// TODO: Base 64 decode
 		if len(vals) != 2 {
 			fmt.Printf("Could not split environ '%s' on ':'\n", *s) // TODO change to log
 			continue
@@ -169,11 +209,12 @@ func (p *AlertPatcher) patchSecrets() error {
 // TODO: common with Black Duck
 func (p *AlertPatcher) patchImages() error {
 	if len(p.alertCr.Spec.RegistryConfiguration.Registry) > 0 || len(p.alertCr.Spec.ImageRegistries) > 0 {
-		for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
-			switch v.(type) {
+		for _, baseRuntimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+			switch baseRuntimeObject.(type) {
 			case *corev1.ReplicationController:
-				for i := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers {
-					v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].Image = controllers_utils.GenerateImageTag(v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].Image, p.alertCr.Spec.ImageRegistries, *p.alertCr.Spec.RegistryConfiguration)
+				baseReplicationControllerRuntimeObject := baseRuntimeObject.(*corev1.ReplicationController)
+				for _, container := range baseReplicationControllerRuntimeObject.Spec.Template.Spec.Containers {
+					container.Image = controllers_utils.GenerateImageTag(container.Image, p.alertCr.Spec.ImageRegistries, *p.alertCr.Spec.RegistryConfiguration)
 				}
 			}
 		}
@@ -183,12 +224,12 @@ func (p *AlertPatcher) patchImages() error {
 
 // TODO: common with Black Duck
 func (p *AlertPatcher) patchDesiredState() error {
-	for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
-		switch v.(type) {
+	for _, baseRuntimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+		switch baseRuntimeObject.(type) {
 		case *corev1.ReplicationController:
 			switch strings.ToUpper(p.alertCr.Spec.DesiredState) {
 			case "STOP":
-				v.(*corev1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
+				baseRuntimeObject.(*corev1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
 			}
 		}
 	}
@@ -280,10 +321,10 @@ func (p *AlertPatcher) patchStorage() error {
 			}
 		case *corev1.ReplicationController:
 			if !p.alertCr.Spec.PersistentStorage {
-				for i := range baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes {
+				for volume := range baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes {
 					// If no PersistentVolumeClaim then we change it to emptyDir in the replication controller
-					if baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource.PersistentVolumeClaim != nil {
-						baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource = corev1.VolumeSource{
+					if baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[volume].VolumeSource.PersistentVolumeClaim != nil {
+						baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[volume].VolumeSource = corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{
 								Medium:    corev1.StorageMediumDefault,
 								SizeLimit: nil,
