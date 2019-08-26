@@ -5,7 +5,7 @@ metadata:
 spec:
   namespace: default
   version: ""
-  exposeService: LOADBALANCER
+  exposeService: ClusterIP
   standAlone: false
   port: 8443
   EncryptionPassword: "yash"
@@ -24,6 +24,11 @@ spec:
   alertMemory: 2560M
   cfsslMemory: 2560M
   desiredState: START
-  imageRegistries:
+  imageRegistries: [
+    "docker.io/blackducksoftware/blackduck-alert:4.0.0",
+    "docker.io/blackduck/blackduck-cfssl:1.0.0"
+  ]
   registryConfiguration:
+    pullSecrets: [""]
+    registry: ""
 #  alertImage: docker.io/blackducksoftware/blackduck-alert:4.0.0

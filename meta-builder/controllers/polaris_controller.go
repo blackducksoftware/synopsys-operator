@@ -89,7 +89,7 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polarisCr.Spec.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisCr.Spec.ImagePullSecrets)
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects([]byte(content))
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
 		if err := ctrl.SetControllerReference(polarisCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {

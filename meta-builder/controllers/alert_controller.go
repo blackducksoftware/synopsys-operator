@@ -17,8 +17,8 @@ package controllers
 
 import (
 	"context"
-	"io/ioutil"
-	"k8s.io/apimachinery/pkg/api/meta"
+	"fmt"
+	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
@@ -68,20 +68,56 @@ func (r *AlertReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, er
 
 func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
 	alertCr := cr.(*synopsysv1.Alert)
-	// TODO: either read contents of yaml from locally mounted file
-	// read content of full desired yaml from externally hosted file
-	// FinalYamlUrl := "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
-	// byteArrayContentFromFile, err := controllers_utils.HttpGet(FinalYamlUrl)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	FinalYamlPath := "config/samples/alert_runtime_objects.yaml"
-	byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
+	//TODO: either read contents of yaml from locally mounted file
+
+	// only fetch the location of the latest if the version in the spec is not given
+	var version string
+	if 0 == len(alertCr.Spec.Version) {
+		latestUrl := "https://raw.githubusercontent.com/blackducksoftware/releases/master/alert/latest"
+		if latestArrayOfByte, err := controllers_utils.HttpGet(latestUrl); err != nil {
+			// TODO: error getting latest
+			return nil, err
+		} else {
+			version = string(latestArrayOfByte)
+		}
+	} else {
+		version = alertCr.Spec.Version
+	}
+
+	latestBaseYamlUrl := fmt.Sprintf("https://raw.githubusercontent.com/blackducksoftware/releases/master/alert/%s/alert_base.yaml", version)
+	latestBaseYamlAsByteArray, err := controllers_utils.HttpGet(latestBaseYamlUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(byteArrayContentFromFile)
+	//FinalYamlPath := "config/samples/alert_runtime_objects.yaml"
+	//byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	latestBaseYamlAsString := string(latestBaseYamlAsByteArray)
+	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAME}", alertCr.Name)
+	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", alertCr.Namespace)
+	if len(alertCr.Spec.ExposeService) > 0 {
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${SERVICE_TYPE}", alertCr.Spec.ExposeService)
+	} else {
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${SERVICE_TYPE}", string(corev1.ServiceTypeClusterIP))
+	}
+
+	if len(alertCr.Spec.AlertMemory) > 0 {
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${ALERT_MEM}", alertCr.Spec.AlertMemory)
+	} else {
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${ALERT_MEM}", "2560M")
+	}
+
+	if len(alertCr.Spec.CfsslMemory) > 0 {
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${CFSSL_MEM}", alertCr.Spec.CfsslMemory)
+	} else {
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${CFSSL_MEM}", "640M")
+	}
+
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
 		if err := ctrl.SetControllerReference(alertCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
@@ -91,7 +127,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 			return mapOfUniqueIdToBaseRuntimeObject, nil
 		}
 	}
-	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject, meta.NewAccessor())
+	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
 }

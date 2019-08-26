@@ -6,26 +6,27 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Alert"
     app: alert
-    name: changethisalertname
-  name: changethisalertname-alert
+    name: ${NAME}
+  name: ${NAME}-alert
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
     app: alert
-    name: changethisalertname
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: alert
-        name: changethisalertname
-      name: changethisalertname-alert
+        name: ${NAME}
+      name: ${NAME}-alert
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisalertname-blackduck-alert-config
+                name: ${NAME}-blackduck-alert-config
             - secretRef:
-                name: changethisalertname-alert-secret
+                name: ${NAME}-alert-secret
           image: docker.io/blackducksoftware/blackduck-alert:4.0.0
           imagePullPolicy: Always
           livenessProbe:
@@ -43,9 +44,9 @@ spec:
               protocol: TCP
           resources:
             limits:
-              memory: 2560M
+              memory: ${ALERT_MEM}
             requests:
-              memory: 2560M
+              memory: ${ALERT_MEM}
           volumeMounts:
             - mountPath: /opt/blackduck/alert/alert-config
               name: dir-alert
@@ -63,24 +64,25 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Cfssl"
     app: alert
-    name: changethisalertname
-  name: changethisalertname-cfssl
+    name: ${NAME}
+  name: ${NAME}-cfssl
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
     app: alert
-    name: changethisalertname
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: alert
-        name: changethisalertname
-      name: changethisalertname-cfssl
+        name: ${NAME}
+      name: ${NAME}-cfssl
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisalertname-blackduck-alert-config
+                name: ${NAME}-blackduck-alert-config
           image: docker.io/blackducksoftware/blackduck-cfssl:1.0.0
           livenessProbe:
             exec:
@@ -97,9 +99,9 @@ spec:
               protocol: TCP
           resources:
             limits:
-              memory: 640M
+              memory: ${CFSSL_MEM}
             requests:
-              memory: 640M
+              memory: ${CFSSL_MEM}
           volumeMounts:
             - mountPath: /etc/cfssl
               name: dir-cfssl
@@ -117,8 +119,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Alert"
     app: alert
-    name: changethisalertname
-  name: changethisalertname-alert
+    name: ${NAME}
+  name: ${NAME}-alert
+  namespace: ${NAMESPACE}
 spec:
   ports:
     - name: port-8443
@@ -127,8 +130,8 @@ spec:
       targetPort: 8443
   selector:
     app: alert
-    name: changethisalertname
-  type: ClusterIP
+    name: ${NAME}
+  type: ${SERVICE_TYPE}
 
 ---
 apiVersion: v1
@@ -139,8 +142,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Cfssl"
     app: alert
-    name: changethisalertname
-  name: changethisalertname-cfssl
+    name: ${NAME}
+  name: ${NAME}-cfssl
+  namespace: ${NAMESPACE}
 spec:
   ports:
     - name: port-8888
@@ -149,7 +153,7 @@ spec:
       targetPort: 8888
   selector:
     app: alert
-    name: changethisalertname
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -165,8 +169,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "ConfigMap"
     app: alert
-    name: changethisalertname
-  name: changethisalertname-blackduck-alert-config
+    name: ${NAME}
+  name: ${NAME}-blackduck-alert-config
+  namespace: ${NAMESPACE}
 
 ---
 apiVersion: v1
@@ -182,8 +187,9 @@ metadata:
     # TODO: show what happens if a resource does not have this label
     operator.synopsys.com/group-id: "AlertSecret"
     app: alert
-    name: changethisalertname
-  name: changethisalertname-alert-secret
+    name: ${NAME}
+  name: ${NAME}-alert-secret
+  namespace: ${NAMESPACE}
 type: Opaque
 
 ---
@@ -195,8 +201,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "AlertPvc"
     app: alert
-    name: changethisalertname
-  name: changethisalertname-alert-pvc
+    name: ${NAME}
+  name: ${NAME}-alert-pvc
+  namespace: ${NAMESPACE}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -213,8 +220,8 @@ spec:
 #   labels:
 #     app: alert
 #     component: route
-#     name: changethisalertname
-#   name: changethisalertname-alert
+#     name: ${NAME}
+#   name: ${NAME}-alert
 #   resourceVersion: "2414"
 #   selfLink: /apis/route.openshift.io/v1/namespaces/demo/routes/demo-alert
 #   uid: 8d100e5e-bd10-11e9-a198-08002782ac65
@@ -226,7 +233,7 @@ spec:
 #     termination: passthrough
 #   to:
 #     kind: Service
-#     name: changethisalertname-alert-alert
+#     name: ${NAME}-alert-alert
 #     weight: 100
 #   wildcardPolicy: None
 # status:

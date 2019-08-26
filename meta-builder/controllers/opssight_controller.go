@@ -94,7 +94,7 @@ func (r *OpsSightReconciler) GetRuntimeObjects(cr interface{}) (map[string]runti
 	content = strings.ReplaceAll(content, "${NAME}", opsSight.Name)
 	content = strings.ReplaceAll(content, "${NAMESPACE}", opsSight.Spec.Namespace)
 
-	mapOfUniqueIDToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects([]byte(content))
+	mapOfUniqueIDToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
 	// TODO: [yash commented this] figure out why this didn't work for black duck, probably just a namespace thing
 	//for _, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
 	//	// set an owner reference

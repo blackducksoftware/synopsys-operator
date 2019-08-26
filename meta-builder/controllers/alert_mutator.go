@@ -29,17 +29,15 @@ import (
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func patchAlert(alertCr *synopsysv1.Alert, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, accessor meta.MetadataAccessor) map[string]runtime.Object {
+func patchAlert(alertCr *synopsysv1.Alert, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object) map[string]runtime.Object {
 	patcher := AlertPatcher{
 		alertCr:                          alertCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
-		accessor:                         accessor,
 	}
 	return patcher.patch()
 }
@@ -47,23 +45,17 @@ func patchAlert(alertCr *synopsysv1.Alert, mapOfUniqueIdToBaseRuntimeObject map[
 type AlertPatcher struct {
 	alertCr                          *synopsysv1.Alert
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
-	accessor                         meta.MetadataAccessor
 }
 
 func (p *AlertPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
-		p.patchNamespace,
 		p.patchEnvirons,
 		p.patchSecrets,
-		p.patchExposeService,
 		p.patchDesiredState,
-		p.patchAlertMemory,
-		p.patchCfsslMemory,
 		p.patchImages,
 		p.patchPort,
 		p.patchStorage,
 		p.patchStandAlone,
-		p.patchVersion,
 	}
 	for _, f := range patches {
 		err := f()
@@ -73,86 +65,6 @@ func (p *AlertPatcher) patch() map[string]runtime.Object {
 	}
 
 	return p.mapOfUniqueIdToBaseRuntimeObject
-}
-
-// TODO: patchName based on cr name [CR_NAME-]
-//func (p *AlertPatcher) patchName() error {
-//	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
-//		p.accessor.SetName(runtimeObject, p.alertCr.Name)
-//	}
-//	return nil
-//}
-
-// TODO: common with Black Duck
-func (p *AlertPatcher) patchExposeService() error {
-	// TODO use constants
-	uniqueId := fmt.Sprintf("Service.%s-alert-exposed", p.alertCr.Name)
-	runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueId]
-	if !ok {
-		return nil
-	}
-
-	switch strings.ToUpper(p.alertCr.Spec.ExposeService) {
-	case "LOADBALANCER":
-		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
-	case "NODEPORT":
-		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
-	default:
-		// TODO: [mphammer, jeremy] should we remove it?
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueId)
-	}
-
-	// TODO add openshift route
-
-	return nil
-}
-
-// TODO: common with Black Duck
-func (p *AlertPatcher) patchNamespace() error {
-	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
-		p.accessor.SetNamespace(runtimeObject, p.alertCr.Spec.Namespace)
-	}
-	return nil
-}
-
-// imageTags is a map of the Alert versions to it's images and tags
-var IMAGE_TAGS = map[string]map[string]string{
-	"3.1.0": {
-		"blackduck-alert": "3.1.0",
-		"blackduck-cfssl": "1.0.0",
-	},
-	"4.0.0": {
-		"blackduck-alert": "4.0.0",
-		"blackduck-cfssl": "1.0.0",
-	},
-	"4.1.0": {
-		"blackduck-alert": "4.1.0",
-		"blackduck-cfssl": "1.0.0",
-	},
-	"4.2.0": {
-		"blackduck-alert": "4.2.0",
-		"blackduck-cfssl": "1.0.0",
-	},
-}
-
-// GetImageTag returns the url for an image
-func GetImageTag(version, name string) string {
-	return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, IMAGE_TAGS[version][name])
-}
-
-// TODO: should we use group-id or another label?
-func (p *AlertPatcher) patchVersion() error {
-
-	for _, baseRuntimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
-		switch baseRuntimeObject.(type) {
-		case *corev1.ReplicationController:
-			baseReplicationControllerRuntimeObject := baseRuntimeObject.(*corev1.ReplicationController)
-			for _, container := range baseReplicationControllerRuntimeObject.Spec.Template.Spec.Containers {
-				container.Image = GetImageTag(p.alertCr.Spec.Version, container.Name)
-			}
-		}
-	}
-	return nil
 }
 
 // TODO: common with Black Duck
@@ -270,32 +182,6 @@ func (p *AlertPatcher) patchPort() error {
 	// RouteUniqueID := "Route.default.demo-alert-route"
 	// routeRuntimeObject := p.mapOfUniqueIdToBaseRuntimeObject[RouteUniqueID]
 
-	return nil
-}
-
-// TODO: common with Black Duck
-func (p *AlertPatcher) patchAlertMemory() error {
-	alertReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ReplicationController.%s-alert", p.alertCr.Name)]
-	if !ok {
-		return nil
-	}
-	alertReplicationController := alertReplicationControllerRuntimeObject.(*corev1.ReplicationController)
-	minAndMaxMem, _ := resource.ParseQuantity(p.alertCr.Spec.AlertMemory)
-	alertReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
-	alertReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
-	return nil
-}
-
-// TODO: common with Black Duck
-func (p *AlertPatcher) patchCfsslMemory() error {
-	cfsslReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)]
-	if !ok {
-		return nil
-	}
-	cfsslReplicationController := cfsslReplicationControllerRuntimeObject.(*corev1.ReplicationController)
-	minAndMaxMem, _ := resource.ParseQuantity(p.alertCr.Spec.AlertMemory)
-	cfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
-	cfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
 	return nil
 }
 

@@ -10,11 +10,10 @@ import (
 	//"github.com/go-logr/logr"
 )
 
-func ConvertYamlFileToRuntimeObjects(byteArrayContent []byte) map[string]runtime.Object {
+func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Object {
 	// TODO: use logr.Logr
 	log := ctrl.Log.WithName("ConvertYamlFileToRuntimeObjects")
 
-	stringContent := string(byteArrayContent[:])
 	listOfSingleK8sResourceYaml := strings.Split(stringContent, "---")
 	mapOfUniqueIdToDesiredRuntimeObject := make(map[string]runtime.Object, 0)
 

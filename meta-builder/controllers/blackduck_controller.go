@@ -88,7 +88,7 @@ func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	content = strings.ReplaceAll(content, "${USER_DB_PASSWORD}", blackduck.Spec.UserPassword)
 	content = strings.ReplaceAll(content, "${POSTGRES_DB_PASSWORD}", blackduck.Spec.PostgresPassword)
 
-	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects([]byte(content))
+	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
 	// TODO: [yash commented this] figure out why this didn't work for black duck, probably just a namespace thing
 	//for _, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
 	//	// set an owner reference

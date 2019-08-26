@@ -66,7 +66,7 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 		return nil, err
 	}
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(byteArrayContentFromFile)
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(string(byteArrayContentFromFile))
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		if err := ctrl.SetControllerReference(reportingCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
 			return mapOfUniqueIdToBaseRuntimeObject, nil
