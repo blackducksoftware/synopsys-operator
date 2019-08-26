@@ -10,7 +10,7 @@ spec:
   names:
     kind: OpsSight
     plural: opssights
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: OpsSight is the Schema for the opssights API

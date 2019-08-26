@@ -24,7 +24,7 @@ metadata:
   name: ${NAME}-opssight-processor
 
 ---
-apiVersion: authorization.openshift.io/v1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   annotations:
@@ -47,7 +47,7 @@ rules:
   - watch
 
 ---
-apiVersion: authorization.openshift.io/v1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   annotations:
@@ -70,7 +70,7 @@ rules:
   - watch
 
 ---
-apiVersion: authorization.openshift.io/v1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   annotations:
@@ -82,6 +82,8 @@ metadata:
     name: ${NAME}
   name: ${NAME}-opssight-pod-processor
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: ${NAME}-opssight-pod-processor
 subjects:
 - kind: ServiceAccount
@@ -89,7 +91,7 @@ subjects:
   namespace: ${NAMESPACE}
 
 ---
-apiVersion: authorization.openshift.io/v1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   annotations:
@@ -101,6 +103,8 @@ metadata:
     name: ${NAME}
   name: ${NAME}-opssight-image-processor
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: ${NAME}-opssight-image-processor
 subjects:
 - kind: ServiceAccount
@@ -108,7 +112,7 @@ subjects:
   namespace: ${NAMESPACE}
 
 ---
-apiVersion: authorization.openshift.io/v1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   annotations:
@@ -120,6 +124,8 @@ metadata:
     name: ${NAME}
   name: ${NAME}-opssight-scanner
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: synopsys-operator-admin
 subjects:
 - kind: ServiceAccount
@@ -226,7 +232,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightCore"
+    operator.synopsys.com/group-dependencies: "OpsSightCore"
   labels:
     operator.synopsys.com/group-id: "OpsSight"
     app: opssight
@@ -251,7 +257,7 @@ kind: Service
 metadata:
   creationTimestamp: null
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSight"
+    operator.synopsys.com/group-dependencies: "OpsSightCore"
   labels:
     operator.synopsys.com/group-id: "ExposeService"
     app: opssight
@@ -275,7 +281,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightScanner"
+    operator.synopsys.com/group-dependencies: "OpsSightScanner"
   labels:
     operator.synopsys.com/group-id: "OpsSight"
     app: opssight
@@ -299,7 +305,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightScanner"
+    operator.synopsys.com/group-dependencies: "OpsSightScanner"
   labels:
     operator.synopsys.com/group-id: "OpsSight"
     app: opssight
@@ -323,7 +329,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightPodProcessor"
+    operator.synopsys.com/group-dependencies: "OpsSightPodProcessor"
   labels:
     operator.synopsys.com/group-id: "OpsSight"
     app: opssight
@@ -347,7 +353,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightImageProcessor"
+    operator.synopsys.com/group-dependencies: "OpsSightImageProcessor"
   labels:
     operator.synopsys.com/group-id: "OpsSight"
     app: opssight
@@ -372,7 +378,7 @@ kind: Service
 metadata:
   annotations:
     prometheus.io/scrape: "true"
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightPrometheus"
+    operator.synopsys.com/group-dependencies: "OpsSightPrometheus"
   labels:
     operator.synopsys.com/group-id: "OpsSight"
     app: opssight
@@ -397,7 +403,7 @@ kind: Service
 metadata:
   creationTimestamp: null
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSight"
+    operator.synopsys.com/group-dependencies: "OpsSightPrometheus"
   labels:
     operator.synopsys.com/group-id: "ExposeService"
     app: opssight
@@ -476,7 +482,7 @@ apiVersion: v1
 kind: ReplicationController
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,Secret"
+    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,Secret,OpsSightCore"
   labels:
     operator.synopsys.com/group-id: "OpsSightScanner"
     app: opssight
@@ -567,7 +573,7 @@ apiVersion: v1
 kind: ReplicationController
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,Secret"
+    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,OpsSightCore"
   labels:
     operator.synopsys.com/group-id: "OpsSightPodProcessor"
     app: opssight
@@ -628,7 +634,7 @@ apiVersion: v1
 kind: ReplicationController
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,Secret"
+    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,OpsSightCore"
   labels:
     operator.synopsys.com/group-id: "OpsSightImageProcessor"
     app: opssight
@@ -687,7 +693,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap"
+    operator.synopsys.com/group-dependencies: "ConfigMap,OpsSightCore,OpsSightScanner,OpsSightImageProcessor,OpsSightPodProcessor"
   labels:
     operator.synopsys.com/group-id: "OpsSightPrometheus"
     app: opssight

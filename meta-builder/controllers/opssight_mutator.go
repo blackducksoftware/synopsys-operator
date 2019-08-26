@@ -127,7 +127,9 @@ func (p *OpsSightPatcher) patchImages() error {
 func (p *OpsSightPatcher) patchNamespace() error {
 	accessor := meta.NewAccessor()
 	for _, runtimeObject := range p.objects {
-		accessor.SetNamespace(runtimeObject, p.opsSight.Spec.Namespace)
+		if kind, err := accessor.Kind(runtimeObject); err == nil && !(kind == "ClusterRole" || kind == "ClusterRoleBinding") {
+			accessor.SetNamespace(runtimeObject, p.opsSight.Spec.Namespace)
+		}
 	}
 	return nil
 }

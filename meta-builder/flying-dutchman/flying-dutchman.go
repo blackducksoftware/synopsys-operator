@@ -7,10 +7,12 @@ import (
 
 	scheduler "github.com/blackducksoftware/synopsys-operator/meta-builder/go-scheduler"
 	"github.com/go-logr/logr"
+	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+
 	//"k8s.io/apimachinery/pkg/util/strategicpatch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -208,7 +210,7 @@ func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.L
 		// TODO: Case 1: we needed to update the configMap and now we should delete and redeploy objects in STAGE 3, 4 ...
 		// TODO: Case 2: we failed to update the configMap...TODO
 		// TODO: delete everything in stages 3, 4 ... and requeue
-		log.Error(err, "Unable to create or update", "desiredRuntimeObject", desiredRuntimeObject)
+		log.Error(err, "Unable to create or update", "desiredRuntimeObject", desiredRuntimeObject, "error", err)
 		return ctrl.Result{}, err
 	}
 	log.V(1).Info("Result of create or update for", "desiredRuntimeObject", desiredRuntimeObject, "opResult", opResult)
@@ -253,6 +255,11 @@ func CheckForReadiness(myClient client.Client, desiredRuntimeObject runtime.Obje
 		_ = myClient.Get(context.TODO(), key, liveReplicationController)
 		return IsReplicationControllerReady(liveReplicationController)
 
+	case *appsv1.Deployment:
+		liveDeployment := &appsv1.Deployment{}
+		_ = myClient.Get(context.TODO(), key, liveDeployment)
+		return IsDeploymentReady(liveDeployment)
+
 	case *batchv1.Job:
 		liveJob := &batchv1.Job{}
 		_ = myClient.Get(context.TODO(), key, liveJob)
@@ -291,6 +298,13 @@ func IsServiceReady(svc *corev1.Service) error {
 func IsReplicationControllerReady(rc *corev1.ReplicationController) error {
 	if rc.Status.ReadyReplicas < rc.Status.Replicas {
 		return fmt.Errorf("replication controller is not ready: %s/%s", rc.GetNamespace(), rc.GetName())
+	}
+	return nil
+}
+
+func IsDeploymentReady(deployment *appsv1.Deployment) error {
+	if deployment.Status.ReadyReplicas < deployment.Status.Replicas {
+		return fmt.Errorf("deployment is not ready: %s/%s", deployment.GetNamespace(), deployment.GetName())
 	}
 	return nil
 }

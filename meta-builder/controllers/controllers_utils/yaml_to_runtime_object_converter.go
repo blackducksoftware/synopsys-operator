@@ -2,11 +2,12 @@ package controllers_utils
 
 import (
 	"fmt"
+	"strings"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"strings"
 	//"github.com/go-logr/logr"
 )
 
@@ -26,7 +27,7 @@ func ConvertYamlFileToRuntimeObjects(byteArrayContent []byte) map[string]runtime
 		decode := scheme.Codecs.UniversalDeserializer().Decode
 		runtimeObject, groupVersionKind, err := decode([]byte(singleYaml), nil, nil)
 		if err != nil {
-			log.V(1).Info("unable to decode a single yaml object, skipping", "singleYaml", singleYaml)
+			log.V(1).Info("unable to decode a single yaml object, skipping", "singleYaml", singleYaml, "error", err)
 			continue
 		}
 
