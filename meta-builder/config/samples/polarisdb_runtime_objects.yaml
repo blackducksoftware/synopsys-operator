@@ -254,6 +254,87 @@ spec:
             claimName: postgresql-pv-claim
 
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "Postgres"
+  labels:
+    operator.synopsys.com/group-id: "InitJob"
+  name: ${NAME}-polaris-postgres-init-config
+data:
+  # TODO: Add POSTGRES_HOST to configmap in the polaris mutator
+  init.sh: |-
+    #!/bin/bash
+
+    set -e
+
+    if [[ -z "$POSTGRES_HOST" ]]; then
+      echo "POSTGRES_HOST must be set"
+      exit 1
+    fi
+
+    if [[ `psql -h $POSTGRES_HOST -U $POSTGRES_USER -c "SELECT datname FROM pg_catalog.pg_database WHERE datname='cos';" --tuples-only | wc -l` -eq 1 ]]; then
+      echo "cos is missing. Initializing the database..."
+
+      psql -h $POSTGRES_HOST -U postgres << EOF
+
+      CREATE DATABASE cos TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE jobs-service TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE issues TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE code_analysis TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE tds_fuzz TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE configs TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE triage_query TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE triage_command TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE desktop_metrics TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE tds_csv TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+      CREATE DATABASE tds_seeker TEMPLATE template0 ENCODING 'utf-8' LOCALE 'en_US.utf8';
+
+    EOF
+    fi
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "Postgres"
+  labels:
+    operator.synopsys.com/group-id: "InitJob"
+  name: ${NAME}-polaris-init-postgres
+spec:
+  template:
+    spec:
+      volumes:
+        - name: postgres-init
+          configMap:
+            defaultMode: 0777
+            name: ${NAME}-polaris-postgres-init-config
+      containers:
+        - name: postgres-init
+          image: registry.access.redhat.com/rhscl/postgresql-96-rhel7:1
+          command: ["/bin/bash"]
+          args: ["-c", "sleep 60; /tmp/postgres-init/init.sh"]
+          volumeMounts:
+            - mountPath: /tmp/postgres-init
+              name: postgres-init
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: postgresql-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+                valueFrom:
+                  configMapKeyRef:
+                    name: postgresql-config
+                    key: POSTGRES_PASSWORD
+      restartPolicy: Never
+  backoffLimit: 4
+
+
+---
 # Source: swip-db/charts/vault/templates/deployment.yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
