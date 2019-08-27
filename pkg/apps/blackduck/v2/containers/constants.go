@@ -34,10 +34,10 @@ const (
 	rabbitmqMemoryLimit        = "1024M"
 	uploadCacheMemoryLimit     = "512M"
 
-	registrationMinCPUUsage  = "1"
-	zookeeperMinCPUUsage     = "1"
-	jobRunnerMinCPUUsage     = "1"
-	jobRunnerMaxCPUUsage     = "1"
+	registrationMinCPUUsage  = ""
+	zookeeperMinCPUUsage     = ""
+	jobRunnerMinCPUUsage     = ""
+	jobRunnerMaxCPUUsage     = ""
 	binaryScannerMinCPUUsage = "1"
 	binaryScannerMaxCPUUsage = "1"
 
@@ -85,7 +85,7 @@ const (
 
 	mediumSolrMemoryLimit = "1024M"
 
-	mediumWebappCPULimit     = "2"
+	mediumWebappCPULimit     = "1"
 	mediumWebappMemoryLimit  = "5120M"
 	mediumWebappHubMaxMemory = "4096m"
 
@@ -93,7 +93,7 @@ const (
 	mediumScanMemoryLimit  = "5120M"
 	mediumScanHubMaxMemory = "4096m"
 
-	mediumJobRunnerReplicas     = 4
+	mediumJobRunnerReplicas     = 3
 	mediumJobRunnerMemoryLimit  = "7168M"
 	mediumJobRunnerHubMaxMemory = "6144m"
 
@@ -105,7 +105,7 @@ const (
 
 	largeSolrMemoryLimit = "1024M"
 
-	largeWebappCPULimit     = "2"
+	largeWebappCPULimit     = "1"
 	largeWebappMemoryLimit  = "9728M"
 	largeWebappHubMaxMemory = "8192m"
 
@@ -113,7 +113,7 @@ const (
 	largeScanMemoryLimit  = "9728M"
 	largeScanHubMaxMemory = "8192m"
 
-	largeJobRunnerReplicas     = 6
+	largeJobRunnerReplicas     = 3
 	largeJobRunnerMemoryLimit  = "13824M"
 	largeJobRunnerHubMaxMemory = "12288m"
 
