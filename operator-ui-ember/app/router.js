@@ -23,6 +23,7 @@ Router.map(function() {
     this.route('help');
     this.route('operator');
     this.route('deploy_polaris');
+    this.route('deploy_black_duck');
   });
 });
 
