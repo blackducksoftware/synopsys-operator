@@ -141,6 +141,7 @@ type OpsSightStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 
 // OpsSight is the Schema for the opssights API
 type OpsSight struct {

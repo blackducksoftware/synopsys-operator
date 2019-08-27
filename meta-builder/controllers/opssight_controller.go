@@ -33,7 +33,9 @@ import (
 
 	"github.com/go-logr/logr"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -162,14 +164,18 @@ func (r *OpsSightReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.setIndexingForChildrenObjects(mgr, &corev1.ConfigMap{})
 	r.setIndexingForChildrenObjects(mgr, &corev1.Service{})
 	r.setIndexingForChildrenObjects(mgr, &corev1.ReplicationController{})
+	r.setIndexingForChildrenObjects(mgr, &appsv1.Deployment{})
 	r.setIndexingForChildrenObjects(mgr, &corev1.Secret{})
 
-	// TODO add jobs and depployment?
 	builder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.OpsSight{})
 	builder = builder.Owns(&corev1.ConfigMap{})
 	builder = builder.Owns(&corev1.Service{})
 	builder = builder.Owns(&corev1.ReplicationController{})
+	builder = builder.Owns(&appsv1.Deployment{})
 	builder = builder.Owns(&corev1.Secret{})
+	builder = builder.Owns(&corev1.ServiceAccount{})
+	builder = builder.Owns(&rbacv1.ClusterRole{})
+	builder = builder.Owns(&rbacv1.ClusterRoleBinding{})
 
 	return builder.Complete(r)
 }
