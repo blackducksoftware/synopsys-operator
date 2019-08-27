@@ -8,8 +8,7 @@ metadata:
     app: blackduck
     component: cfssl
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-cfssl
+  name: ${NAME}-blackduck-cfssl
 spec:
   replicas: 1
   selector:
@@ -22,13 +21,12 @@ spec:
         app: blackduck
         component: cfssl
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-cfssl
+      name: ${NAME}-blackduck-cfssl
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/blackduck-cfssl:1.0.0
           imagePullPolicy: Always
           livenessProbe:
@@ -58,21 +56,20 @@ spec:
       volumes:
         - name: dir-cfssl
           persistentVolumeClaim:
-            claimName: ${NAME}-cfssl
+            claimName: ${NAME}-blackduck-cfssl
 
 ---
 apiVersion: v1
 kind: ReplicationController
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,PVC,Blackduck,cfssl"
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Blackduck,cfssl"
   labels:
     operator.synopsys.com/group-id: "Webserver"
     app: blackduck
     component: webserver
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-webserver
+  name: ${NAME}-blackduck-webserver
 spec:
   replicas: 1
   selector:
@@ -85,13 +82,12 @@ spec:
         app: blackduck
         component: webserver
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-webserver
+      name: ${NAME}-blackduck-webserver
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/blackduck-nginx:1.0.7
           imagePullPolicy: Always
           livenessProbe:
@@ -134,11 +130,11 @@ spec:
         - name: certificate
           secret:
             defaultMode: 292
-            secretName: ${NAME}-webserver-certificate
+            secretName: ${NAME}-blackduck-webserver-certificate
         - name: auth-custom-ca
           secret:
             defaultMode: 292
-            secretName: ${NAME}-auth-custom-ca
+            secretName: ${NAME}-blackduck-auth-custom-ca
 
 ---
 apiVersion: v1
@@ -151,8 +147,7 @@ metadata:
     app: blackduck
     component: documentation
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-documentation
+  name: ${NAME}-blackduck-documentation
 spec:
   replicas: 1
   selector:
@@ -165,13 +160,12 @@ spec:
         app: blackduck
         component: documentation
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-documentation
+      name: ${NAME}-blackduck-documentation
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/blackduck-documentation:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -214,8 +208,7 @@ metadata:
     app: blackduck
     component: registration
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-registration
+  name: ${NAME}-blackduck-registration
 spec:
   replicas: 1
   selector:
@@ -228,13 +221,12 @@ spec:
         app: blackduck
         component: registration
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-registration
+      name: ${NAME}-blackduck-registration
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/blackduck-registration:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -257,7 +249,6 @@ spec:
             limits:
               memory: 1G
             requests:
-              cpu: "1"
               memory: 1G
           volumeMounts:
             - mountPath: /opt/blackduck/hub/hub-registration/config
@@ -273,7 +264,7 @@ spec:
       volumes:
         - name: dir-registration
           persistentVolumeClaim:
-            claimName: ${NAME}-registration
+            claimName: ${NAME}-blackduck-registration
         - emptyDir: {}
           name: dir-registration-security
         - name: proxy-certificate
@@ -283,7 +274,7 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: ${NAME}-proxy-certificate
+            secretName: ${NAME}-blackduck-proxy-certificate
 
 ---
 apiVersion: v1
@@ -296,8 +287,7 @@ metadata:
     app: blackduck
     component: zookeeper
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-zookeeper
+  name: ${NAME}-blackduck-zookeeper
 spec:
   replicas: 1
   selector:
@@ -310,13 +300,12 @@ spec:
         app: blackduck
         component: zookeeper
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-zookeeper
+      name: ${NAME}-blackduck-zookeeper
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/blackduck-zookeeper:1.0.0
           imagePullPolicy: Always
           livenessProbe:
@@ -352,7 +341,7 @@ spec:
       volumes:
         - name: dir-zookeeper
           persistentVolumeClaim:
-            claimName: ${NAME}-zookeeper
+            claimName: ${NAME}-blackduck-zookeeper
 
 ---
 apiVersion: v1
@@ -365,8 +354,7 @@ metadata:
     app: blackduck
     component: jobrunner
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-jobrunner
+  name: ${NAME}-blackduck-jobrunner
 spec:
   replicas: 1
   selector:
@@ -379,8 +367,7 @@ spec:
         app: blackduck
         component: jobrunner
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-jobrunner
+      name: ${NAME}-blackduck-jobrunner
     spec:
       containers:
         - env:
@@ -388,9 +375,9 @@ spec:
               value: 4096m
           envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
             - configMapRef:
-                name: ${NAME}-db-config
+                name: ${NAME}-blackduck-db-config
           image: docker.io/blackducksoftware/blackduck-jobrunner:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -435,7 +422,7 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: ${NAME}-proxy-certificate
+            secretName: ${NAME}-blackduck-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -446,7 +433,7 @@ spec:
               - key: HUB_POSTGRES_USER_PASSWORD_FILE
                 mode: 420
                 path: HUB_POSTGRES_USER_PASSWORD_FILE
-            secretName: ${NAME}-db-creds
+            secretName: ${NAME}-blackduck-db-creds
         - emptyDir: {}
           name: dir-jobrunner
 
@@ -461,8 +448,7 @@ metadata:
     app: blackduck
     component: scan
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-scan
+  name: ${NAME}-blackduck-scan
 spec:
   replicas: 1
   selector:
@@ -475,8 +461,7 @@ spec:
         app: blackduck
         component: scan
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-scan
+      name: ${NAME}-blackduck-scan
     spec:
       containers:
         - env:
@@ -484,9 +469,9 @@ spec:
               value: 2048m
           envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
             - configMapRef:
-                name: ${NAME}-db-config
+                name: ${NAME}-blackduck-db-config
           image: docker.io/blackducksoftware/blackduck-scan:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -535,7 +520,7 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: ${NAME}-proxy-certificate
+            secretName: ${NAME}-blackduck-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -546,7 +531,7 @@ spec:
               - key: HUB_POSTGRES_USER_PASSWORD_FILE
                 mode: 420
                 path: HUB_POSTGRES_USER_PASSWORD_FILE
-            secretName: ${NAME}-db-creds
+            secretName: ${NAME}-blackduck-db-creds
 
 ---
 apiVersion: v1
@@ -559,8 +544,7 @@ metadata:
     app: blackduck
     component: authentication
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-authentication
+  name: ${NAME}-blackduck-authentication
 spec:
   replicas: 1
   selector:
@@ -573,8 +557,7 @@ spec:
         app: blackduck
         component: authentication
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-authentication
+      name: ${NAME}-blackduck-authentication
     spec:
       containers:
         - env:
@@ -582,9 +565,9 @@ spec:
               value: 512m
           envFrom:
             - configMapRef:
-                name: ${NAME}-db-config
+                name: ${NAME}-blackduck-db-config
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/blackduck-authentication:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -632,7 +615,7 @@ spec:
         - name: auth-custom-ca
           secret:
             defaultMode: 292
-            secretName: ${NAME}-auth-custom-ca
+            secretName: ${NAME}-blackduck-auth-custom-ca
         - name: proxy-certificate
           secret:
             defaultMode: 420
@@ -640,10 +623,10 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: ${NAME}-proxy-certificate
+            secretName: ${NAME}-blackduck-proxy-certificate
         - name: dir-authentication
           persistentVolumeClaim:
-            claimName: ${NAME}-authentication
+            claimName: ${NAME}-blackduck-authentication
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -654,7 +637,7 @@ spec:
               - key: HUB_POSTGRES_USER_PASSWORD_FILE
                 mode: 420
                 path: HUB_POSTGRES_USER_PASSWORD_FILE
-            secretName: ${NAME}-db-creds
+            secretName: ${NAME}-blackduck-db-creds
         - emptyDir: {}
           name: dir-authentication-security
 
@@ -669,8 +652,7 @@ metadata:
     app: blackduck
     component: webapp-logstash
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-webapp-logstash
+  name: ${NAME}-blackduck-webapp-logstash
 spec:
   replicas: 1
   selector:
@@ -683,8 +665,7 @@ spec:
         app: blackduck
         component: webapp-logstash
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-webapp-logstash
+      name: ${NAME}-blackduck-webapp-logstash
     spec:
       containers:
         - env:
@@ -692,9 +673,9 @@ spec:
               value: 2048m
           envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
             - configMapRef:
-                name: ${NAME}-db-config
+                name: ${NAME}-blackduck-db-config
           image: docker.io/blackducksoftware/blackduck-webapp:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -737,7 +718,7 @@ spec:
               subPath: HUB_PROXY_CERT_FILE
         - envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/blackduck-logstash:1.0.4
           imagePullPolicy: Always
           livenessProbe:
@@ -769,10 +750,10 @@ spec:
           name: dir-webapp-security
         - name: dir-webapp
           persistentVolumeClaim:
-            claimName: ${NAME}-webapp
+            claimName: ${NAME}-blackduck-webapp
         - name: dir-logstash
           persistentVolumeClaim:
-            claimName: ${NAME}-logstash
+            claimName: ${NAME}-blackduck-logstash
         - name: proxy-certificate
           secret:
             defaultMode: 420
@@ -780,7 +761,7 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: ${NAME}-proxy-certificate
+            secretName: ${NAME}-blackduck-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -791,7 +772,7 @@ spec:
               - key: HUB_POSTGRES_USER_PASSWORD_FILE
                 mode: 420
                 path: HUB_POSTGRES_USER_PASSWORD_FILE
-            secretName: ${NAME}-db-creds
+            secretName: ${NAME}-blackduck-db-creds
 
 ---
 apiVersion: v1
@@ -804,8 +785,7 @@ metadata:
     app: blackduck
     component: uploadcache
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-uploadcache
+  name: ${NAME}-blackduck-uploadcache
 spec:
   replicas: 1
   selector:
@@ -818,13 +798,12 @@ spec:
         app: blackduck
         component: uploadcache
         name: ${NAME}
-        version: 2019.6.1
-      name: ${NAME}-uploadcache
+      name: ${NAME}-blackduck-uploadcache
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/blackduck-upload-cache:1.0.8
           imagePullPolicy: Always
           livenessProbe:
@@ -870,11 +849,11 @@ spec:
           name: dir-uploadcache-security
         - name: dir-uploadcache-data
           persistentVolumeClaim:
-            claimName: ${NAME}-uploadcache-data
+            claimName: ${NAME}-blackduck-uploadcache-data
         - name: dir-seal-key
           secret:
             defaultMode: 292
-            secretName: ${NAME}-upload-cache
+            secretName: ${NAME}-blackduck-upload-cache
 
 ---
 apiVersion: v1
@@ -887,8 +866,7 @@ metadata:
     app: blackduck
     component: cfssl
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-cfssl
+  name: ${NAME}-blackduck-cfssl
 spec:
   ports:
     - name: port-8888
@@ -912,8 +890,7 @@ metadata:
     app: blackduck
     component: webserver
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-webserver
+  name: ${NAME}-blackduck-webserver
 spec:
   ports:
     - name: port-443
@@ -937,8 +914,7 @@ metadata:
     app: blackduck
     component: documentation
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-documentation
+  name: ${NAME}-blackduck-documentation
 spec:
   ports:
     - name: port-8443
@@ -962,8 +938,7 @@ metadata:
     app: blackduck
     component: registration
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-registration
+  name: ${NAME}-blackduck-registration
 spec:
   ports:
     - name: port-8443
@@ -987,8 +962,7 @@ metadata:
     app: blackduck
     component: zookeeper
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-zookeeper
+  name: ${NAME}-blackduck-zookeeper
 spec:
   ports:
     - name: port-2181
@@ -1012,8 +986,7 @@ metadata:
     app: blackduck
     component: scan
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-scan
+  name: ${NAME}-blackduck-scan
 spec:
   ports:
     - name: port-8443
@@ -1037,7 +1010,6 @@ metadata:
     app: blackduck
     component: authentication
     name: ${NAME}
-    version: 2019.6.1
   name: authentication
 spec:
   ports:
@@ -1062,7 +1034,6 @@ metadata:
     app: blackduck
     component: webapp-logstash
     name: ${NAME}
-    version: 2019.6.1
   name: webapp
 spec:
   ports:
@@ -1087,8 +1058,7 @@ metadata:
     app: blackduck
     component: webapp-logstash
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-logstash
+  name: ${NAME}-blackduck-logstash
 spec:
   ports:
     - name: port-5044
@@ -1112,7 +1082,6 @@ metadata:
     app: blackduck
     name: ${NAME}
     component: uploadcache
-    version: 2019.6.1
   name: uploadcache
 spec:
   ports:
@@ -1133,28 +1102,28 @@ spec:
 ---
 apiVersion: v1
 data:
-  BLACKDUCK_CFSSL_HOST: ${NAME}-cfssl
+  BLACKDUCK_CFSSL_HOST: ${NAME}-blackduck--cfssl
   BLACKDUCK_CFSSL_PORT: "8888"
-  BROKER_URL: amqps://${NAME}-rabbitmq/protecodesc
+  BROKER_URL: amqps://${NAME}-blackduck-rabbitmq/protecodesc
   BROKER_USE_SSL: "yes"
-  CFSSL: ${NAME}-cfssl:8888
+  CFSSL: ${NAME}-blackduck-cfssl:8888
   CLIENT_CERT_CN: blackduck-binaryscanner
   DATA_RETENTION_IN_DAYS: "180"
   ENABLE_SOURCE_UPLOADS: "false"
   HTTPS_VERIFY_CERTS: "yes"
-  HUB_CFSSL_HOST: ${NAME}-cfssl
-  HUB_DOC_HOST: ${NAME}-documentation
-  HUB_JOBRUNNER_HOST: ${NAME}-jobrunner
-  HUB_LOGSTASH_HOST: ${NAME}-logstash
-  HUB_REGISTRATION_HOST: ${NAME}-registration
-  HUB_SCAN_HOST: ${NAME}-scan
-  HUB_SOLR_HOST: ${NAME}solr
+  HUB_CFSSL_HOST: ${NAME}-blackduck-cfssl
+  HUB_DOC_HOST: ${NAME}-blackduck-documentation
+  HUB_JOBRUNNER_HOST: ${NAME}-blackduck-jobrunner
+  HUB_LOGSTASH_HOST: ${NAME}-blackduck-logstash
+  HUB_REGISTRATION_HOST: ${NAME}-blackduck-registration
+  HUB_SCAN_HOST: ${NAME}-blackduck-scan
+  HUB_SOLR_HOST: ${NAME}-blackduck-solr
   HUB_VERSION: ${HUB_VERSION}
-  HUB_WEBSERVER_HOST: ${NAME}-webserver
-  HUB_ZOOKEEPER_HOST: ${NAME}-zookeeper
+  HUB_WEBSERVER_HOST: ${NAME}-blackduck-webserver
+  HUB_ZOOKEEPER_HOST: ${NAME}-blackduck-zookeeper
   IPV4_ONLY: "0"
   MAX_TOTAL_SOURCE_SIZE_MB: "4000"
-  RABBIT_MQ_HOST: ${NAME}-rabbitmq
+  RABBIT_MQ_HOST: ${NAME}-blackduck-rabbitmq
   RABBIT_MQ_PORT: "5671"
   RABBITMQ_DEFAULT_VHOST: protecodesc
   RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT: "false"
@@ -1170,8 +1139,7 @@ metadata:
     operator.synopsys.com/group-id: "ConfigMap"
     app: blackduck
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-config
+  name: ${NAME}-blackduck-config
 
 ---
 apiVersion: v1
@@ -1186,8 +1154,7 @@ metadata:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-webserver-certificate
+  name: ${NAME}-blackduck-webserver-certificate
 type: Opaque
 
 ---
@@ -1202,8 +1169,7 @@ metadata:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
     name: ${NAME}
-    version: 2019.6.1
-  name: ${NAME}-upload-cache
+  name: ${NAME}-blackduck-upload-cache
 type: Opaque
 
 ---
@@ -1217,7 +1183,7 @@ metadata:
     app: blackduck
     component: postgres
     name: ${NAME}
-  name: ${NAME}-postgres
+  name: ${NAME}-blackduck-postgres
 spec:
   replicas: 1
   selector:
@@ -1230,7 +1196,7 @@ spec:
         app: blackduck
         component: postgres
         name: ${NAME}
-      name: ${NAME}-postgres
+      name: ${NAME}-blackduck-postgres
     spec:
       containers:
         - env:
@@ -1246,15 +1212,15 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
-                  name: ${NAME}-db-creds
+                  name: ${NAME}-blackduck-db-creds
             - name: POSTGRESQL_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_POSTGRES_PASSWORD_FILE
-                  name: ${NAME}-db-creds
+                  name: ${NAME}-blackduck-db-creds
           envFrom:
             - configMapRef:
-                name: ${NAME}-db-config
+                name: ${NAME}-blackduck-db-config
           image: registry.access.redhat.com/rhscl/postgresql-96-rhel7:1
           imagePullPolicy: IfNotPresent
           lifecycle:
@@ -1293,7 +1259,7 @@ spec:
       volumes:
         - name: postgres-data-volume
           persistentVolumeClaim:
-            claimName: ${NAME}-postgres
+            claimName: ${NAME}-blackduck-postgres
 
 ---
 apiVersion: v1
@@ -1306,7 +1272,7 @@ metadata:
     app: blackduck
     component: postgres
     name: ${NAME}
-  name: ${NAME}-postgres
+  name: ${NAME}-blackduck-postgres
 spec:
   ports:
     - name: port-5432
@@ -1329,8 +1295,7 @@ metadata:
     operator.synopsys.com/group-id: "ConfigMap"
     app: blackduck
     name: ${NAME}
-    version: 2019.8.0
-  name: ${NAME}-db-config
+  name: ${NAME}-blackduck-db-config
 
 ---
 apiVersion: v1
@@ -1342,8 +1307,7 @@ metadata:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
     name: ${NAME}
-    version: 2019.8.0
-  name: ${NAME}-db-creds
+  name: ${NAME}-blackduck-db-creds
 data:
   HUB_POSTGRES_ADMIN_PASSWORD_FILE: "${ADMIN_DB_PASSWORD}"
   HUB_POSTGRES_USER_PASSWORD_FILE: "${USER_DB_PASSWORD}"
@@ -1358,7 +1322,7 @@ metadata:
     operator.synopsys.com/group-dependencies: "Postgres"
   labels:
     operator.synopsys.com/group-id: "InitJob"
-  name: ${NAME}-postgres-init-config
+  name: ${NAME}-blackduck-postgres-init-config
 data:
   init.sh: |-
     #!/bin/bash
@@ -1437,7 +1401,7 @@ metadata:
     operator.synopsys.com/group-dependencies: "Postgres"
   labels:
     operator.synopsys.com/group-id: "InitJob"
-  name: ${NAME}-init-postgres
+  name: ${NAME}-blackduck-init-postgres
 spec:
   template:
     spec:
@@ -1445,7 +1409,7 @@ spec:
         - name: postgres-init
           configMap:
             defaultMode: 0777
-            name: ${NAME}-postgres-init-config
+            name: ${NAME}-blackduck-postgres-init-config
       containers:
         - name: postgres-init
           image: registry.access.redhat.com/rhscl/postgresql-96-rhel7:1
@@ -1456,23 +1420,23 @@ spec:
               name: postgres-init
           envFrom:
             - configMapRef:
-                name: ${NAME}-db-config
+                name: ${NAME}-blackduck-db-config
           env:
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_POSTGRES_PASSWORD_FILE
-                  name: ${NAME}-db-creds
+                  name: ${NAME}-blackduck-db-creds
             - name: HUB_POSTGRES_USER_PASSWORD_FILE
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_USER_PASSWORD_FILE
-                  name: ${NAME}-db-creds
+                  name: ${NAME}-blackduck-db-creds
             - name: HUB_POSTGRES_ADMIN_PASSWORD_FILE
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
-                  name: ${NAME}-db-creds
+                  name: ${NAME}-blackduck-db-creds
       restartPolicy: Never
   backoffLimit: 4
 
@@ -1486,7 +1450,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-postgres
+  name: ${NAME}-blackduck-postgres
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1504,7 +1468,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-webapp
+  name: ${NAME}-blackduck-webapp
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1522,7 +1486,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-zookeeper
+  name: ${NAME}-blackduck-zookeeper
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1540,7 +1504,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-uploadcache-data
+  name: ${NAME}-blackduck-uploadcache-data
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1558,7 +1522,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-authentication
+  name: ${NAME}-blackduck-authentication
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1576,7 +1540,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-cfssl
+  name: ${NAME}-blackduck-cfssl
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1594,7 +1558,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-registration
+  name: ${NAME}-blackduck-registration
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1612,7 +1576,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-solr
+  name: ${NAME}-blackduck-solr
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1630,7 +1594,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: ${NAME}
-  name: ${NAME}-logstash
+  name: ${NAME}-blackduck-logstash
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1649,7 +1613,7 @@ metadata:
     app: blackduck
     name: ${NAME}
     version: 2019.6.1
-  name: ${NAME}-auth-custom-ca
+  name: ${NAME}-blackduck-auth-custom-ca
 type: Opaque
 
 ---
@@ -1663,7 +1627,7 @@ metadata:
     app: blackduck
     name: ${NAME}
     version: 2019.6.1
-  name: ${NAME}-proxy-certificate
+  name: ${NAME}-blackduck-proxy-certificate
 type: Opaque
 
 ---
@@ -1678,7 +1642,7 @@ metadata:
     app: blackduck
     name: ${NAME}
     component: webserver-exposed
-  name: ${NAME}-webserver-exposed
+  name: ${NAME}-blackduck-webserver-exposed
 spec:
   ports:
     - name: port-443
@@ -1702,7 +1666,6 @@ metadata:
     app: blackduck
     component: rabbitmq
     name: ${NAME}
-    version: 2019.8.0
   name: ${NAME}-blackduck-rabbitmq
 spec:
   replicas: 1
@@ -1716,13 +1679,12 @@ spec:
         app: blackduck
         component: rabbitmq
         name: ${NAME}
-        version: 2019.8.0
       name: ${NAME}-blackduck-rabbitmq
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/rabbitmq:1.0.0
           imagePullPolicy: Always
           name: rabbitmq
@@ -1753,7 +1715,6 @@ metadata:
     app: blackduck
     component: rabbitmq
     name: ${NAME}
-    version: 2019.8.0
   name: ${NAME}-blackduck-rabbitmq
 spec:
   ports:
@@ -1765,7 +1726,6 @@ spec:
     app: blackduck
     component: rabbitmq
     name: ${NAME}
-    version: 2019.8.0
   type: ClusterIP
 
 ---
@@ -1779,7 +1739,6 @@ metadata:
     app: blackduck
     component: binaryscanner
     name: ${NAME}
-    version: 2019.8.0
   name: ${NAME}-blackduck-binaryscanner
   namespace: ${NAME}
 spec:
@@ -1794,7 +1753,6 @@ spec:
         app: blackduck
         component: binaryscanner
         name: ${NAME}
-        version: 2019.8.0
       name: ${NAME}-blackduck-binaryscanner
     spec:
       containers:
@@ -1802,7 +1760,7 @@ spec:
             - /docker-entrypoint.sh
           envFrom:
             - configMapRef:
-                name: ${NAME}-config
+                name: ${NAME}-blackduck-config
           image: docker.io/blackducksoftware/appcheck-worker:2019.06
           imagePullPolicy: Always
           name: binaryscanner

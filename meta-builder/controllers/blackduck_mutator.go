@@ -132,7 +132,7 @@ func (p *BlackduckPatcher) patchSealKey() error {
 		return fmt.Errorf("SEAL_KEY key couldn't be found inside blackduck-secret")
 	}
 
-	runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-upload-cache", p.blackDuckCr.Name)]
+	runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-blackduck-upload-cache", p.blackDuckCr.Name)]
 	if !ok {
 		return nil
 	}
@@ -144,7 +144,7 @@ func (p *BlackduckPatcher) patchSealKey() error {
 // TODO: common with Alert
 func (p *BlackduckPatcher) patchExposeService() error {
 	// TODO use contansts
-	id := fmt.Sprintf("Service.%s-webserver-exposed", p.blackDuckCr.Name)
+	id := fmt.Sprintf("Service.%s-blackduck-webserver-exposed", p.blackDuckCr.Name)
 	runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[id]
 	if !ok {
 		return nil
@@ -169,11 +169,11 @@ func (p *BlackduckPatcher) patchAuthCert() error {
 		for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 			switch v.(type) {
 			case *corev1.ReplicationController:
-				removeVolumeAndVolumeMountFromRC(v.(*corev1.ReplicationController), fmt.Sprintf("%sauth-custom-ca", p.blackDuckCr.Name))
+				removeVolumeAndVolumeMountFromRC(v.(*corev1.ReplicationController), fmt.Sprintf("%s-blackduck-auth-custom-ca", p.blackDuckCr.Name))
 			}
 		}
 	} else {
-		secret, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-auth-custom-ca", p.blackDuckCr.Name)]
+		secret, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-blackduck-auth-custom-ca", p.blackDuckCr.Name)]
 		if !ok {
 			return nil
 		}
@@ -192,11 +192,11 @@ func (p *BlackduckPatcher) patchProxyCert() error {
 		for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 			switch v.(type) {
 			case *corev1.ReplicationController:
-				removeVolumeAndVolumeMountFromRC(v.(*corev1.ReplicationController), fmt.Sprintf("%s-proxy-certificate", p.blackDuckCr.Name))
+				removeVolumeAndVolumeMountFromRC(v.(*corev1.ReplicationController), fmt.Sprintf("%s-blackduck-proxy-certificate", p.blackDuckCr.Name))
 			}
 		}
 	} else {
-		secret, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-proxy-certificate", p.blackDuckCr.Name)]
+		secret, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-blackduck-proxy-certificate", p.blackDuckCr.Name)]
 		if !ok {
 			return nil
 		}
@@ -299,12 +299,12 @@ func (p *BlackduckPatcher) patchImages() error {
 }
 
 func (p *BlackduckPatcher) patchPostgresConfig() error {
-	cmConf, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-db-config", p.blackDuckCr.Name)]
+	cmConf, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-blackduck-db-config", p.blackDuckCr.Name)]
 	if !ok {
 		return nil
 	}
 
-	secretConf, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-db-creds", p.blackDuckCr.Name)]
+	secretConf, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-blackduck-db-creds", p.blackDuckCr.Name)]
 	if !ok {
 		return nil
 	}
@@ -328,15 +328,15 @@ func (p *BlackduckPatcher) patchPostgresConfig() error {
 		secretConf.(*corev1.Secret).Data["HUB_POSTGRES_USER_PASSWORD_FILE"] = []byte(p.blackDuckCr.Spec.ExternalPostgres.PostgresUserPassword)
 
 		// Delete the component required when deploying internal postgres
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("PersistentVolumeClaim.%s-postgres", p.blackDuckCr.Name))
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("Job.%s-init-postgres", p.blackDuckCr.Name))
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("ConfigMap.%s-postgres-init-config", p.blackDuckCr.Name))
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("Service.%s-postgres", p.blackDuckCr.Name))
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("ReplicationController.%s-postgres", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("PersistentVolumeClaim.%s-blackduck-postgres", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("Job.%s-blackduck-init-postgres", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("ConfigMap.%s-blackduck-postgres-init-config", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("Service.%s-blackduck-postgres", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("ReplicationController.%s-blackduck-postgres", p.blackDuckCr.Name))
 	} else {
 		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_ADMIN"] = "blackduck"
 		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_ENABLE_SSL"] = "false"
-		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_HOST"] = fmt.Sprintf("%s-postgres", p.blackDuckCr.Name)
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_HOST"] = fmt.Sprintf("%s-blackduck-postgres", p.blackDuckCr.Name)
 		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_PORT"] = "5432"
 		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_USER"] = "blackduck_user"
 
@@ -351,7 +351,7 @@ func (p *BlackduckPatcher) patchPostgresConfig() error {
 func (p *BlackduckPatcher) patchWebserverCertificates() error {
 
 	if len(p.blackDuckCr.Spec.Certificate) > 0 && len(p.blackDuckCr.Spec.CertificateKey) > 0 {
-		runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-webserver-certificate", p.blackDuckCr.Name)]
+		runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-blackduck-webserver-certificate", p.blackDuckCr.Name)]
 		if !ok {
 			return nil
 		}
@@ -365,7 +365,7 @@ func (p *BlackduckPatcher) patchWebserverCertificates() error {
 
 // TODO: common with Alert
 func (p *BlackduckPatcher) patchEnvirons() error {
-	configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-config", p.blackDuckCr.Name)]
+	configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-blackduck-config", p.blackDuckCr.Name)]
 	if !ok {
 		return nil
 	}
