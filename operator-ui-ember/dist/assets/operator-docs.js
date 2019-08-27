@@ -269,6 +269,10 @@
     id: "deploy_polaris",
     link: "/deploy_polaris"
   }, {
+    name: "Deploy Black Duck",
+    id: "deploy_black_duck",
+    link: "/deploy_black_duck"
+  }, {
     name: "Docs",
     id: "docs",
     link: "/documentation"
@@ -841,6 +845,7 @@
       this.route('help');
       this.route('operator');
       this.route('deploy_polaris');
+      this.route('deploy_black_duck');
     });
   });
   var _default = Router;
@@ -955,6 +960,18 @@
   _exports.default = _default;
 });
 ;define("operator-docs/routes/ui", ["exports"], function (_exports) {
+  "use strict";
+
+  Object.defineProperty(_exports, "__esModule", {
+    value: true
+  });
+  _exports.default = void 0;
+
+  var _default = Ember.Route.extend({});
+
+  _exports.default = _default;
+});
+;define("operator-docs/routes/ui/deploy-black-duck", ["exports"], function (_exports) {
   "use strict";
 
   Object.defineProperty(_exports, "__esModule", {
@@ -1531,6 +1548,24 @@
 
   _exports.default = _default;
 });
+;define("operator-docs/templates/ui/deploy-black-duck", ["exports"], function (_exports) {
+  "use strict";
+
+  Object.defineProperty(_exports, "__esModule", {
+    value: true
+  });
+  _exports.default = void 0;
+
+  var _default = Ember.HTMLBars.template({
+    "id": "bwqkOdjb",
+    "block": "{\"symbols\":[],\"statements\":[[1,[23,\"outlet\"],false]],\"hasEval\":false}",
+    "meta": {
+      "moduleName": "operator-docs/templates/ui/deploy-black-duck.hbs"
+    }
+  });
+
+  _exports.default = _default;
+});
 ;define("operator-docs/templates/ui/deploy-polaris", ["exports"], function (_exports) {
   "use strict";
 
@@ -1626,7 +1661,7 @@ catch(err) {
 
 ;
           if (!runningTests) {
-            require("operator-docs/app")["default"].create({"name":"operator-docs","version":"0.0.0+04692cc6"});
+            require("operator-docs/app")["default"].create({"name":"operator-docs","version":"0.0.0+59df5787"});
           }
         
 //# sourceMappingURL=operator-docs.map

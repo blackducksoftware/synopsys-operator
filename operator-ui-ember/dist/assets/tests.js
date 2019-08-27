@@ -532,6 +532,10 @@ define("operator-docs/tests/lint/app.lint-test", [], function () {
     assert.expect(1);
     assert.ok(true, 'routes/ui.js should pass ESLint\n\n');
   });
+  QUnit.test('routes/ui/deploy-black-duck.js', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/ui/deploy-black-duck.js should pass ESLint\n\n');
+  });
   QUnit.test('routes/ui/deploy-polaris.js', function (assert) {
     assert.expect(1);
     assert.ok(true, 'routes/ui/deploy-polaris.js should pass ESLint\n\n');
@@ -664,6 +668,10 @@ define("operator-docs/tests/lint/templates.template.lint-test", [], function () 
   QUnit.test('operator-docs/templates/ui.hbs', function (assert) {
     assert.expect(1);
     assert.ok(true, 'operator-docs/templates/ui.hbs should pass TemplateLint.\n\n');
+  });
+  QUnit.test('operator-docs/templates/ui/deploy-black-duck.hbs', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'operator-docs/templates/ui/deploy-black-duck.hbs should pass TemplateLint.\n\n');
   });
   QUnit.test('operator-docs/templates/ui/deploy-polaris.hbs', function (assert) {
     assert.expect(1);
@@ -798,6 +806,10 @@ define("operator-docs/tests/lint/tests.lint-test", [], function () {
     assert.expect(1);
     assert.ok(true, 'unit/routes/ui-test.js should pass ESLint\n\n');
   });
+  QUnit.test('unit/routes/ui/deploy-black-duck-test.js', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'unit/routes/ui/deploy-black-duck-test.js should pass ESLint\n\n');
+  });
   QUnit.test('unit/routes/ui/deploy-polaris-test.js', function (assert) {
     assert.expect(1);
     assert.ok(true, 'unit/routes/ui/deploy-polaris-test.js should pass ESLint\n\n');
@@ -927,6 +939,17 @@ define("operator-docs/tests/unit/routes/ui-test", ["qunit", "ember-qunit"], func
     (0, _emberQunit.setupTest)(hooks);
     (0, _qunit.test)('it exists', function (assert) {
       let route = this.owner.lookup('route:ui');
+      assert.ok(route);
+    });
+  });
+});
+define("operator-docs/tests/unit/routes/ui/deploy-black-duck-test", ["qunit", "ember-qunit"], function (_qunit, _emberQunit) {
+  "use strict";
+
+  (0, _qunit.module)('Unit | Route | ui/deploy_black_duck', function (hooks) {
+    (0, _emberQunit.setupTest)(hooks);
+    (0, _qunit.test)('it exists', function (assert) {
+      let route = this.owner.lookup('route:ui/deploy-black-duck');
       assert.ok(route);
     });
   });
