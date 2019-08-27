@@ -45,7 +45,7 @@ type BlackduckSpec struct {
 	Environs              []string                  `json:"environs,omitempty"`
 	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
 	LicenseKey            string                    `json:"licenseKey,omitempty"`
-	RegistryConfiguration RegistryConfiguration     `json:"registryConfiguration,omitempty"`
+	RegistryConfiguration *RegistryConfiguration    `json:"registryConfiguration,omitempty"`
 	AdminPassword         string                    `json:"adminPassword"`
 	UserPassword          string                    `json:"userPassword"`
 	PostgresPassword      string                    `json:"postgresPassword"`

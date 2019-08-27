@@ -120,7 +120,7 @@ func (p *AlertPatcher) patchSecrets() error {
 
 // TODO: common with Black Duck
 func (p *AlertPatcher) patchImages() error {
-	if len(p.alertCr.Spec.RegistryConfiguration.Registry) > 0 || len(p.alertCr.Spec.ImageRegistries) > 0 {
+	if p.alertCr.Spec.RegistryConfiguration != nil && (len(p.alertCr.Spec.RegistryConfiguration.Registry) > 0 || len(p.alertCr.Spec.ImageRegistries) > 0) {
 		for _, baseRuntimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
 			switch baseRuntimeObject.(type) {
 			case *corev1.ReplicationController:

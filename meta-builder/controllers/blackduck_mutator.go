@@ -285,12 +285,12 @@ func (p *BlackduckPatcher) patchReplicas() error {
 
 // TODO: common with Alert
 func (p *BlackduckPatcher) patchImages() error {
-	if len(p.blackDuckCr.Spec.RegistryConfiguration.Registry) > 0 || len(p.blackDuckCr.Spec.ImageRegistries) > 0 {
+	if p.blackDuckCr.Spec.RegistryConfiguration != nil && (len(p.blackDuckCr.Spec.RegistryConfiguration.Registry) > 0 || len(p.blackDuckCr.Spec.ImageRegistries) > 0) {
 		for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 			switch v.(type) {
 			case *corev1.ReplicationController:
 				for i := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers {
-					v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].Image = controllers_utils.GenerateImageTag(v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].Image, p.blackDuckCr.Spec.ImageRegistries, p.blackDuckCr.Spec.RegistryConfiguration)
+					v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].Image = controllers_utils.GenerateImageTag(v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].Image, p.blackDuckCr.Spec.ImageRegistries, *p.blackDuckCr.Spec.RegistryConfiguration)
 				}
 			}
 		}
