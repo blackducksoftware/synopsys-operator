@@ -166,7 +166,7 @@ spec:
         - envFrom:
             - configMapRef:
                 name: ${NAME}-blackduck-config
-          image: docker.io/blackducksoftware/blackduck-documentation:2019.6.1
+          image: docker.io/blackducksoftware/blackduck-documentation:2019.4.0
           imagePullPolicy: Always
           livenessProbe:
             exec:
@@ -227,7 +227,7 @@ spec:
         - envFrom:
             - configMapRef:
                 name: ${NAME}-blackduck-config
-          image: docker.io/blackducksoftware/blackduck-registration:2019.6.1
+          image: docker.io/blackducksoftware/blackduck-registration:2019.4.0
           imagePullPolicy: Always
           livenessProbe:
             exec:
@@ -378,7 +378,7 @@ spec:
                 name: ${NAME}-blackduck-config
             - configMapRef:
                 name: ${NAME}-blackduck-db-config
-          image: docker.io/blackducksoftware/blackduck-jobrunner:2019.6.1
+          image: docker.io/blackducksoftware/blackduck-jobrunner:2019.4.0
           imagePullPolicy: Always
           livenessProbe:
             exec:
@@ -472,7 +472,7 @@ spec:
                 name: ${NAME}-blackduck-config
             - configMapRef:
                 name: ${NAME}-blackduck-db-config
-          image: docker.io/blackducksoftware/blackduck-scan:2019.6.1
+          image: docker.io/blackducksoftware/blackduck-scan:2019.4.0
           imagePullPolicy: Always
           livenessProbe:
             exec:
@@ -568,7 +568,7 @@ spec:
                 name: ${NAME}-blackduck-db-config
             - configMapRef:
                 name: ${NAME}-blackduck-config
-          image: docker.io/blackducksoftware/blackduck-authentication:2019.6.1
+          image: docker.io/blackducksoftware/blackduck-authentication:2019.4.0
           imagePullPolicy: Always
           livenessProbe:
             exec:
@@ -676,7 +676,7 @@ spec:
                 name: ${NAME}-blackduck-config
             - configMapRef:
                 name: ${NAME}-blackduck-db-config
-          image: docker.io/blackducksoftware/blackduck-webapp:2019.6.1
+          image: docker.io/blackducksoftware/blackduck-webapp:2019.4.0
           imagePullPolicy: Always
           livenessProbe:
             exec:
@@ -1102,7 +1102,7 @@ spec:
 ---
 apiVersion: v1
 data:
-  BLACKDUCK_CFSSL_HOST: ${NAME}-blackduck--cfssl
+  BLACKDUCK_CFSSL_HOST: ${NAME}-blackduck-cfssl
   BLACKDUCK_CFSSL_PORT: "8888"
   BROKER_URL: amqps://${NAME}-blackduck-rabbitmq/protecodesc
   BROKER_USE_SSL: "yes"
@@ -1612,7 +1612,6 @@ metadata:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
     name: ${NAME}
-    version: 2019.6.1
   name: ${NAME}-blackduck-auth-custom-ca
 type: Opaque
 
@@ -1626,7 +1625,6 @@ metadata:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
     name: ${NAME}
-    version: 2019.6.1
   name: ${NAME}-blackduck-proxy-certificate
 type: Opaque
 
@@ -1761,7 +1759,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: ${NAME}-blackduck-config
-          image: docker.io/blackducksoftware/appcheck-worker:2019.06
+          image: docker.io/blackducksoftware/appcheck-worker:2019.01
           imagePullPolicy: Always
           name: binaryscanner
           ports:
@@ -1777,3 +1775,80 @@ spec:
       dnsPolicy: ClusterFirst
       securityContext:
         fsGroup: 0
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    app: blackduck
+    component: pvc
+    name: ${NAME}
+  name: ${NAME}-blackduck-solr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  labels:
+    app: blackduck
+    component: solr
+    name: ${NAME}
+  name: ${NAME}-blackduck-solr
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: solr
+    name: ${NAME}
+  template:
+    metadata:
+      labels:
+        app: blackduck
+        component: solr
+        name: ${NAME}
+      name: ${NAME}-blackduck-solr
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: ${NAME}-blackduck-config
+          image: docker.io/blackducksoftware/blackduck-solr:1.0.0
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - http://localhost:8983/solr/project/admin/ping?wt=json
+            failureThreshold: 10
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: solr
+          ports:
+            - containerPort: 8983
+              protocol: TCP
+          resources:
+            limits:
+              memory: 640M
+            requests:
+              memory: 640M
+          volumeMounts:
+            - mountPath: /opt/blackduck/hub/solr/cores.data
+              name: dir-solr
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - name: dir-solr
+          persistentVolumeClaim:
+            claimName: ${NAME}-blackduck-solr
