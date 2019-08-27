@@ -7,7 +7,7 @@ require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20190827174936-ade4158d8b6f
+	github.com/blackducksoftware/synopsys-operator v0.0.0-20190827201936-f790f893b3e1
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
@@ -74,7 +74,7 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	honnef.co/go/tools v0.0.1-2019.2.2 // indirect
 	k8s.io/api v0.0.0-20190826194732-9f642ccb7a30 // indirect
-	k8s.io/apiextensions-apiserver v0.0.0-20190827155707-09e949d5b9d5 // indirect
+	k8s.io/apiextensions-apiserver v0.0.0-20190827195709-e883aab73540 // indirect
 	k8s.io/apimachinery v0.0.0-20190827074644-f378a67c6af3
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/gengo v0.0.0-20190826232639-a874a240740c // indirect
@@ -86,7 +86,7 @@ replace (
 	cloud.google.com/go => cloud.google.com/go v0.44.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent => contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	github.com/NYTimes/gziphandler => github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190827174936-ade4158d8b6f
+	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190827201936-f790f893b3e1
 	github.com/cockroachdb/cockroach-go => github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt => github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.13+incompatible // indirect
