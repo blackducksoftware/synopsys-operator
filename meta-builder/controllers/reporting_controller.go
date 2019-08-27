@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"

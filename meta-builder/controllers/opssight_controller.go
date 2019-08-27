@@ -28,11 +28,12 @@ import (
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 
 	"github.com/go-logr/logr"
 
+	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -176,6 +177,7 @@ func (r *OpsSightReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder = builder.Owns(&corev1.ServiceAccount{})
 	builder = builder.Owns(&rbacv1.ClusterRole{})
 	builder = builder.Owns(&rbacv1.ClusterRoleBinding{})
+	builder = builder.Owns(&routev1.Route{})
 
 	return builder.Complete(r)
 }

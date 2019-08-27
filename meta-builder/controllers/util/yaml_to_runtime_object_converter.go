@@ -1,28 +1,31 @@
-package controllers_utils
+package util
 
 import (
 	"fmt"
 	"strings"
 
+	routev1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	//"github.com/go-logr/logr"
 )
 
+// ConvertYamlFileToRuntimeObjects converts the yaml file string to map of runtime object
 func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Object {
 	// TODO: use logr.Logr
 	log := ctrl.Log.WithName("ConvertYamlFileToRuntimeObjects")
 
 	listOfSingleK8sResourceYaml := strings.Split(stringContent, "---")
-	mapOfUniqueIdToDesiredRuntimeObject := make(map[string]runtime.Object, 0)
+	mapOfUniqueIDToDesiredRuntimeObject := make(map[string]runtime.Object, 0)
 
 	for _, singleYaml := range listOfSingleK8sResourceYaml {
 		if singleYaml == "\n" || singleYaml == "" {
 			// ignore empty cases
 			continue
 		}
+
+		routev1.AddToScheme(scheme.Scheme)
 		decode := scheme.Codecs.UniversalDeserializer().Decode
 		runtimeObject, groupVersionKind, err := decode([]byte(singleYaml), nil, nil)
 		if err != nil {
@@ -37,9 +40,9 @@ func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Ob
 			log.V(1).Info("Failed to get runtimeObject's name", "err", err)
 			continue
 		}
-		uniqueId := fmt.Sprintf("%s.%s", runtimeObjectKind, runtimeObjectName)
-		log.V(1).Info("creating runtime object label", "uniqueId", uniqueId)
-		mapOfUniqueIdToDesiredRuntimeObject[uniqueId] = runtimeObject
+		uniqueID := fmt.Sprintf("%s.%s", runtimeObjectKind, runtimeObjectName)
+		log.V(1).Info("creating runtime object label", "uniqueId", uniqueID)
+		mapOfUniqueIDToDesiredRuntimeObject[uniqueID] = runtimeObject
 	}
-	return mapOfUniqueIdToDesiredRuntimeObject
+	return mapOfUniqueIDToDesiredRuntimeObject
 }

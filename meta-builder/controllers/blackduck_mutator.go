@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 )
 
 func patchBlackduck(client client.Client, blackDuckCr *synopsysv1.Blackduck, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object) map[string]runtime.Object {

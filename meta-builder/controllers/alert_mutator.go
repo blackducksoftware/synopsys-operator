@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	corev1 "k8s.io/api/core/v1"

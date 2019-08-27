@@ -26,19 +26,18 @@ import (
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func patchOpsSight(client client.Client, opsSight *synopsysv1.OpsSight, objects map[string]runtime.Object) map[string]runtime.Object {
+func patchOpsSight(client client.Client, opsSight *synopsysv1.OpsSight, runtimeObjects map[string]runtime.Object) map[string]runtime.Object {
 	patcher := OpsSightPatcher{
-		Client:   client,
-		opsSight: opsSight,
-		objects:  objects,
+		Client:         client,
+		opsSight:       opsSight,
+		runtimeObjects: runtimeObjects,
 	}
 	return patcher.patch()
 }
@@ -46,8 +45,8 @@ func patchOpsSight(client client.Client, opsSight *synopsysv1.OpsSight, objects 
 // OpsSightPatcher applies the patches to OpsSight
 type OpsSightPatcher struct {
 	client.Client
-	opsSight *synopsysv1.OpsSight
-	objects  map[string]runtime.Object
+	opsSight       *synopsysv1.OpsSight
+	runtimeObjects map[string]runtime.Object
 }
 
 func (p *OpsSightPatcher) patch() map[string]runtime.Object {
@@ -55,10 +54,14 @@ func (p *OpsSightPatcher) patch() map[string]runtime.Object {
 	// and apply the necessary changes
 
 	patches := []func() error{
-		p.patchNamespace,
 		p.patchImages,
 		p.patchOpsSightCoreModelExposeService,
 		p.patchOpsSightPrometheusExposeService,
+		p.patchImageProcessor,
+		p.patchPodProcessor,
+		p.patchPrometheusMetrics,
+		p.patchProcessor,
+		p.patchCoreModelUI,
 	}
 	for _, f := range patches {
 		err := f()
@@ -67,13 +70,13 @@ func (p *OpsSightPatcher) patch() map[string]runtime.Object {
 		}
 	}
 
-	return p.objects
+	return p.runtimeObjects
 }
 
 func (p *OpsSightPatcher) patchOpsSightCoreModelExposeService() error {
 	// TODO use constants
 	id := fmt.Sprintf("Service.%s-opssight-core-exposed", p.opsSight.Name)
-	runtimeObject, ok := p.objects[id]
+	runtimeObject, ok := p.runtimeObjects[id]
 	if !ok {
 		return nil
 	}
@@ -84,7 +87,7 @@ func (p *OpsSightPatcher) patchOpsSightCoreModelExposeService() error {
 	case "NODEPORT":
 		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
 	default:
-		delete(p.objects, id)
+		delete(p.runtimeObjects, id)
 	}
 
 	return nil
@@ -93,7 +96,7 @@ func (p *OpsSightPatcher) patchOpsSightCoreModelExposeService() error {
 func (p *OpsSightPatcher) patchOpsSightPrometheusExposeService() error {
 	// TODO use constants
 	id := fmt.Sprintf("Service.%s-opssight-prometheus-exposed", p.opsSight.Name)
-	runtimeObject, ok := p.objects[id]
+	runtimeObject, ok := p.runtimeObjects[id]
 	if !ok {
 		return nil
 	}
@@ -103,8 +106,6 @@ func (p *OpsSightPatcher) patchOpsSightPrometheusExposeService() error {
 		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
 	case "NODEPORT":
 		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
-	default:
-		delete(p.objects, id)
 	}
 
 	return nil
@@ -112,7 +113,7 @@ func (p *OpsSightPatcher) patchOpsSightPrometheusExposeService() error {
 
 func (p *OpsSightPatcher) patchImages() error {
 	if len(p.opsSight.Spec.RegistryConfiguration.Registry) > 0 || len(p.opsSight.Spec.ImageRegistries) > 0 {
-		for _, v := range p.objects {
+		for _, v := range p.runtimeObjects {
 			switch v.(type) {
 			case *corev1.ReplicationController:
 				for i := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers {
@@ -124,12 +125,54 @@ func (p *OpsSightPatcher) patchImages() error {
 	return nil
 }
 
-func (p *OpsSightPatcher) patchNamespace() error {
-	accessor := meta.NewAccessor()
-	for _, runtimeObject := range p.objects {
-		if kind, err := accessor.Kind(runtimeObject); err == nil && !(kind == "ClusterRole" || kind == "ClusterRoleBinding") {
-			accessor.SetNamespace(runtimeObject, p.opsSight.Spec.Namespace)
+func (p *OpsSightPatcher) patchProcessor() error {
+	if !p.opsSight.Spec.Perceiver.EnableImagePerceiver && !p.opsSight.Spec.Perceiver.EnablePodPerceiver {
+		delete(p.runtimeObjects, fmt.Sprintf("ServiceAccount.%s-opssight-processor", p.opsSight.Name))
+	}
+	return nil
+}
+
+func (p *OpsSightPatcher) patchImageProcessor() error {
+	// TODO need to check if the cluster is OpenShift
+	if !p.opsSight.Spec.Perceiver.EnableImagePerceiver {
+		delete(p.runtimeObjects, fmt.Sprintf("ClusterRole.%s-opssight-image-processor", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("ClusterRoleBinding.%s-opssight-image-processor", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("Service.%s-opssight-image-processor", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("ReplicationController.%s-opssight-image-processor", p.opsSight.Name))
+	}
+	return nil
+}
+
+func (p *OpsSightPatcher) patchPodProcessor() error {
+	if !p.opsSight.Spec.Perceiver.EnablePodPerceiver {
+		delete(p.runtimeObjects, fmt.Sprintf("ClusterRole.%s-opssight-pod-processor", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("ClusterRoleBinding.%s-opssight-pod-processor", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("Service.%s-opssight-pod-processor", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("ReplicationController.%s-opssight-pod-processor", p.opsSight.Name))
+	}
+	return nil
+}
+
+func (p *OpsSightPatcher) patchPrometheusMetrics() error {
+	if !p.opsSight.Spec.EnableMetrics {
+		delete(p.runtimeObjects, fmt.Sprintf("ConfigMap.%s-opssight-prometheus", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("Service.%s-opssight-prometheus", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("Service.%s-opssight-prometheus-exposed", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("Deployment.%s-opssight-prometheus", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("Route.%s-opssight-prometheus-metrics", p.opsSight.Name))
+	} else {
+		// TODO need to check if the cluster is OpenShift
+		if p.opsSight.Spec.Prometheus.Expose != "OPENSHIFT" {
+			delete(p.runtimeObjects, fmt.Sprintf("Route.%s-opssight-prometheus-metrics", p.opsSight.Name))
 		}
+	}
+	return nil
+}
+
+func (p *OpsSightPatcher) patchCoreModelUI() error {
+	// TODO need to check if the cluster is OpenShift
+	if p.opsSight.Spec.Perceptor.Expose != "OPENSHIFT" {
+		delete(p.runtimeObjects, fmt.Sprintf("Route.%s-opssight-core", p.opsSight.Name))
 	}
 	return nil
 }
