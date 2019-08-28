@@ -1,4 +1,4 @@
-package controllers_utils
+package util
 
 import (
 	"fmt"
@@ -6,7 +6,8 @@ import (
 	"net/http"
 )
 
-func HttpGet(url string) (content []byte, err error) {
+// HTTPGet returns the http response for the api
+func HTTPGet(url string) (content []byte, err error) {
 	response, err := http.Get(url)
 	if err != nil {
 		return

@@ -19,13 +19,14 @@
  *  under the License.
  */
 
-package controllers_utils
+package util
 
 import (
 	"fmt"
-	v1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"regexp"
 	"strings"
+
+	metabuilderapi "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 )
 
 var imageTagRegexp = regexp.MustCompile(`([0-9a-zA-Z-_:\\.]*)/([0-9a-zA-Z-_:\\.]*):([a-zA-Z0-9-\\._]+)$`)
@@ -74,7 +75,7 @@ func GetImageName(image string) (string, error) {
 }
 
 // GenerateImageTag generate the container image tag based on the configuration
-func GenerateImageTag(defaultImage string, imageRegistries []string, registryConfig v1.RegistryConfiguration) string {
+func GenerateImageTag(defaultImage string, imageRegistries []string, registryConfig metabuilderapi.RegistryConfiguration) string {
 	if len(imageRegistries) > 0 {
 		imageName, err := GetImageName(defaultImage)
 		if err != nil {
@@ -89,7 +90,7 @@ func GenerateImageTag(defaultImage string, imageRegistries []string, registryCon
 	return defaultImage
 }
 
-func getRegistryConfiguration(image string, registryConfig v1.RegistryConfiguration) string {
+func getRegistryConfiguration(image string, registryConfig metabuilderapi.RegistryConfiguration) string {
 	if len(registryConfig.Registry) > 0 {
 		imageName, err := GetImageName(image)
 		if err != nil {

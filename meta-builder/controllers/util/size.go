@@ -19,27 +19,28 @@
  *  under the License.
  */
 
-package controllers_utils
+package util
 
 import (
 	"fmt"
+
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // GenResourceRequirementsFromContainerSize converts ContainerSize to  ResourceRequirements
-func GenResourceRequirementsFromContainerSize(containerSize synopsysv1.ContainerSize) (*v1.ResourceRequirements, error) {
-	req := &v1.ResourceRequirements{}
+func GenResourceRequirementsFromContainerSize(containerSize synopsysv1.ContainerSize) (*corev1.ResourceRequirements, error) {
+	req := &corev1.ResourceRequirements{}
 	if containerSize.MinCPU != nil {
 		quantity, err := resource.ParseQuantity(fmt.Sprintf("%d", *containerSize.MinCPU))
 		if err != nil {
 			return nil, err
 		}
 		if req.Requests == nil {
-			req.Requests = make(map[v1.ResourceName]resource.Quantity)
+			req.Requests = make(map[corev1.ResourceName]resource.Quantity)
 		}
-		req.Requests[v1.ResourceCPU] = quantity
+		req.Requests[corev1.ResourceCPU] = quantity
 	}
 
 	if containerSize.MaxCPU != nil {
@@ -48,9 +49,9 @@ func GenResourceRequirementsFromContainerSize(containerSize synopsysv1.Container
 			return nil, err
 		}
 		if req.Limits == nil {
-			req.Limits = make(map[v1.ResourceName]resource.Quantity)
+			req.Limits = make(map[corev1.ResourceName]resource.Quantity)
 		}
-		req.Limits[v1.ResourceCPU] = quantity
+		req.Limits[corev1.ResourceCPU] = quantity
 	}
 
 	if containerSize.MinMem != nil {
@@ -59,9 +60,9 @@ func GenResourceRequirementsFromContainerSize(containerSize synopsysv1.Container
 			return nil, err
 		}
 		if req.Requests == nil {
-			req.Requests = make(map[v1.ResourceName]resource.Quantity)
+			req.Requests = make(map[corev1.ResourceName]resource.Quantity)
 		}
-		req.Requests[v1.ResourceMemory] = quantity
+		req.Requests[corev1.ResourceMemory] = quantity
 	}
 
 	if containerSize.MaxMem != nil {
@@ -70,9 +71,9 @@ func GenResourceRequirementsFromContainerSize(containerSize synopsysv1.Container
 			return nil, err
 		}
 		if req.Limits == nil {
-			req.Limits = make(map[v1.ResourceName]resource.Quantity)
+			req.Limits = make(map[corev1.ResourceName]resource.Quantity)
 		}
-		req.Limits[v1.ResourceMemory] = quantity
+		req.Limits[corev1.ResourceMemory] = quantity
 	}
 	return req, nil
 }

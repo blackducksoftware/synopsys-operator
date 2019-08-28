@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -74,7 +74,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	var version string
 	if 0 == len(alertCr.Spec.Version) {
 		latestUrl := "https://raw.githubusercontent.com/blackducksoftware/releases/master/alert/latest"
-		if latestArrayOfByte, err := controllers_utils.HttpGet(latestUrl); err != nil {
+		if latestArrayOfByte, err := controllers_utils.HTTPGet(latestUrl); err != nil {
 			// TODO: error getting latest
 			return nil, err
 		} else {
@@ -85,7 +85,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	}
 
 	latestBaseYamlUrl := fmt.Sprintf("https://raw.githubusercontent.com/blackducksoftware/releases/master/alert/%s/alert_base.yaml", version)
-	latestBaseYamlAsByteArray, err := controllers_utils.HttpGet(latestBaseYamlUrl)
+	latestBaseYamlAsByteArray, err := controllers_utils.HTTPGet(latestBaseYamlUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 
 	latestBaseYamlAsString := string(latestBaseYamlAsByteArray)
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAME}", alertCr.Name)
-	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", alertCr.Namespace)
+	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", alertCr.Spec.Namespace)
 	if len(alertCr.Spec.ExposeService) > 0 {
 		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${SERVICE_TYPE}", alertCr.Spec.ExposeService)
 	} else {

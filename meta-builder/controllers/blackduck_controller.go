@@ -18,12 +18,13 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
+
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
