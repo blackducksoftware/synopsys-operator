@@ -28,7 +28,7 @@ import (
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 
 	"github.com/go-logr/logr"
@@ -46,7 +46,8 @@ import (
 // OpsSightReconciler reconciles a OpsSight object
 type OpsSightReconciler struct {
 	client.Client
-	Log logr.Logger
+	Scheme *runtime.Scheme
+	Log    logr.Logger
 }
 
 // GetClient returns the controller runtime client
@@ -176,6 +177,8 @@ func (r *OpsSightReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder = builder.Owns(&corev1.ServiceAccount{})
 	builder = builder.Owns(&rbacv1.ClusterRole{})
 	builder = builder.Owns(&rbacv1.ClusterRoleBinding{})
+	// TODO: add logic to first check if we're on OpenShift
+	//builder = builder.Owns(&routev1.Route{})
 
 	return builder.Complete(r)
 }

@@ -1,4 +1,4 @@
-package controllers_utils
+package util
 
 import (
 	"io/ioutil"
@@ -10,13 +10,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
+// CreateInstructionManual creates the instruction manual on the fly based on the group annotation and labels
+func CreateInstructionManual(mapOfUniqueIDToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 
 	dependencyYamlStruct := &flying_dutchman.RuntimeObjectDependencyYaml{}
 
 	accessor := meta.NewAccessor()
 
-	for uniqueId, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
+	for uniqueID, desiredRuntimeObject := range mapOfUniqueIDToDesiredRuntimeObject {
 		labels, err := accessor.Labels(desiredRuntimeObject)
 		if err != nil {
 			return nil, err
@@ -35,7 +36,7 @@ func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runt
 		if dependencyYamlStruct.Groups == nil {
 			dependencyYamlStruct.Groups = make(map[string][]string)
 		}
-		dependencyYamlStruct.Groups[group] = append(dependencyYamlStruct.Groups[group], uniqueId)
+		dependencyYamlStruct.Groups[group] = append(dependencyYamlStruct.Groups[group], uniqueID)
 
 		dependencies, ok := annotations["operator.synopsys.com/group-dependencies"]
 		if !ok {

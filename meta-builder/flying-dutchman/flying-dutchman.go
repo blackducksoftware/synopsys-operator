@@ -3,8 +3,6 @@ package flying_dutchman
 import (
 	"context"
 	"fmt"
-	"time"
-
 	scheduler "github.com/blackducksoftware/synopsys-operator/meta-builder/go-scheduler"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -123,7 +121,7 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 	}
 
 	// create a scheduler
-	alertScheduler := scheduler.New(scheduler.ConcurrentTasks(5))
+	alertScheduler := scheduler.New()
 	// create a task map to use later to draw all the dependencies
 	taskMap := make(map[string]*scheduler.Task)
 	for uniqueId, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
@@ -217,8 +215,8 @@ func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.L
 
 	if err := CheckForReadiness(myClient, desiredRuntimeObject); err != nil {
 		// TODO: requeue after here, think about logic here [jeremy / aditya]
-		log.V(1).Info("CheckForReadiness failed", "err", err)
-		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		log.Error(err, "CheckForReadiness failed", "desiredRuntimeObject", desiredRuntimeObject)
+		return ctrl.Result{}, err
 	}
 
 	// finally return nil if ensured successfully

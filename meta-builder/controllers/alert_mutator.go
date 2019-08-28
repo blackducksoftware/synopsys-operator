@@ -25,13 +25,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func patchAlert(alertCr *synopsysv1.Alert, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object) map[string]runtime.Object {
@@ -53,7 +52,6 @@ func (p *AlertPatcher) patch() map[string]runtime.Object {
 		p.patchSecrets,
 		p.patchDesiredState,
 		p.patchImages,
-		p.patchPort,
 		p.patchStorage,
 		p.patchStandAlone,
 	}
@@ -145,43 +143,6 @@ func (p *AlertPatcher) patchDesiredState() error {
 			}
 		}
 	}
-	return nil
-}
-
-func (p *AlertPatcher) patchPort() error {
-	replicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ReplicationController.%s-alert", p.alertCr.Name)]
-	if !ok {
-		return nil
-	}
-	replicationController := replicationControllerRuntimeObject.(*corev1.ReplicationController)
-	port := *p.alertCr.Spec.Port
-	replicationController.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = port
-	replicationController.Spec.Template.Spec.Containers[0].Ports[0].Protocol = corev1.ProtocolTCP
-
-	serviceRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Service.%s-alert", p.alertCr.Name)]
-	if !ok {
-		return nil
-	}
-	service := serviceRuntimeObject.(*corev1.Service)
-	service.Spec.Ports[0].Name = fmt.Sprintf("port-%d", port)
-	service.Spec.Ports[0].Port = port
-	service.Spec.Ports[0].TargetPort = intstr.IntOrString{IntVal: port}
-	service.Spec.Ports[0].Protocol = corev1.ProtocolTCP
-
-	serviceExposedRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Service.%s-alert-exposed", p.alertCr.Name)]
-	if !ok {
-		return nil
-	}
-	serviceExposed := serviceExposedRuntimeObject.(*corev1.Service)
-	serviceExposed.Spec.Ports[0].Name = fmt.Sprintf("port-%d", port)
-	service.Spec.Ports[0].Port = port
-	service.Spec.Ports[0].TargetPort = intstr.IntOrString{IntVal: port}
-	service.Spec.Ports[0].Protocol = corev1.ProtocolTCP
-
-	// TODO: Support OpenShift Routes
-	// RouteUniqueID := "Route.default.demo-alert-route"
-	// routeRuntimeObject := p.mapOfUniqueIdToBaseRuntimeObject[RouteUniqueID]
-
 	return nil
 }
 

@@ -9,6 +9,7 @@ metadata:
     component: image-getter
     name: ${NAME}
   name: ${NAME}-opssight-image-getter
+  namespace: ${NAMESPACE}
 
 ---
 apiVersion: v1
@@ -22,6 +23,7 @@ metadata:
     component: processor
     name: ${NAME}
   name: ${NAME}-opssight-processor
+  namespace: ${NAMESPACE}
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -194,6 +196,7 @@ metadata:
     component: ${NAME}-opssight
     name: ${NAME}
   name: ${NAME}-opssight
+  namespace: ${NAMESPACE}
 
 ---
 apiVersion: v1
@@ -209,6 +212,7 @@ metadata:
     component: prometheus
     name: ${NAME}
   name: ${NAME}-opssight-prometheus
+  namespace: ${NAMESPACE}
 
 ---
 apiVersion: v1
@@ -225,6 +229,7 @@ metadata:
     component: blackduck
     name: ${NAME}
   name: ${NAME}-opssight-blackduck
+  namespace: ${NAMESPACE}
 type: Opaque
 
 ---
@@ -239,6 +244,7 @@ metadata:
     component: core
     name: ${NAME}
   name: ${NAME}-opssight-core
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: port-core
@@ -264,6 +270,7 @@ metadata:
     name: ${NAME}
     component: core-exposed
   name: ${NAME}-opssight-core-exposed
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: port-core
@@ -288,6 +295,7 @@ metadata:
     component: scanner
     name: ${NAME}
   name: ${NAME}-opssight-scanner
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: port-scanner
@@ -312,6 +320,7 @@ metadata:
     component: scanner
     name: ${NAME}
   name: ${NAME}-opssight-image-getter
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: port-image-getter
@@ -336,6 +345,7 @@ metadata:
     component: pod-processor
     name: ${NAME}
   name: ${NAME}-opssight-pod-processor
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: port-pod-processor
@@ -360,6 +370,7 @@ metadata:
     component: image-processor
     name: ${NAME}
   name: ${NAME}-opssight-image-processor
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: port-image-processor
@@ -385,6 +396,7 @@ metadata:
     component: prometheus
     name: ${NAME}
   name: ${NAME}-opssight-prometheus
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: port-prometheus
@@ -410,6 +422,7 @@ metadata:
     name: ${NAME}
     component: prometheus-exposed
   name: ${NAME}-opssight-prometheus-exposed
+  namespace: ${NAMESPACE}
 spec:
   ports:
   - name: port-prometheus
@@ -434,6 +447,7 @@ metadata:
     component: core
     name: ${NAME}
   name: ${NAME}-opssight-core
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -489,6 +503,7 @@ metadata:
     component: scanner
     name: ${NAME}
   name: ${NAME}-opssight-scanner
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -580,6 +595,7 @@ metadata:
     component: pod-processor
     name: ${NAME}
   name: ${NAME}-opssight-pod-processor
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -641,6 +657,7 @@ metadata:
     component: image-processor
     name: ${NAME}
   name: ${NAME}-opssight-image-processor
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -700,6 +717,7 @@ metadata:
     component: prometheus
     name: ${NAME}
   name: ${NAME}-opssight-prometheus
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -746,3 +764,48 @@ spec:
         name: prometheus
       - emptyDir: {}
         name: data
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "OpsSight,OpsSightCore"
+  labels:
+    operator.synopsys.com/group-id: "OpsSightCoreRoute"
+    app: opssight
+    component: core-ui
+    name: ${NAME}
+  name: ${NAME}-opssight-core
+  namespace: ${NAMESPACE}
+spec:
+  path: "/model"
+  port:
+    targetPort: port-core
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: ${NAME}-opssight-core
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "OpsSight,OpsSightPrometheus"
+  labels:
+    operator.synopsys.com/group-id: "OpsSightPrometheusRoute"
+    app: opssight
+    component: prometheus-metrics
+    name: ${NAME}
+  name: ${NAME}-opssight-prometheus-metrics
+  namespace: ${NAMESPACE}
+spec:
+  port:
+    targetPort: port-prometheus
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: ${NAME}-opssight-prometheus
