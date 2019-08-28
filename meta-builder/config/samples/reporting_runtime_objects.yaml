@@ -921,17 +921,6 @@ spec:
       protocol: "TCP"
   selector:
     app: "report-storage"
----
-# Source: reporting/templates/postgres-credentials.yaml
-
-apiVersion: "v1"
-kind: "Secret"
-metadata:
-  name: "cloudsql"
-type: "Opaque"
-data:
-  reporting_db_username: "cG9zdGdyZXM="
-  reporting_db_password: "cm9vdA=="
 
 ---
 # Source: reporting/templates/rp-frontend.yaml
@@ -1030,4 +1019,4 @@ spec:
 ---
 # Source: reporting/templates/rp-polaris-agent-service.yaml
 
-
+---

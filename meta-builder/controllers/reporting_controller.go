@@ -78,7 +78,8 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 }
 
 func (r *ReportingReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
-	instructionManual, err := controllers_utils.CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject)
+	instructionManualLocation := "config/samples/dependency_manual_reporting.yaml"
+	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation, mapOfUniqueIdToDesiredRuntimeObject)
 	if err != nil {
 		return nil, err
 	}

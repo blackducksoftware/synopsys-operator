@@ -17,5 +17,3 @@ spec:
     port: 5432
     username: postgres
     password: root
-
-  

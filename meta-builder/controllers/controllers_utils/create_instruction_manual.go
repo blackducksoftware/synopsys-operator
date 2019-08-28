@@ -1,10 +1,13 @@
 package controllers_utils
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
+	"io/ioutil"
+	"strings"
+
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
+	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
-	"strings"
 )
 
 func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
@@ -70,6 +73,23 @@ func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runt
 			}
 		}
 
+	}
+
+	return dependencyYamlStruct, nil
+}
+
+func CreateInstructionManualFromYaml(instructionManualLocation string, mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
+	// Read Dependency YAML File into Struct
+	dependencyYamlBytes, err := ioutil.ReadFile(instructionManualLocation)
+	if err != nil {
+		return nil, err
+	}
+
+	dependencyYamlStruct := &flying_dutchman.RuntimeObjectDependencyYaml{}
+
+	err = yaml.Unmarshal(dependencyYamlBytes, dependencyYamlStruct)
+	if err != nil {
+		return nil, err
 	}
 
 	return dependencyYamlStruct, nil

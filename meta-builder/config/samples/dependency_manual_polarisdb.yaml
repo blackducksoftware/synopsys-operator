@@ -1,88 +1,83 @@
 ---
 runtimeobjectsgroupings:
   ServiceAccounts:
-    - ServiceAccount.default.eventstore-init
-    - ServiceAccount.default.tools-minio-secret-init
-    - ServiceAccount.default.upload-server-secret-init
-    - ServiceAccount.default.vault-init
+    - ServiceAccount.eventstore-init
+    - ServiceAccount.tools-minio-secret-init
+    - ServiceAccount.upload-server-secret-init
+    - ServiceAccount.vault-init
   Roles:
-    - Role.default.eventstore-init
-    - Role.default.tools-minio-secret-init
-    - Role.default.upload-server-secret-init
-    - Role.default.vault-init
+    - Role.eventstore-init
+    - Role.tools-minio-secret-init
+    - Role.upload-server-secret-init
+    - Role.vault-init
   RoleBindings:
-    - RoleBinding.default.eventstore-init
-    - RoleBinding.default.tools-minio-secret-init
-    - RoleBinding.default.upload-server-secret-init
-    - RoleBinding.default.vault-init
+    - RoleBinding.eventstore-init
+    - RoleBinding.tools-minio-secret-init
+    - RoleBinding.upload-server-secret-init
+    - RoleBinding.vault-init
   Deployments:
-    - Deployment.default.upload-server
-    - Deployment.default.mongodb
-    - Deployment.default.vault-init
-    - Deployment.default.postgresql
-    - Deployment.default.swip-db-vault
+    - Deployment.upload-server
+    - Deployment.mongodb
+    - Deployment.vault-init
+    - Deployment.postgresql
+    - Deployment.swip-db-vault
   StatefulSets:
-    - StatefulSet.default.swip-db-consul
-    - StatefulSet.default.eventstore
+    - StatefulSet.swip-db-consul
+    - StatefulSet.eventstore
   JobsToRunBefore:
-    - Job.default.tools-minio-secret-init
-    - Job.default.upload-server-secret-init
-    - Job.default.vault-tls-init
+    - Job.tools-minio-secret-init
+    - Job.upload-server-secret-init
+    - Job.vault-tls-init
   JobsToRunAfter:
-    - Job.default.eventstore-init
+    - Job.eventstore-init
+    - Job.polaris-init-postgres
   Services:
-    - Services.default.upload-server
-    - Services.default.eventstore
-    - Services.default.mongodb
-    - Services.default.swip-db-consul
-    - Services.default.swip-db-consul-ui
-    - Services.default.postgresql
-    - Services.default.swip-db-vault
-    - Services.default.vault-exporter
+    - Services.upload-server
+    - Services.eventstore
+    - Services.mongodb
+    - Services.swip-db-consul
+    - Services.swip-db-consul-ui
+    - Services.postgresql
+    - Services.swip-db-vault
+    - Services.vault-exporter
   PersistentVolumeClaims:
-    - PersistentVolumeClaim.default.postgresql-pv-claim
-    - PersistentVolumeClaim.default.upload-server-pv-claim
-    - PersistentVolumeClaim.default.mongodb
+    - PersistentVolumeClaim.postgresql-pv-claim
+    - PersistentVolumeClaim.upload-server-pv-claim
+    - PersistentVolumeClaim.mongodb
   Secrets:
-    - Secret.default.swip-db-consul-gossip-key
-    - Secret.default.smtp
+    - Secret.swip-db-consul-gossip-key
+    - Secret.smtp
   ConfigMaps:
-    - ConfigMap.default.swip-db-consul-tests
-    - ConfigMap.default.postgresql-config
-    - ConfigMap.default.swip-db-vault-config
-    - ConfigMap.default.vault-policies
+    - ConfigMap.swip-db-consul-tests
+    - ConfigMap.postgresql-config
+    - ConfigMap.swip-db-vault-config
+    - ConfigMap.vault-policies
   PodDisruptionBudgets:
-    - PodDisruptionBudget.default.swip-db-consul-pdb
-    - PodDisruptionBudget.default.swip-db-vault
+    - PodDisruptionBudget.swip-db-consul-pdb
+    - PodDisruptionBudget.swip-db-vault
 runtimeobjectdependencies:
   - obj: RoleBindings
-    isdependenton: Roles
-  - obj: RoleBindings
-    isdependenton: ServiceAccounts
+    isdependenton:
+      - Roles
+      - ServiceAccounts
   - obj: Deployments
-    isdependenton: RoleBindings
-  - obj: Deployments
-    isdependenton: PersistentVolumeClaims
-  - obj: Deployments
-    isdependenton: Secrets
-  - obj: Deployments
-    isdependenton: ConfigMaps
-  - obj: Deployments
-    isdependenton: JobsToRunBefore
+    isdependenton:
+      - RoleBindings
+      - PersistentVolumeClaims
+      - Secrets
+      - ConfigMaps
+      - JobsToRunBefore
   - obj: StatefulSets
-    isdependenton: RoleBindings
-  - obj: StatefulSets
-    isdependenton: Secrets
-  - obj: StatefulSets
-    isdependenton: ConfigMaps
-  - obj: StatefulSets
-    isdependenton: JobsToRunBefore
+    isdependenton: 
+      - RoleBindings
+      - Secrets
+      - ConfigMaps
+      - JobsToRunBefore
   - obj: JobsToRunAfter
-    isdependenton: StatefulSets
+    isdependenton:
+      - StatefulSets
+      - Deployments
   - obj: PodDisruptionBudgets
-    isdependenton: Deployments
-  - obj: Services
-    isdependenton: Deployments
-    - obj: Services
-    isdependenton: StatefulSets
+    isdependenton:
+      - Deployments
 ---

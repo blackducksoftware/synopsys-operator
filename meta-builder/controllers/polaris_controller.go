@@ -105,7 +105,8 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 }
 
 func (r *PolarisReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
-	instructionManual, err := controllers_utils.CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject)
+	instructionManualLocation := "config/samples/dependency_manual_polaris.yaml"
+	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation, mapOfUniqueIdToDesiredRuntimeObject)
 	if err != nil {
 		return nil, err
 	}

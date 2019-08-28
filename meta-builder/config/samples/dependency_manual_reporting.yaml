@@ -1,47 +1,43 @@
 ---
 runtimeobjectsgroupings:
   ServiceAccounts:
-    - ServiceAccount.default.rp-issue-manager
-    - ServiceAccount.default.rp-portfolio-service
-    - ServiceAccount.default.rp-report-service
-    - ServiceAccount.default.rp-swagger-doc
-    - ServiceAccount.default.rp-tools-portfolio-service
-    - ServiceAccount.default.rp-polaris-agent-service
+    - ServiceAccount.rp-issue-manager
+    - ServiceAccount.rp-portfolio-service
+    - ServiceAccount.rp-report-service
+    - ServiceAccount.rp-swagger-doc
+    - ServiceAccount.rp-tools-portfolio-service
   Deployments:
-    - Deployment.default.rp-issue-manager
-    - Deployment.default.rp-portfolio-service
-    - Deployment.default.rp-report-service
-    - Deployment.default.rp-swagger-doc
-    - Deployment.default.rp-tools-portfolio-service
-    - Deployment.default.report-storage
-    - Deployment.default.rp-frontend
-    - Deployment.default.rp-polaris-agent-service
+    - Deployment.rp-issue-manager
+    - Deployment.rp-portfolio-service
+    - Deployment.rp-report-service
+    - Deployment.rp-swagger-doc
+    - Deployment.rp-tools-portfolio-service
+    - Deployment.report-storage
+    - Deployment.rp-frontend
   HorizontalPodAutoscalers:
-    - HorizontalPodAutoscaler.default.rp-issue-manager
-    - HorizontalPodAutoscaler.default.rp-portfolio-service
-    - HorizontalPodAutoscaler.default.rp-report-service
-    - HorizontalPodAutoscaler.default.rp-tools-portfolio-service
+    - HorizontalPodAutoscaler.rp-issue-manager
+    - HorizontalPodAutoscaler.rp-portfolio-service
+    - HorizontalPodAutoscaler.rp-report-service
+    - HorizontalPodAutoscaler.rp-tools-portfolio-service
   Services:
-    - Services.default.rp-issue-manager
-    - Services.default.rp-portfolio-service
-    - Services.default.rp-report-service
-    - Services.default.rp-swagger-doc
-    - Services.default.rp-tools-portfolio-service
-    - Services.default.report-storage
-    - Services.default.rp-frontend
+    - Services.rp-issue-manager
+    - Services.rp-portfolio-service
+    - Services.rp-report-service
+    - Services.rp-swagger-doc
+    - Services.rp-tools-portfolio-service
+    - Services.report-storage
+    - Services.rp-frontend
   PersistentVolumeClaims:
-    - PersistentVolumeClaim.default.report-storage-pv-claim
+    - PersistentVolumeClaim.report-storage-pv-claim
   Secrets:
-    - Secret.default.cloudsql
+    - Secret.cloudsql
 runtimeobjectdependencies:
   - obj: Deployments
-    isdependenton: ServiceAccounts
-  - obj: Deployments
-    isdependenton: PersistentVolumeClaims
-  - obj: Deployments
-    isdependenton: Secrets
-  - obj: Services
-    isdependenton: Deployments
+    isdependenton: 
+    - ServiceAccounts
+    - PersistentVolumeClaims
+    - Secrets
   - obj: HorizontalPodAutoscalers
-    isdependenton: Deployments
+    isdependenton: 
+    - Deployments
 ---

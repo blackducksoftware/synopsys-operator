@@ -1,32 +1,87 @@
 ---
 runtimeobjectsgroupings:
   ServiceAccounts:
-    - ServiceAccount.default.auth-server
+    - ServiceAccount.auth-server
+    - ServiceAccount.configs-service
+    - ServiceAccount.cos-server
+    - ServiceAccount.desktop-metrics-service
+    - ServiceAccount.download-server
+    - ServiceAccount.issue-server
+    - ServiceAccount.logs-service
+    - ServiceAccount.pericles-swagger-ui
+    - ServiceAccount.taxonomy-server
+    - ServiceAccount.tds-code-analysis
+    - ServiceAccount.tools-service
+    - ServiceAccount.triage-command-handler
+    - ServiceAccount.triage-query
+    - ServiceAccount.vinyl-server
+    - ServiceAccount.web-core
+    - ServiceAccount.web-help
   Roles:
-    - Role.default.leaderElector
+    - Role.leaderElector
   RoleBindings:
-    - RoleBinding.default.leaderElector
+    - RoleBinding.leaderElector
   Deployments:
-    - Deployment.default.auth-server
+    - Deployment.auth-server
+    - Deployment.configs-service
+    - Deployment.cos-server
+    - Deployment.desktop-metrics-service
+    - Deployment.download-server
+    - Deployment.issue-server
+    - Deployment.logs-service
+    - Deployment.pericles-swagger-ui
+    - Deployment.taxonomy-server
+    - Deployment.tds-code-analysis
+    - Deployment.tools-service
+    - Deployment.triage-command-handler
+    - Deployment.triage-query
+    - Deployment.vinyl-server
+    - Deployment.web-core
+    - Deployment.web-help
   HorizontalPodAutoscalers:
-    - HorizontalPodAutoscaler.default.auth-server
+    - HorizontalPodAutoscaler.auth-server
+    - HorizontalPodAutoscaler.configs-service
+    - HorizontalPodAutoscaler.cos-server
+    - HorizontalPodAutoscaler.desktop-metrics-service
+    - HorizontalPodAutoscaler.issue-server
+    - HorizontalPodAutoscaler.logs-service
+    - HorizontalPodAutoscaler.taxonomy-server
+    - HorizontalPodAutoscaler.tds-code-analysis
+    - HorizontalPodAutoscaler.tools-service
+    - HorizontalPodAutoscaler.triage-command-handler
+    - HorizontalPodAutoscaler.triage-query
+    - HorizontalPodAutoscaler.vinyl-server
+    - HorizontalPodAutoscaler.web-core
   Services:
-    - Services.default.auth-server
+    - Service.auth-server
+    - Service.configs-service
+    - Service.cos-server
+    - Service.desktop-metrics-service
+    - Service.download-server
+    - Service.issue-server
+    - Service.logs-service
+    - Service.pericles-swagger-ui
+    - Service.taxonomy-server
+    - Service.tds-code-analysis
+    - Service.tools-service
+    - Service.triage-command-handler
+    - Service.triage-query
+    - Service.vinyl-server
+    - Service.web-core
+    - Service.web-help
   Ingress:
-    - Ingress.default.release-name-ingress
+    - Ingress.release-name-ingress
 runtimeobjectdependencies:
   - obj: RoleBindings
-    isdependenton: Roles
+    isdependenton: 
+    - Roles
   - obj: RoleBindings
-    isdependenton: ServiceAccounts
+    isdependenton: 
+    - ServiceAccounts
   - obj: Deployments
-    isdependenton: RoleBindings
-  - obj: Services
-    isdependenton: Deployments
+    isdependenton: 
+    - RoleBindings
   - obj: HorizontalPodAutoscalers
-    isdependenton: Deployments
-  - obj: Ingress
-    isdependenton: Deployments
-  - obj: Ingress
-    isdependenton: Services
+    isdependenton: 
+    - Deployments
 ---

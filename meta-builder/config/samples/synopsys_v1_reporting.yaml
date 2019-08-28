@@ -4,4 +4,13 @@ metadata:
   name: reporting-sample
 spec:
   # Add fields here
-  foo: bar
+  namespace: default
+  environment: onprem
+  environment_address: onprem.dev.polaris.synopsys.com
+  image_pull_secrets: gcr-json-key
+  postgres:
+    hostname: postgresql
+    port: 5432
+    username: postgres
+    password: root
+  isReportingStandalone: false
