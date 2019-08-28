@@ -33,7 +33,6 @@ import (
 
 	"github.com/go-logr/logr"
 
-	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -47,7 +46,8 @@ import (
 // OpsSightReconciler reconciles a OpsSight object
 type OpsSightReconciler struct {
 	client.Client
-	Log logr.Logger
+	Scheme *runtime.Scheme
+	Log    logr.Logger
 }
 
 // GetClient returns the controller runtime client
@@ -177,7 +177,8 @@ func (r *OpsSightReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder = builder.Owns(&corev1.ServiceAccount{})
 	builder = builder.Owns(&rbacv1.ClusterRole{})
 	builder = builder.Owns(&rbacv1.ClusterRoleBinding{})
-	builder = builder.Owns(&routev1.Route{})
+	// TODO: add logic to first check if we're on OpenShift
+	//builder = builder.Owns(&routev1.Route{})
 
 	return builder.Complete(r)
 }
