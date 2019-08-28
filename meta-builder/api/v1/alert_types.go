@@ -37,7 +37,7 @@ type AlertSpec struct {
 	// Set the type for the service. [dev-note]: LOADBALANCER, NODEPORT allowed so far
 	ExposeService string `json:"exposeService"`
 	// Deploy alert in standalone mode. [dev-note]: this does not need to be a pointer
-	StandAlone *bool `json:"standAlone"` // TODO: check with mphammer
+	StandAlone *bool `json:"standAlone"` // TODO: standalone=false does not work, but we allow customers to enter it
 	// Set Port for alert rc and service. [dev-note]: this does not need to be a pointer
 	Port *int32 `json:"port"`
 	// plaintext string for ALERT_ENCRYPTION_PASSWORD. [dev-note]: this should be a pointer, also json should not be capitalized. Also TODO: either convert these from plan to encoded, or take this out from the api and move it to the list of secrets below; both cases, you need to write a migrate

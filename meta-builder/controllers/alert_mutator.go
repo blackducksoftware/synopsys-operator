@@ -47,19 +47,35 @@ type AlertPatcher struct {
 }
 
 func (p *AlertPatcher) patch() map[string]runtime.Object {
-	patches := []func() error{
-		p.patchEnvirons,
-		p.patchSecrets,
-		p.patchDesiredState,
-		p.patchImages,
-		p.patchStorage,
-		p.patchStandAlone,
+	// Patches have to be done in order
+	err := p.patchEnvirons()
+	if err != nil {
+		fmt.Printf("%s\n", err)
 	}
-	for _, f := range patches {
-		err := f()
-		if err != nil {
-			fmt.Printf("%s\n", err)
-		}
+
+	err = p.patchSecrets()
+	if err != nil {
+		fmt.Printf("%s\n", err)
+	}
+
+	err = p.patchImages()
+	if err != nil {
+		fmt.Printf("%s\n", err)
+	}
+
+	err = p.patchStorage()
+	if err != nil {
+		fmt.Printf("%s\n", err)
+	}
+
+	err = p.patchDesiredState()
+	if err != nil {
+		fmt.Printf("%s\n", err)
+	}
+
+	err = p.patchStandAlone()
+	if err != nil {
+		fmt.Printf("%s\n", err)
 	}
 
 	return p.mapOfUniqueIdToBaseRuntimeObject
@@ -187,7 +203,8 @@ func (p *AlertPatcher) patchStorage() error {
 }
 
 func (p *AlertPatcher) patchStandAlone() error {
-	if *p.alertCr.Spec.StandAlone == true {
+	if *p.alertCr.Spec.StandAlone == false {
+		// TODO: Currently, alert does not work without its own cfssl
 		// Remove Cfssl Resources
 		uniqueID := fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
@@ -202,21 +219,6 @@ func (p *AlertPatcher) patchStandAlone() error {
 		}
 		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
 		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alertCr.Name, "alert", "cfssl")
-	} else {
-		// TODO: [mphammer]
-		//uniqueID := fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)
-		//alertCfsslReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
-		//if !ok {
-		//	return nil
-		//}
-		//
-		//// patch Cfssl Image
-		//alertCfsslReplicationController := alertCfsslReplicationControllerRuntimeObject.(*corev1.ReplicationController)
-		//alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Image = p.alertCr.Spec.StandAlone.CfsslImage
-		//// patch Cfssl Memory
-		//minAndMaxMem, _ := resource.ParseQuantity(p.alertCr.Spec.StandAlone.CfsslMemory)
-		//alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
-		//alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
 	}
 	return nil
 }

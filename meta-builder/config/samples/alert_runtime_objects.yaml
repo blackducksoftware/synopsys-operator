@@ -210,7 +210,6 @@ spec:
   resources:
     requests:
       storage: 5G
-
 # TODO Routes
 # apiVersion: route.openshift.io/v1
 # kind: Route
@@ -222,9 +221,6 @@ spec:
 #     component: route
 #     name: ${NAME}
 #   name: ${NAME}-alert
-#   resourceVersion: "2414"
-#   selfLink: /apis/route.openshift.io/v1/namespaces/demo/routes/demo-alert
-#   uid: 8d100e5e-bd10-11e9-a198-08002782ac65
 # spec:
 #   host: demo-alert-demo.192.168.99.100.nip.io
 #   port:
@@ -236,12 +232,3 @@ spec:
 #     name: ${NAME}-alert-alert
 #     weight: 100
 #   wildcardPolicy: None
-# status:
-#   ingress:
-#     - conditions:
-#         - lastTransitionTime: "2019-08-12T14:50:39Z"
-#           status: "True"
-#           type: Admitted
-#       host: demo-alert-demo.192.168.99.100.nip.io
-#       routerName: router
-#       wildcardPolicy: None
