@@ -22,15 +22,18 @@ under the License.
 package synopsysctl
 
 import (
+	"fmt"
+	"html"
+	"io/ioutil"
 	"net/http"
-	"os"
-	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
+	// "os"
+	// "time"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 // serveUICmd edits Synopsys resources
@@ -38,33 +41,46 @@ var serveUICmd = &cobra.Command{
 	Use:   "serve-ui",
 	Short: "Starts a service running the User Interface and listens for events",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Start Running the ember User Interface on localhost
+		// // Start Running the ember User Interface on localhost
 		log.Debug("Starting User Interface's Ember Front End...")
-		r := mux.NewRouter()
-		// Serve static files for ember
-		log.Debug("Serving static files for ember from /dist")
-		static := "../../operator-ui-ember/dist/"
-		r.PathPrefix("/").Handler(http.FileServer(http.Dir(static)))
+		// r := mux.NewRouter()
 
-		// Route for base route
-		log.Debug("Handling base / route")
-		entry := "../../operator-ui-ember/dist/index.html"
-		r.PathPrefix("/").HandlerFunc(IndexHandler(entry))
+		// // Serve static assets directly.
+		// static := "../../operator-ui-ember/dist"
+		// r.PathPrefix("/dist").Handler(http.FileServer(http.Dir(static)))
 
-		log.Debug("listening and serving at 8081")
-		port := "8081"
-		srv := &http.Server{
-			Handler: handlers.LoggingHandler(os.Stdout, r),
-			Addr:    "localhost:" + port,
-			// Good practice: enforce timeouts for servers you create!
-			WriteTimeout: 15 * time.Second,
-			ReadTimeout:  15 * time.Second,
-		}
+		// // Route for base route
+		// entry := "../../operator-ui-ember/dist/index.html"
+		// r.PathPrefix("/").HandlerFunc(IndexHandler(entry))
 
-		log.Fatal(srv.ListenAndServe())
+		// port := "8090"
+		// log.Debug(fmt.Sprintf("listening and serving at localhost:%s", port))
+		// srv := &http.Server{
+		// 	Handler: handlers.LoggingHandler(os.Stdout, r),
+		// 	Addr:    "localhost:" + port,
+		// 	// Good practice: enforce timeouts for servers you create!
+		// 	WriteTimeout: 15 * time.Second,
+		// 	ReadTimeout:  15 * time.Second,
+		// }
+
+		// log.Fatal(srv.ListenAndServe())
 
 		// Start Running a backend server that listens for input from the User Interface
-		log.Debug("Starting User Interface's Back End")
+		log.Debug("Listening for api calls...")
+		router := mux.NewRouter()
+
+		router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("Received Data: %q\n", html.EscapeString(r.URL.Path))
+			reqBody, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("Data from Body: %s", reqBody)
+
+		})
+		apiPort := "8081"
+		fmt.Printf("Listening for data with api: localhost:%s\n", apiPort)
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", apiPort), handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(router)))
 
 		return nil
 	},
@@ -72,6 +88,7 @@ var serveUICmd = &cobra.Command{
 
 func IndexHandler(entry string) func(w http.ResponseWriter, r *http.Request) {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		log.Debugf("Handling route %s", r.URL.Path)
 		http.ServeFile(w, r, entry)
 	}
 
