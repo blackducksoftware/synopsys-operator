@@ -40,7 +40,7 @@ spec:
             timeoutSeconds: 10
           name: blackduck-alert
           ports:
-            - containerPort: 8443
+            - containerPort: ${ALERT_PORT}
               protocol: TCP
           resources:
             limits:
@@ -124,10 +124,10 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   ports:
-    - name: port-8443
-      port: 8443
+    - name: port-${ALERT_PORT}
+      port: ${ALERT_PORT}
       protocol: TCP
-      targetPort: 8443
+      targetPort: ${ALERT_PORT}
   selector:
     app: alert
     name: ${NAME}

@@ -117,6 +117,12 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${CFSSL_MEM}", "640M")
 	}
 
+	if 0 != *alertCr.Spec.Port {
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${ALERT_PORT}", string(*alertCr.Spec.Port))
+	} else {
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${ALERT_PORT}", "8443")
+	}
+
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
