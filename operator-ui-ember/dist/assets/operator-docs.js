@@ -30,9 +30,16 @@
     deployed: false,
     actions: {
       deploy() {
-        alert("deploying");
-        alert(this.model);
-        this.toggleProperty('deployed');
+        alert("Running AJAX...");
+        var dataString = "hello there";
+        $.ajax({
+          type: "POST",
+          url: "http://localhost:8081/",
+          data: dataString,
+          success: function () {
+            alert("success");
+          }
+        });
       }
 
     }
@@ -1104,8 +1111,8 @@
   _exports.default = void 0;
 
   var _default = Ember.HTMLBars.template({
-    "id": "HpA7xaXW",
-    "block": "{\"symbols\":[],\"statements\":[[7,\"a\"],[12,\"onclick\",[29,\"action\",[[24,0,[]],\"deploy\"],null]],[11,\"role\",\"button\"],[9],[0,\"\\n    \"],[7,\"h3\"],[9],[1,[24,0,[\"data\",\"first\"]],false],[0,\" \"],[1,[24,0,[\"data\",\"last\"]],false],[10],[0,\"\\n\"],[10],[0,\"\\n\\n\"],[7,\"div\"],[11,\"id\",\"contact_form\"],[9],[0,\"\\n    \"],[7,\"form\"],[11,\"name\",\"bd-form\"],[11,\"action\",\"\"],[11,\"class\",\"form-horizontal\"],[9],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"name\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Name\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"namespace\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Namespace\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"version\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Version\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-sm-offset-2 col-sm-10\"],[9],[0,\"\\n                \"],[7,\"button\"],[11,\"class\",\"btn btn-sm btn-primary\"],[9],[0,\"Deploy\"],[3,\"action\",[[24,0,[]],\"deploy\"]],[10],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"input\"],[11,\"name\",\"submit\"],[11,\"class\",\"button\"],[11,\"id\",\"submit_btn\"],[11,\"value\",\"Send\"],[11,\"type\",\"submit\"],[9],[10],[0,\"\\n    \"],[10],[0,\"\\n\"],[10]],\"hasEval\":false}",
+    "id": "/XsVctPp",
+    "block": "{\"symbols\":[],\"statements\":[[7,\"a\"],[12,\"onclick\",[29,\"action\",[[24,0,[]],\"deploy\"],null]],[11,\"role\",\"button\"],[9],[0,\"\\n    \"],[7,\"h3\"],[9],[1,[24,0,[\"data\",\"first\"]],false],[0,\" \"],[1,[24,0,[\"data\",\"last\"]],false],[10],[0,\"\\n\"],[10],[0,\"\\n\\n\"],[7,\"div\"],[11,\"id\",\"contact_form\"],[9],[0,\"\\n    \"],[7,\"form\"],[11,\"name\",\"bd-form\"],[11,\"action\",\"\"],[11,\"class\",\"form-horizontal\"],[9],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"name\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Name\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"namespace\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Namespace\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"version\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Version\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-sm-offset-2 col-sm-10\"],[9],[0,\"\\n                \"],[7,\"button\"],[11,\"class\",\"btn btn-sm btn-primary\"],[9],[0,\"Deploy\"],[3,\"action\",[[24,0,[]],\"deploy\"]],[10],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n    \"],[10],[0,\"\\n\"],[10]],\"hasEval\":false}",
     "meta": {
       "moduleName": "operator-docs/templates/components/black-duck-form.hbs"
     }
@@ -1608,8 +1615,8 @@
   _exports.default = void 0;
 
   var _default = Ember.HTMLBars.template({
-    "id": "/N+gGbgW",
-    "block": "{\"symbols\":[\"bdData\"],\"statements\":[[7,\"div\"],[9],[0,\"Deploy Black Duck Page\"],[10],[0,\"\\n\"],[4,\"each\",[[24,0,[\"model\"]]],null,{\"statements\":[[5,\"black-duck-form\",[],[[\"@data\"],[[24,1,[]]]]],[0,\"\\n\"]],\"parameters\":[1]},null],[1,[23,\"outlet\"],false],[0,\"\\n\\n\"],[7,\"script\"],[9],[0,\"\\n    // action=\\\"http://localhost:8081/\\\" method=\\\"POST\\\" \\n    $(function () {\\n        $(\\\".button\\\").click(function () {\\n            alert(\\\"button clicked!\\\")\\n            // validate and process form here\\n            var dataString = \\\"hello there\\\";\\n            //alert (dataString);return false;\\n            $.ajax({\\n                type: \\\"POST\\\",\\n                url: \\\"http://localhost:8081/\\\",\\n                data: dataString,\\n                success: function () {\\n                    alert(\\\"success\\\")\\n                }\\n            });\\n            return false;\\n        });\\n    });\\n\\n    /* function sendBlackDuck() {\\n         alert(\\\"Sending Black Duck Data\\\")\\n         var bdPatches = {\\n             patch: \\\"patch_parameter\\\"\\n         }\\n         var xhr = new XMLHttpRequest();\\n         xhr.open('POST', \\\"http://localhost:8081\\\", true);\\n         xhr.setRequestHeader(\\\"Content-Type\\\", \\\"application/json\\\");\\n         xhr.send(JSON.stringify(bdPatches));\\n         alert(\\\"Sent Black Duck Data\\\")\\n     } */\\n\"],[10]],\"hasEval\":false}",
+    "id": "SL/0nrfi",
+    "block": "{\"symbols\":[\"bdData\"],\"statements\":[[7,\"div\"],[9],[0,\"Deploy Black Duck Page\"],[10],[0,\"\\n\"],[4,\"each\",[[24,0,[\"model\"]]],null,{\"statements\":[[5,\"black-duck-form\",[],[[\"@data\"],[[24,1,[]]]]],[0,\"\\n\"]],\"parameters\":[1]},null],[1,[23,\"outlet\"],false]],\"hasEval\":false}",
     "meta": {
       "moduleName": "operator-docs/templates/ui/deploy-black-duck.hbs"
     }
@@ -1712,7 +1719,7 @@ catch(err) {
 
 ;
           if (!runningTests) {
-            require("operator-docs/app")["default"].create({"name":"operator-docs","version":"0.0.0+15cb2bfa"});
+            require("operator-docs/app")["default"].create({"name":"operator-docs","version":"0.0.0+a765f912"});
           }
         
 //# sourceMappingURL=operator-docs.map
