@@ -27,6 +27,7 @@ import (
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 	routev1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -44,7 +45,6 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = synopsysv1.AddToScheme(scheme)
-	_ = routev1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -66,6 +66,14 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
+	}
+
+	// TODO: add isOpenShift field to viper config
+	isOpenShift := controllers_utils.IsOpenShift(mgr.GetConfig())
+	setupLog.V(1).Info("cluster configuration", "isOpenShift", isOpenShift)
+
+	if isOpenShift {
+		_ = routev1.AddToScheme(scheme)
 	}
 
 	// setting up Alert Controller
@@ -90,9 +98,10 @@ func main() {
 
 	// setting up OpsSight Controller
 	if err = (&controllers.OpsSightReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("OpsSight"),
-		Scheme: mgr.GetScheme(), // we've added this ourselves
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("OpsSight"),
+		Scheme:      mgr.GetScheme(), // we've added this ourselves
+		IsOpenShift: isOpenShift,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OpsSight")
 		os.Exit(1)
