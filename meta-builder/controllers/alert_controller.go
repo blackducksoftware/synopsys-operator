@@ -17,7 +17,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
@@ -70,22 +69,8 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	alertCr := cr.(*synopsysv1.Alert)
 	//TODO: either read contents of yaml from locally mounted file
 
-	// only fetch the location of the latest if the version in the spec is not given
-	var version string
-	if 0 == len(alertCr.Spec.Version) {
-		latestUrl := "https://raw.githubusercontent.com/blackducksoftware/releases/master/alert/latest"
-		if latestArrayOfByte, err := controllers_utils.HTTPGet(latestUrl); err != nil {
-			// TODO: error getting latest
-			return nil, err
-		} else {
-			version = string(latestArrayOfByte)
-		}
-	} else {
-		version = alertCr.Spec.Version
-	}
-
-	latestBaseYamlUrl := fmt.Sprintf("https://raw.githubusercontent.com/blackducksoftware/releases/master/alert/%s/alert_base.yaml", version)
-	latestBaseYamlAsByteArray, err := controllers_utils.HTTPGet(latestBaseYamlUrl)
+	// get the base yaml for the app
+	latestBaseYamlAsString, err := controllers_utils.GetBaseYaml(controllers_utils.ALERT, alertCr.Spec.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +81,6 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	//	return nil, err
 	//}
 
-	latestBaseYamlAsString := string(latestBaseYamlAsByteArray)
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAME}", alertCr.Name)
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", alertCr.Spec.Namespace)
 	if len(alertCr.Spec.ExposeService) > 0 {

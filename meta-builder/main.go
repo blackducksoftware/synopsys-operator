@@ -68,6 +68,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// TODO: add isOpenShift field to viper config
 	isOpenShift := controllers_utils.IsOpenShift(mgr.GetConfig())
 	setupLog.V(1).Info("cluster configuration", "isOpenShift", isOpenShift)
 
@@ -97,9 +98,10 @@ func main() {
 
 	// setting up OpsSight Controller
 	if err = (&controllers.OpsSightReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("OpsSight"),
-		Scheme: mgr.GetScheme(), // we've added this ourselves
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("OpsSight"),
+		Scheme:      mgr.GetScheme(), // we've added this ourselves
+		IsOpenShift: isOpenShift,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OpsSight")
 		os.Exit(1)

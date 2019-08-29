@@ -22,14 +22,18 @@ under the License.
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -62,6 +66,8 @@ func (p *OpsSightPatcher) patch() map[string]runtime.Object {
 		p.patchPrometheusMetrics,
 		p.patchProcessor,
 		p.patchCoreModelUI,
+		p.patchWithSize,
+		p.patchReplicas,
 	}
 	for _, f := range patches {
 		err := f()
@@ -106,6 +112,8 @@ func (p *OpsSightPatcher) patchOpsSightPrometheusExposeService() error {
 		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
 	case "NODEPORT":
 		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
+	default:
+		delete(p.runtimeObjects, id)
 	}
 
 	return nil
@@ -157,7 +165,6 @@ func (p *OpsSightPatcher) patchPrometheusMetrics() error {
 	if !p.opsSight.Spec.EnableMetrics {
 		delete(p.runtimeObjects, fmt.Sprintf("ConfigMap.%s-opssight-prometheus", p.opsSight.Name))
 		delete(p.runtimeObjects, fmt.Sprintf("Service.%s-opssight-prometheus", p.opsSight.Name))
-		delete(p.runtimeObjects, fmt.Sprintf("Service.%s-opssight-prometheus-exposed", p.opsSight.Name))
 		delete(p.runtimeObjects, fmt.Sprintf("Deployment.%s-opssight-prometheus", p.opsSight.Name))
 		delete(p.runtimeObjects, fmt.Sprintf("Route.%s-opssight-prometheus-metrics", p.opsSight.Name))
 	} else {
@@ -173,6 +180,94 @@ func (p *OpsSightPatcher) patchCoreModelUI() error {
 	// TODO need to check if the cluster is OpenShift
 	if p.opsSight.Spec.Perceptor.Expose != "OPENSHIFT" {
 		delete(p.runtimeObjects, fmt.Sprintf("Route.%s-opssight-core", p.opsSight.Name))
+	}
+	return nil
+}
+
+// TODO: common with Alert
+func (p *OpsSightPatcher) patchWithSize() error {
+	var size synopsysv1.Size
+	if len(p.opsSight.Spec.Size) > 0 {
+		if err := p.Client.Get(context.TODO(), types.NamespacedName{
+			Namespace: p.opsSight.Namespace,
+			Name:      strings.ToLower(p.opsSight.Spec.Size),
+		}, &size); err != nil {
+
+			if !apierrs.IsNotFound(err) {
+				return err
+			}
+			if apierrs.IsNotFound(err) {
+				return fmt.Errorf("opsSight instance [%s] is configured to use a Size [%s] that doesn't exist", p.opsSight.Spec.Namespace, p.opsSight.Spec.Size)
+			}
+		}
+
+		for _, v := range p.runtimeObjects {
+			switch v.(type) {
+			case *corev1.ReplicationController:
+				componentName, ok := v.(*corev1.ReplicationController).GetLabels()["component"]
+				if !ok {
+					return fmt.Errorf("component name is missing in %s", v.(*corev1.ReplicationController).Name)
+				}
+
+				sizeConf, ok := size.Spec.PodResources[componentName]
+				if !ok {
+					return fmt.Errorf("opsSight instance [%s] is configured to use a Size [%s] but the size doesn't contain an entry for [%s]", p.opsSight.Spec.Namespace, p.opsSight.Spec.Size, v.(*corev1.ReplicationController).Name)
+				}
+				v.(*corev1.ReplicationController).Spec.Replicas = func(i int) *int32 { j := int32(i); return &j }(sizeConf.Replica)
+				for containerIndex, container := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers {
+					containerConf, ok := sizeConf.ContainerLimit[container.Name]
+					if !ok {
+						return fmt.Errorf("opsSight instance [%s] is configured to use a Size [%s]. The size oesn't contain an entry for pod [%s] container [%s]", p.opsSight.Spec.Namespace, p.opsSight.Spec.Size, v.(*corev1.ReplicationController).Name, container.Name)
+					}
+					resourceRequirements, err := controllers_utils.GenResourceRequirementsFromContainerSize(containerConf)
+					if err != nil {
+						return err
+					}
+					v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+				}
+			case *appsv1.Deployment:
+				componentName, ok := v.(*appsv1.Deployment).GetLabels()["component"]
+				if !ok {
+					return fmt.Errorf("component name is missing in %s", v.(*appsv1.Deployment).Name)
+				}
+
+				sizeConf, ok := size.Spec.PodResources[componentName]
+				if !ok {
+					return fmt.Errorf("opsSight instance [%s] is configured to use a Size [%s] but the size doesn't contain an entry for [%s]", p.opsSight.Spec.Namespace, p.opsSight.Spec.Size, v.(*corev1.ReplicationController).Name)
+				}
+				v.(*appsv1.Deployment).Spec.Replicas = func(i int) *int32 { j := int32(i); return &j }(sizeConf.Replica)
+				for containerIndex, container := range v.(*appsv1.Deployment).Spec.Template.Spec.Containers {
+					containerConf, ok := sizeConf.ContainerLimit[container.Name]
+					if !ok {
+						return fmt.Errorf("opsSight instance [%s] is configured to use a Size [%s]. The size oesn't contain an entry for pod [%s] container [%s]", p.opsSight.Spec.Namespace, p.opsSight.Spec.Size, v.(*corev1.ReplicationController).Name, container.Name)
+					}
+					resourceRequirements, err := controllers_utils.GenResourceRequirementsFromContainerSize(containerConf)
+					if err != nil {
+						return err
+					}
+					v.(*appsv1.Deployment).Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// TODO: common with Alert
+func (p *OpsSightPatcher) patchReplicas() error {
+	for _, v := range p.runtimeObjects {
+		switch v.(type) {
+		case *corev1.ReplicationController:
+			switch strings.ToUpper(p.opsSight.Spec.DesiredState) {
+			case "STOP":
+				v.(*corev1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
+			}
+		case *appsv1.Deployment:
+			switch strings.ToUpper(p.opsSight.Spec.DesiredState) {
+			case "STOP":
+				v.(*appsv1.Deployment).Spec.Replicas = func(i int32) *int32 { return &i }(0)
+			}
+		}
 	}
 	return nil
 }

@@ -105,6 +105,8 @@ type Prometheus struct {
 type OpsSightSpec struct {
 	// OpsSight
 	Namespace  string      `json:"namespace"`
+	Size       string      `json:"size"`
+	Version    string      `json:"version,omitempty"`
 	IsUpstream bool        `json:"isUpstream"`
 	Perceptor  *Perceptor  `json:"perceptor"`
 	ScannerPod *ScannerPod `json:"scannerPod"`

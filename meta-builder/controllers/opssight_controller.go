@@ -24,7 +24,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
@@ -33,6 +32,7 @@ import (
 
 	"github.com/go-logr/logr"
 
+	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -46,8 +46,9 @@ import (
 // OpsSightReconciler reconciles a OpsSight object
 type OpsSightReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	Log    logr.Logger
+	Scheme      *runtime.Scheme
+	Log         logr.Logger
+	IsOpenShift bool
 }
 
 // GetClient returns the controller runtime client
@@ -87,38 +88,34 @@ func (r *OpsSightReconciler) GetRuntimeObjects(cr interface{}) (map[string]runti
 	// if err != nil {
 	// 	return nil, err
 	// }
-	FinalYamlPath := "config/samples/opssight_runtime_objects.yaml"
-	byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
+	// get the base yaml for the app
+	latestBaseYamlAsString, err := controllers_utils.GetBaseYaml(controllers_utils.OPSSIGHT, opsSight.Spec.Version)
 	if err != nil {
 		return nil, err
 	}
 
-	content := string(byteArrayContentFromFile)
-	content = strings.ReplaceAll(content, "${NAME}", opsSight.Name)
-	content = strings.ReplaceAll(content, "${NAMESPACE}", opsSight.Spec.Namespace)
+	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAME}", opsSight.Name)
+	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", opsSight.Spec.Namespace)
 
-	mapOfUniqueIDToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
-	// TODO: [yash commented this] figure out why this didn't work for black duck, probably just a namespace thing
-	//for _, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
-	//	// set an owner reference
-	//	if err := ctrl.SetControllerReference(blackduck, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-	//		// requeue if we cannot set owner on the object
-	//		// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-	//		//return ctrl.Result{}, err
-	//		return mapOfUniqueIdToDesiredRuntimeObject, nil
-	//	}
-	//}
-	fmt.Printf("Before - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(mapOfUniqueIDToDesiredRuntimeObject))
+	mapOfUniqueIDToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString)
+	for _, desiredRuntimeObject := range mapOfUniqueIDToDesiredRuntimeObject {
+		// set an owner reference
+		if err := ctrl.SetControllerReference(opsSight, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
+			// requeue if we cannot set owner on the object
+			// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
+			//return ctrl.Result{}, err
+			return mapOfUniqueIDToDesiredRuntimeObject, nil
+		}
+	}
 	objs := patchOpsSight(r.Client, opsSight, mapOfUniqueIDToDesiredRuntimeObject)
-	fmt.Printf("After - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(objs))
 
 	return objs, nil
 }
 
 // GetInstructionManual creates the instruction manual on the fly based on labels and annotations
-func (r *OpsSightReconciler) GetInstructionManual(obj map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
+func (r *OpsSightReconciler) GetInstructionManual(mapOfUniqueIDToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	// 2. Create Instruction Manual From Runtime Objects
-	instructionManual, err := controllers_utils.CreateInstructionManual(obj)
+	instructionManual, err := controllers_utils.CreateInstructionManual(mapOfUniqueIDToDesiredRuntimeObject)
 	if err != nil {
 		return nil, err
 	}
@@ -130,11 +127,6 @@ func (r *OpsSightReconciler) GetInstructionManual(obj map[string]runtime.Object)
 
 // Reconcile reconcile the OpsSight custom resources
 func (r *OpsSightReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("opsSight", req.NamespacedName)
-
-	// your logic here
-
 	return flying_dutchman.MetaReconcile(req, r)
 }
 
@@ -177,8 +169,9 @@ func (r *OpsSightReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder = builder.Owns(&corev1.ServiceAccount{})
 	builder = builder.Owns(&rbacv1.ClusterRole{})
 	builder = builder.Owns(&rbacv1.ClusterRoleBinding{})
-	// TODO: add logic to first check if we're on OpenShift
-	//builder = builder.Owns(&routev1.Route{})
+	if r.IsOpenShift {
+		builder = builder.Owns(&routev1.Route{})
+	}
 
 	return builder.Complete(r)
 }
