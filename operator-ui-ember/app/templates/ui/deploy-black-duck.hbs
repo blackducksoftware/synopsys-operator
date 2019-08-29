@@ -3,36 +3,3 @@
 <BlackDuckForm @data={{bdData}} />
 {{/each}}
 {{outlet}}
-
-<script>
-    // action="http://localhost:8081/" method="POST" 
-    $(function () {
-        $(".button").click(function () {
-            alert("button clicked!")
-            // validate and process form here
-            var dataString = "hello there";
-            //alert (dataString);return false;
-            $.ajax({
-                type: "POST",
-                url: "http://localhost:8081/",
-                data: dataString,
-                success: function () {
-                    alert("success")
-                }
-            });
-            return false;
-        });
-    });
-
-    /* function sendBlackDuck() {
-         alert("Sending Black Duck Data")
-         var bdPatches = {
-             patch: "patch_parameter"
-         }
-         var xhr = new XMLHttpRequest();
-         xhr.open('POST', "http://localhost:8081", true);
-         xhr.setRequestHeader("Content-Type", "application/json");
-         xhr.send(JSON.stringify(bdPatches));
-         alert("Sent Black Duck Data")
-     } */
-</script>
