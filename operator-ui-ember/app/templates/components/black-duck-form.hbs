@@ -1,4 +1,4 @@
-<a onclick={{action "deploy"}} role="button">
+<a onclick={{action "deployBlackDuck"}} role="button">
     <h3>{{this.data.first}} {{this.data.last}}</h3>
 </a>
 
@@ -7,19 +7,19 @@
         <div class="form-group">
             <label for="name" class="col-md-2 control-label">Name</label>
             <div class="col-md-5">
-                {{input value=model.name class="form-control"}}
+                {{input value=this.name class="form-control"}}
             </div>
         </div>
         <div class="form-group">
             <label for="namespace" class="col-md-2 control-label">Namespace</label>
             <div class="col-md-5">
-                {{input value=model.name class="form-control"}}
+                {{input value=this.namespace class="form-control"}}
             </div>
         </div>
         <div class="form-group">
             <label for="version" class="col-md-2 control-label">Version</label>
             <div class="col-md-5">
-                {{input value=model.name class="form-control"}}
+                {{input value=this.version class="form-control"}}
             </div>
         </div>
         <div class="form-group">

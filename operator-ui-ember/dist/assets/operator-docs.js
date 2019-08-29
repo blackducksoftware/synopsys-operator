@@ -27,16 +27,24 @@
   _exports.default = void 0;
 
   var _default = Ember.Component.extend({
-    deployed: false,
+    name: "",
+    namespace: "",
+    version: "",
     actions: {
       deployBlackDuck() {
         alert("Running AJAX for Black Duck..."); //alert(model.name)
 
+        var BlackDuckSpecData = {
+          name: this.name,
+          namespace: this.namespace,
+          version: this.version
+        };
+        alert(BlackDuckSpecData);
         var dataString = "Hello Black Duck";
         $.ajax({
           type: "POST",
           url: "http://localhost:8081/",
-          data: dataString,
+          data: JSON.stringify(BlackDuckSpecData),
           success: function () {
             alert("success");
           }
@@ -1129,8 +1137,8 @@
   _exports.default = void 0;
 
   var _default = Ember.HTMLBars.template({
-    "id": "CpRLruKL",
-    "block": "{\"symbols\":[],\"statements\":[[7,\"a\"],[12,\"onclick\",[29,\"action\",[[24,0,[]],\"deploy\"],null]],[11,\"role\",\"button\"],[9],[0,\"\\n    \"],[7,\"h3\"],[9],[1,[24,0,[\"data\",\"first\"]],false],[0,\" \"],[1,[24,0,[\"data\",\"last\"]],false],[10],[0,\"\\n\"],[10],[0,\"\\n\\n\"],[7,\"div\"],[11,\"id\",\"contact_form\"],[9],[0,\"\\n    \"],[7,\"form\"],[11,\"name\",\"bd-form\"],[11,\"action\",\"\"],[11,\"class\",\"form-horizontal\"],[9],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"name\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Name\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"namespace\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Namespace\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"version\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Version\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[25,[\"model\",\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-sm-offset-2 col-sm-10\"],[9],[0,\"\\n                \"],[7,\"button\"],[11,\"class\",\"btn btn-sm btn-primary\"],[9],[0,\"Submit\"],[3,\"action\",[[24,0,[]],\"deployBlackDuck\"]],[10],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n    \"],[10],[0,\"\\n\"],[10]],\"hasEval\":false}",
+    "id": "7dEj76+h",
+    "block": "{\"symbols\":[],\"statements\":[[7,\"a\"],[12,\"onclick\",[29,\"action\",[[24,0,[]],\"deployBlackDuck\"],null]],[11,\"role\",\"button\"],[9],[0,\"\\n    \"],[7,\"h3\"],[9],[1,[24,0,[\"data\",\"first\"]],false],[0,\" \"],[1,[24,0,[\"data\",\"last\"]],false],[10],[0,\"\\n\"],[10],[0,\"\\n\\n\"],[7,\"div\"],[11,\"id\",\"contact_form\"],[9],[0,\"\\n    \"],[7,\"form\"],[11,\"name\",\"bd-form\"],[11,\"action\",\"\"],[11,\"class\",\"form-horizontal\"],[9],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"name\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Name\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[24,0,[\"name\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"namespace\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Namespace\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[24,0,[\"namespace\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"label\"],[11,\"for\",\"version\"],[11,\"class\",\"col-md-2 control-label\"],[9],[0,\"Version\"],[10],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-md-5\"],[9],[0,\"\\n                \"],[1,[29,\"input\",null,[[\"value\",\"class\"],[[24,0,[\"version\"]],\"form-control\"]]],false],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n        \"],[7,\"div\"],[11,\"class\",\"form-group\"],[9],[0,\"\\n            \"],[7,\"div\"],[11,\"class\",\"col-sm-offset-2 col-sm-10\"],[9],[0,\"\\n                \"],[7,\"button\"],[11,\"class\",\"btn btn-sm btn-primary\"],[9],[0,\"Submit\"],[3,\"action\",[[24,0,[]],\"deployBlackDuck\"]],[10],[0,\"\\n            \"],[10],[0,\"\\n        \"],[10],[0,\"\\n    \"],[10],[0,\"\\n\"],[10]],\"hasEval\":false}",
     "meta": {
       "moduleName": "operator-docs/templates/components/black-duck-form.hbs"
     }
@@ -1737,7 +1745,7 @@ catch(err) {
 
 ;
           if (!runningTests) {
-            require("operator-docs/app")["default"].create({"name":"operator-docs","version":"0.0.0+5d74a87c"});
+            require("operator-docs/app")["default"].create({"name":"operator-docs","version":"0.0.0+a4179a1f"});
           }
         
 //# sourceMappingURL=operator-docs.map
