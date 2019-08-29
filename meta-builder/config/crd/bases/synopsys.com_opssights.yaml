@@ -343,6 +343,10 @@ spec:
               - scanner
               - scannerReplicaCount
               type: object
+            size:
+              type: string
+            version:
+              type: string
           required:
           - blackduck
           - desiredState
@@ -352,6 +356,7 @@ spec:
           - perceiver
           - perceptor
           - scannerPod
+          - size
           type: object
         status:
           description: OpsSightStatus defines the observed state of OpsSight

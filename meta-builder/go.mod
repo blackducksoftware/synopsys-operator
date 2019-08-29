@@ -7,7 +7,6 @@ require (
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/openshift/api v3.9.1-0.20190822120857-58aab2885e38+incompatible
-	github.com/openshift/client-go v0.0.0-20190813201236-5a5508328169
 	github.com/stretchr/testify v1.3.0
 	github.com/tmc/dot v0.0.0-20180926222610-6d252d5ff882
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58

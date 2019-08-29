@@ -203,22 +203,16 @@ func (p *AlertPatcher) patchStorage() error {
 }
 
 func (p *AlertPatcher) patchStandAlone() error {
+	// if we want to use Black Duck's cfssl
 	if *p.alertCr.Spec.StandAlone == false {
-		// TODO: Currently, alert does not work without its own cfssl
 		// Remove Cfssl Resources
 		uniqueID := fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
 		uniqueID = fmt.Sprintf("Service.%s-cfssl", p.alertCr.Name)
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
-
-		// Add Environ to use BlackDuck Cfssl
-		ConfigMapUniqueID := fmt.Sprintf("ConfigMap.%s-blackduck-alert-config", p.alertCr.Name)
-		configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
-		if !ok {
-			return nil
-		}
-		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
-		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alertCr.Name, "alert", "cfssl")
+		// TODO: NOTE: THIS WILL NOT WORK WITHOUT SETTING 'HUB_CFSSL_HOST' manually
+		// See: https://synopsys.atlassian.net/wiki/spaces/BDLM/pages/153583626/Synopsys+Alert+Installation+Guide+for+Synopsys+Operator
+		// TODO: this should really be implemented by removing standalone field, and reconciling on an environs add of 'HUB_CFSSL_HOST'
 	}
 	return nil
 }
