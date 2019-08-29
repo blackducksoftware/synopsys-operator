@@ -3,9 +3,10 @@ import Component from '@ember/component';
 export default Component.extend({
     deployed: false,
     actions: {
-        deploy() {
-            alert("Running AJAX...")
-            var dataString = "hello there";
+        deployBlackDuck() {
+            alert("Running AJAX for Black Duck...")
+            //alert(model.name)
+            var dataString = "Hello Black Duck";
             $.ajax({
                 type: "POST",
                 url: "http://localhost:8081/",

@@ -442,7 +442,7 @@ define("operator-docs/tests/lint/app.lint-test", [], function () {
   });
   QUnit.test('components/black-duck-form.js', function (assert) {
     assert.expect(1);
-    assert.ok(false, 'components/black-duck-form.js should pass ESLint\n\n9:13 - \'$\' is not defined. (no-undef)');
+    assert.ok(false, 'components/black-duck-form.js should pass ESLint\n\n10:13 - \'$\' is not defined. (no-undef)');
   });
   QUnit.test('components/documentation-navbar.js', function (assert) {
     assert.expect(1);
@@ -566,7 +566,7 @@ define("operator-docs/tests/lint/app.lint-test", [], function () {
   });
   QUnit.test('routes/ui/deploy-polaris.js', function (assert) {
     assert.expect(1);
-    assert.ok(true, 'routes/ui/deploy-polaris.js should pass ESLint\n\n');
+    assert.ok(false, 'routes/ui/deploy-polaris.js should pass ESLint\n\n9:13 - \'$\' is not defined. (no-undef)');
   });
   QUnit.test('routes/ui/help.js', function (assert) {
     assert.expect(1);
