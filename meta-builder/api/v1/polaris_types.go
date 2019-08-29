@@ -26,16 +26,10 @@ import (
 type PolarisSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Namespace        string         `json:"namespace,omitempty"`
-	EnvironmentName  string         `json:"environment"`
-	EnvironmentDNS   string         `json:"environment_address"`
-	ImagePullSecrets string         `json:"image_pull_secrets"`
-	AuthServerSpec   AuthServerSpec `json:"auth_server,omitempty"`
-}
-
-type AuthServerSpec struct {
-	Replicas      *int32        `json:"replicas,omitempty"`
-	ResourcesSpec ResourcesSpec `json:"resources,omitempty"`
+	Namespace        string `json:"namespace,omitempty"`
+	EnvironmentName  string `json:"environment"`
+	EnvironmentDNS   string `json:"environment_address"`
+	ImagePullSecrets string `json:"image_pull_secrets"`
 }
 
 // PolarisStatus defines the observed state of Polaris

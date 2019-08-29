@@ -71,6 +71,26 @@ rules:
 - apiGroups:
   - synopsys.com
   resources:
+  - authServer
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - synopsys.com
+  resources:
+  - authServer/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - synopsys.com
+  resources:
   - blackducks
   verbs:
   - create

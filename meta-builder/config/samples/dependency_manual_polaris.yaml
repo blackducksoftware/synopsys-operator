@@ -1,7 +1,6 @@
 ---
 runtimeobjectsgroupings:
   ServiceAccounts:
-    - ServiceAccount.auth-server
     - ServiceAccount.configs-service
     - ServiceAccount.cos-server
     - ServiceAccount.desktop-metrics-service
@@ -17,12 +16,7 @@ runtimeobjectsgroupings:
     - ServiceAccount.vinyl-server
     - ServiceAccount.web-core
     - ServiceAccount.web-help
-  Roles:
-    - Role.leaderElector
-  RoleBindings:
-    - RoleBinding.leaderElector
   Deployments:
-    - Deployment.auth-server
     - Deployment.configs-service
     - Deployment.cos-server
     - Deployment.desktop-metrics-service
@@ -39,7 +33,6 @@ runtimeobjectsgroupings:
     - Deployment.web-core
     - Deployment.web-help
   HorizontalPodAutoscalers:
-    - HorizontalPodAutoscaler.auth-server
     - HorizontalPodAutoscaler.configs-service
     - HorizontalPodAutoscaler.cos-server
     - HorizontalPodAutoscaler.desktop-metrics-service
@@ -53,7 +46,6 @@ runtimeobjectsgroupings:
     - HorizontalPodAutoscaler.vinyl-server
     - HorizontalPodAutoscaler.web-core
   Services:
-    - Service.auth-server
     - Service.configs-service
     - Service.cos-server
     - Service.desktop-metrics-service
@@ -72,15 +64,9 @@ runtimeobjectsgroupings:
   Ingress:
     - Ingress.release-name-ingress
 runtimeobjectdependencies:
-  - obj: RoleBindings
-    isdependenton: 
-    - Roles
-  - obj: RoleBindings
-    isdependenton: 
-    - ServiceAccounts
   - obj: Deployments
     isdependenton: 
-    - RoleBindings
+    - ServiceAccounts
   - obj: HorizontalPodAutoscalers
     isdependenton: 
     - Deployments

@@ -136,6 +136,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "PolarisDB")
 		os.Exit(1)
 	}
+	if err = (&controllers.AuthServerReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("AuthServer"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AuthServer")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

@@ -8,22 +8,22 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func patchPolaris(polarisCr *synopsysv1.Polaris, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, accessor meta.MetadataAccessor) map[string]runtime.Object {
-	patcher := PolarisPatcher{
-		polarisCr:                        polarisCr,
+func patchAuthServer(authServerCr *synopsysv1.AuthServer, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, accessor meta.MetadataAccessor) map[string]runtime.Object {
+	patcher := AuthServerPatcher{
+		authServerCr:                     authServerCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
 		accessor:                         accessor,
 	}
 	return patcher.patch()
 }
 
-type PolarisPatcher struct {
-	polarisCr                        *synopsysv1.Polaris
+type AuthServerPatcher struct {
+	authServerCr                     *synopsysv1.AuthServer
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
 	accessor                         meta.MetadataAccessor
 }
 
-func (p *PolarisPatcher) patch() map[string]runtime.Object {
+func (p *AuthServerPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
 	}
@@ -36,9 +36,9 @@ func (p *PolarisPatcher) patch() map[string]runtime.Object {
 	return p.mapOfUniqueIdToBaseRuntimeObject
 }
 
-func (p *PolarisPatcher) patchNamespace() error {
+func (p *AuthServerPatcher) patchNamespace() error {
 	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
-		p.accessor.SetNamespace(runtimeObject, p.polarisCr.Spec.Namespace)
+		p.accessor.SetNamespace(runtimeObject, p.authServerCr.Spec.Namespace)
 	}
 	return nil
 }
