@@ -1,0 +1,32 @@
+<a onclick={{action "deploy"}} role="button">
+    <h3>{{this.data.first}} {{this.data.last}}</h3>
+</a>
+
+<div id="contact_form">
+    <form name="bd-form" action="" class="form-horizontal">
+        <div class="form-group">
+            <label for="name" class="col-md-2 control-label">Name</label>
+            <div class="col-md-5">
+                {{input value=model.name class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="namespace" class="col-md-2 control-label">Namespace</label>
+            <div class="col-md-5">
+                {{input value=model.name class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="version" class="col-md-2 control-label">Version</label>
+            <div class="col-md-5">
+                {{input value=model.name class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+                <button {{action "deploy"}} class="btn btn-sm btn-primary">Deploy</button>
+            </div>
+        </div>
+        <input type="submit" name="submit" class="button" id="submit_btn" value="Send">
+    </form>
+</div>
