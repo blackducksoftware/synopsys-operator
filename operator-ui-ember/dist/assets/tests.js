@@ -1,5 +1,29 @@
 'use strict';
 
+define("operator-docs/tests/integration/components/black-duck-form-test", ["qunit", "ember-qunit", "@ember/test-helpers"], function (_qunit, _emberQunit, _testHelpers) {
+  "use strict";
+
+  (0, _qunit.module)('Integration | Component | black-duck-form', function (hooks) {
+    (0, _emberQunit.setupRenderingTest)(hooks);
+    (0, _qunit.test)('it renders', async function (assert) {
+      // Set any properties with this.set('myProperty', 'value');
+      // Handle any actions with this.set('myAction', function(val) { ... });
+      await (0, _testHelpers.render)(Ember.HTMLBars.template({
+        "id": "kxmRmKXO",
+        "block": "{\"symbols\":[],\"statements\":[[5,\"black-duck-form\",[],[[],[]]]],\"hasEval\":false}",
+        "meta": {}
+      }));
+      assert.equal(this.element.textContent.trim(), ''); // Template block usage:
+
+      await (0, _testHelpers.render)(Ember.HTMLBars.template({
+        "id": "ZC40/S8o",
+        "block": "{\"symbols\":[],\"statements\":[[0,\"\\n      \"],[5,\"black-duck-form\",[],[[],[]],{\"statements\":[[0,\"\\n        template block text\\n      \"]],\"parameters\":[]}],[0,\"\\n    \"]],\"hasEval\":false}",
+        "meta": {}
+      }));
+      assert.equal(this.element.textContent.trim(), 'template block text');
+    });
+  });
+});
 define("operator-docs/tests/integration/components/documentation-navbar-test", ["qunit", "ember-qunit", "@ember/test-helpers"], function (_qunit, _emberQunit, _testHelpers) {
   "use strict";
 
@@ -416,6 +440,10 @@ define("operator-docs/tests/lint/app.lint-test", [], function () {
     assert.expect(1);
     assert.ok(true, 'app.js should pass ESLint\n\n');
   });
+  QUnit.test('components/black-duck-form.js', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'components/black-duck-form.js should pass ESLint\n\n');
+  });
   QUnit.test('components/documentation-navbar.js', function (assert) {
     assert.expect(1);
     assert.ok(true, 'components/documentation-navbar.js should pass ESLint\n\n');
@@ -561,6 +589,10 @@ define("operator-docs/tests/lint/templates.template.lint-test", [], function () 
     assert.expect(1);
     assert.ok(true, 'operator-docs/templates/application.hbs should pass TemplateLint.\n\n');
   });
+  QUnit.test('operator-docs/templates/components/black-duck-form.hbs', function (assert) {
+    assert.expect(1);
+    assert.ok(false, 'operator-docs/templates/components/black-duck-form.hbs should pass TemplateLint.\n\noperator-docs/templates/components/black-duck-form.hbs\n  2:4  error  Incorrect indentation for `<h3>` beginning at L2:C4. Expected `<h3>` to be at an indentation of 2 but was found at 4.  block-indentation\n  6:4  error  Incorrect indentation for `<form>` beginning at L6:C4. Expected `<form>` to be at an indentation of 2 but was found at 4.  block-indentation\n  7:8  error  Incorrect indentation for `<div>` beginning at L7:C8. Expected `<div>` to be at an indentation of 6 but was found at 8.  block-indentation\n  13:8  error  Incorrect indentation for `<div>` beginning at L13:C8. Expected `<div>` to be at an indentation of 6 but was found at 8.  block-indentation\n  19:8  error  Incorrect indentation for `<div>` beginning at L19:C8. Expected `<div>` to be at an indentation of 6 but was found at 8.  block-indentation\n  25:8  error  Incorrect indentation for `<div>` beginning at L25:C8. Expected `<div>` to be at an indentation of 6 but was found at 8.  block-indentation\n  30:8  error  Incorrect indentation for `<input>` beginning at L30:C8. Expected `<input>` to be at an indentation of 6 but was found at 8.  block-indentation\n  8:12  error  Incorrect indentation for `<label>` beginning at L8:C12. Expected `<label>` to be at an indentation of 10 but was found at 12.  block-indentation\n  9:12  error  Incorrect indentation for `<div>` beginning at L9:C12. Expected `<div>` to be at an indentation of 10 but was found at 12.  block-indentation\n  10:16  error  Incorrect indentation for `{{input}}` beginning at L10:C16. Expected `{{input}}` to be at an indentation of 14 but was found at 16.  block-indentation\n  14:12  error  Incorrect indentation for `<label>` beginning at L14:C12. Expected `<label>` to be at an indentation of 10 but was found at 12.  block-indentation\n  15:12  error  Incorrect indentation for `<div>` beginning at L15:C12. Expected `<div>` to be at an indentation of 10 but was found at 12.  block-indentation\n  16:16  error  Incorrect indentation for `{{input}}` beginning at L16:C16. Expected `{{input}}` to be at an indentation of 14 but was found at 16.  block-indentation\n  20:12  error  Incorrect indentation for `<label>` beginning at L20:C12. Expected `<label>` to be at an indentation of 10 but was found at 12.  block-indentation\n  21:12  error  Incorrect indentation for `<div>` beginning at L21:C12. Expected `<div>` to be at an indentation of 10 but was found at 12.  block-indentation\n  22:16  error  Incorrect indentation for `{{input}}` beginning at L22:C16. Expected `{{input}}` to be at an indentation of 14 but was found at 16.  block-indentation\n  26:12  error  Incorrect indentation for `<div>` beginning at L26:C12. Expected `<div>` to be at an indentation of 10 but was found at 12.  block-indentation\n  27:16  error  Incorrect indentation for `<button>` beginning at L27:C16. Expected `<button>` to be at an indentation of 14 but was found at 16.  block-indentation\n');
+  });
   QUnit.test('operator-docs/templates/components/documentation-navbar.hbs', function (assert) {
     assert.expect(1);
     assert.ok(true, 'operator-docs/templates/components/documentation-navbar.hbs should pass TemplateLint.\n\n');
@@ -671,7 +703,7 @@ define("operator-docs/tests/lint/templates.template.lint-test", [], function () 
   });
   QUnit.test('operator-docs/templates/ui/deploy-black-duck.hbs', function (assert) {
     assert.expect(1);
-    assert.ok(false, 'operator-docs/templates/ui/deploy-black-duck.hbs should pass TemplateLint.\n\noperator-docs/templates/ui/deploy-black-duck.hbs\n  2:8  error  Incorrect indentation for `\n    function sendBlackDuck() {\n        alert("Sending Black Duck Data")\n        var bdPatches = {\n            patch: "patch_parameter"\n        }\n        var xhr = new XMLHttpRequest();\n        xhr.open(\'POST\', "http://localhost:8081", true);\n        xhr.setRequestHeader("Content-Type", "application/json");\n        xhr.send(JSON.stringify(bdPatches));\n        alert("Sent Black Duck Data")\n    } \n` beginning at L2:C8. Expected `\n    function sendBlackDuck() {\n        alert("Sending Black Duck Data")\n        var bdPatches = {\n            patch: "patch_parameter"\n        }\n        var xhr = new XMLHttpRequest();\n        xhr.open(\'POST\', "http://localhost:8081", true);\n        xhr.setRequestHeader("Content-Type", "application/json");\n        xhr.send(JSON.stringify(bdPatches));\n        alert("Sent Black Duck Data")\n    } \n` to be at an indentation of 2 but was found at 4.  block-indentation\n');
+    assert.ok(false, 'operator-docs/templates/ui/deploy-black-duck.hbs should pass TemplateLint.\n\noperator-docs/templates/ui/deploy-black-duck.hbs\n  3:0  error  Incorrect indentation for `<BlackDuckForm>` beginning at L3:C0. Expected `<BlackDuckForm>` to be at an indentation of 2 but was found at 0.  block-indentation\n  7:8  error  Incorrect indentation for `\n    // action="http://localhost:8081/" method="POST" \n    $(function () {\n        $(".button").click(function () {\n            alert("button clicked!")\n            // validate and process form here\n            var dataString = "hello there";\n            //alert (dataString);return false;\n            $.ajax({\n                type: "POST",\n                url: "http://localhost:8081/",\n                data: dataString,\n                success: function () {\n                    alert("success")\n                }\n            });\n            return false;\n        });\n    });\n\n    /* function sendBlackDuck() {\n         alert("Sending Black Duck Data")\n         var bdPatches = {\n             patch: "patch_parameter"\n         }\n         var xhr = new XMLHttpRequest();\n         xhr.open(\'POST\', "http://localhost:8081", true);\n         xhr.setRequestHeader("Content-Type", "application/json");\n         xhr.send(JSON.stringify(bdPatches));\n         alert("Sent Black Duck Data")\n     } */\n` beginning at L7:C8. Expected `\n    // action="http://localhost:8081/" method="POST" \n    $(function () {\n        $(".button").click(function () {\n            alert("button clicked!")\n            // validate and process form here\n            var dataString = "hello there";\n            //alert (dataString);return false;\n            $.ajax({\n                type: "POST",\n                url: "http://localhost:8081/",\n                data: dataString,\n                success: function () {\n                    alert("success")\n                }\n            });\n            return false;\n        });\n    });\n\n    /* function sendBlackDuck() {\n         alert("Sending Black Duck Data")\n         var bdPatches = {\n             patch: "patch_parameter"\n         }\n         var xhr = new XMLHttpRequest();\n         xhr.open(\'POST\', "http://localhost:8081", true);\n         xhr.setRequestHeader("Content-Type", "application/json");\n         xhr.send(JSON.stringify(bdPatches));\n         alert("Sent Black Duck Data")\n     } */\n` to be at an indentation of 2 but was found at 4.  block-indentation\n');
   });
   QUnit.test('operator-docs/templates/ui/deploy-polaris.hbs', function (assert) {
     assert.expect(1);
@@ -694,6 +726,10 @@ define("operator-docs/tests/lint/tests.lint-test", [], function () {
   "use strict";
 
   QUnit.module('ESLint | tests');
+  QUnit.test('integration/components/black-duck-form-test.js', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'integration/components/black-duck-form-test.js should pass ESLint\n\n');
+  });
   QUnit.test('integration/components/documentation-navbar-test.js', function (assert) {
     assert.expect(1);
     assert.ok(true, 'integration/components/documentation-navbar-test.js should pass ESLint\n\n');
