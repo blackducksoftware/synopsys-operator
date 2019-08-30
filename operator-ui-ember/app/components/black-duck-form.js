@@ -1,7 +1,7 @@
 import Component from '@ember/component';
 
 export default Component.extend({
-    spec: {
+    blackDuckConfig: {
         name: "",
         namespace: "",
         version: "",
@@ -30,8 +30,8 @@ export default Component.extend({
             alert("Running AJAX for Black Duck...")
             $.ajax({
                 type: "POST",
-                url: "http://localhost:8081/",
-                data: JSON.stringify(this.spec),
+                url: "http://localhost:8081/api/deploy_black_duck",
+                data: JSON.stringify(this.blackDuckConfig),
                 success: function () {
                     alert("success")
                 }

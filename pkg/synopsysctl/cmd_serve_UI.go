@@ -69,17 +69,34 @@ var serveUICmd = &cobra.Command{
 		log.Debug("Listening for api calls...")
 		router := mux.NewRouter()
 
-		router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("Received Data: %q\n", html.EscapeString(r.URL.Path))
+		router.HandleFunc("/api/deploy_polaris", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("Received Polaris Data: %q\n", html.EscapeString(r.URL.Path))
 			reqBody, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("Data from Body: %s", reqBody)
-
+			fmt.Printf("Data from Polaris Body: %s\n", reqBody)
 		})
+		router.HandleFunc("/api/deploy_black_duck", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("Received Black Duck Data: %q\n", html.EscapeString(r.URL.Path))
+			reqBody, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("Data from Black Duck Body: %s\n", reqBody)
+		})
+		router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("Data: %q\n", html.EscapeString(r.URL.Path))
+			reqBody, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("Data: %s\n", reqBody)
+		})
+
 		apiPort := "8081"
 		fmt.Printf("Listening for data with api: localhost:%s\n", apiPort)
+		fmt.Printf("api:\n  - /api/deploy_polaris\n  - /api/deploy_black_duck\n\n")
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", apiPort), handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(router)))
 
 		return nil

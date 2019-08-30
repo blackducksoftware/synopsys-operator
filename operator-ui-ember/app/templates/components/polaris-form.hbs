@@ -6,24 +6,23 @@
             <div class="row">
                 <div class="col-6">
                     <label for="smtpHost">SMTP HOST</label>
-                    <Input @value={{this.spec.SMTPHost}} type="text" class="form-control" name="smtpHost" id="smtpHost"
-                        required placeholder="Please enter smtp host" />
+                    <Input @value={{this.polarisConfig.SMTPHost}} type="text" class="form-control" name="smtpHost"
+                        id="smtpHost" required placeholder="Please enter smtp host" />
                 </div>
                 <div class="col-6">
                     <label for="smtpPort">SMTP PORT</label>
-                    <Input @value={{this.spec.SMTPPort}} type="text" class="form-control" name="smtpPort" id="smtpPort"
-                        required placeholder="Please enter smtp port" />
+                    <Input @value={{this.polarisConfig.SMTPPort}} type="text" class="form-control" name="smtpPort"
+                        id="smtpPort" required placeholder="Please enter smtp port" />
                 </div>
                 <div class="col-6">
                     <label for="smtpUsername">SMTP USERNAME</label>
-                    <Input @value={{this.spec.SMTPUsername}} type="text" class="form-control" name="smtpUsername"
-                        id="smtpUsername" placeholder="Please enter smtp username" />
+                    <Input @value={{this.polarisConfig.SMTPUsername}} type="text" class="form-control"
+                        name="smtpUsername" id="smtpUsername" placeholder="Please enter smtp username" />
                 </div>
                 <div class="col-6">
                     <label for="smtpPassword">SMTP PASSWORD</label>
-                    <Input @value={{this.spec.SMTPPassword}} type="password" class="form-control" name="smtpPassword"
-                        id="smtpPassword" placeholder="Please enter smtp password" />
-                    <button id="smtp-button" type="button" class="btn btn-secondary btn-create">Test Settings</button>
+                    <Input @value={{this.polarisConfig.SMTPPassword}} type="password" class="form-control"
+                        name="smtpPassword" id="smtpPassword" placeholder="Please enter smtp password" />
                 </div>
             </div>
         </div>
@@ -31,7 +30,7 @@
         <div class="form-group">
             <label for="polarisEnvironmentName">ENVIRONMENT NAME</label>
             <div class="input-group">
-                <Input @value={{this.spec.environmentName}} type="text" class="form-control"
+                <Input @value={{this.polarisConfig.environmentName}} type="text" class="form-control"
                     name="polarisEnvironmentName" id="polarisEnvironmentName" required
                     placeholder="Please enter a name for your Environment" />
             </div>
@@ -39,7 +38,7 @@
         <div class="form-group">
             <label for="polarisEnvironmentAddress">ENVIRONMENT ADDRESS (DNS)</label>
             <div class="input-group">
-                <Input @value={{this.spec.environmentAddress}} type="text" class="form-control"
+                <Input @value={{this.polarisConfig.environmentAddress}} type="text" class="form-control"
                     name="polarisEnvironmentAddress" id="polarisEnvironmentAddress" required
                     placeholder="Please enter a desired url for polaris" />
             </div>
@@ -47,14 +46,14 @@
         <div class="form-group">
             <label for="namespace">NAMESPACE</label>
             <div class="input-group">
-                <Input @value={{this.spec.namespace}} type="text" class="form-control" name="namespace" id="namespace"
-                    required placeholder="Namespace where polaris need to be deployed" value="default" />
+                <Input @value={{this.polarisConfig.namespace}} type="text" class="form-control" name="namespace"
+                    id="namespace" required placeholder="Namespace where polaris need to be deployed" value="default" />
             </div>
         </div>
         <div class="form-group">
             <label for="storageClass">STORAGE CLASS</label>
             <div class="input-group">
-                <Input @value={{this.spec.storageClass}} type="text" class="form-control" name="storageClass"
+                <Input @value={{this.polarisConfig.storageClass}} type="text" class="form-control" name="storageClass"
                     id="storageClass" required placeholder="Storage class to be used for Persistent Volumes" />
             </div>
         </div>
