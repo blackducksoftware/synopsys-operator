@@ -27,10 +27,9 @@ export default Component.extend({
     },
     actions: {
         deployBlackDuck() {
-            alert("Running AJAX for Black Duck...")
             $.ajax({
                 type: "POST",
-                url: "http://localhost:8081/api/deploy_black_duck",
+                url: "/api/deploy_black_duck",
                 data: JSON.stringify(this.blackDuckConfig),
                 success: function () {
                     alert("success")
