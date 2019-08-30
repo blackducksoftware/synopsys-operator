@@ -118,4 +118,127 @@
     </form>
 </div>
 
+<div id="other-on-prem">
+    <div class="form-group">
+        <label for="polarisEnvironmentName">ENVIRONMENT NAME</label>
+        <div class="input-group">
+            <input type="text" class="form-control" name="polarisEnvironmentName" id="polarisEnvironmentName" required
+                placeholder="Please enter a name for your Environment">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="polarisEnvironmentAddress">ENVIRONMENT ADDRESS (DNS)</label>
+        <div class="input-group">
+            <input type="text" class="form-control" name="polarisEnvironmentAddress" id="polarisEnvironmentAddress"
+                required placeholder="Please enter a desired url for polaris">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="namespace">NAMESPACE</label>
+        <div class="input-group">
+            <input type="text" class="form-control" name="namespace" id="namespace" required
+                placeholder="Namespace where polaris need to be deployed" value="default">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="storageClass">STORAGE CLASS</label>
+        <div class="input-group">
+            <input type="text" class="form-control" name="storageClass" id="storageClass" required
+                placeholder="Storage class to be used for Persistent Volumes">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="sslCertsType"><b>SSL CERTIFICATE TYPE FOR POLARIS(HTTPS)</b></label>
+        <div class="row">
+            <div class="col-lg-3">
+                <label class="k-option">
+                    <span class="k-option__control">
+                        <span class="k-radio k-radio--check-bold">
+                            <input type="radio" name="sslCertsType" value="self-signed" checked>
+                            <span></span>
+                        </span>
+                    </span>
+                    <span class="k-option__label">
+                        <span class="k-option__head">
+                            <span class="k-option__title">
+                                Self-Signed Certificate
+                            </span>
+                        </span>
+                        <span class="k-option__body">
+                            Configures polaris application with self-signed certificate
+                        </span>
+                    </span>
+                </label>
+            </div>
+            <div class="col-lg-3">
+                <label class="k-option">
+                    <span class="k-option__control">
+                        <span class="k-radio k-radio--check-bold">
+                            <input type="radio" name="sslCertsType" value="custom">
+                            <span></span>
+                        </span>
+                    </span>
+                    <span class="k-option__label">
+                        <span class="k-option__head">
+                            <span class="k-option__title">
+                                Custom Certificate
+                            </span>
+                        </span>
+                        <span class="k-option__body">
+                            Configures polaris application with user provided certificate
+                        </span>
+                    </span>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="ssl"></div>
+    <div class="form-group">
+        <label for="polarisEnvironmentTemplate"><b>POSTGRES INSTANCE TYPE</b></label>
+        <div class="row">
+            <div class="col-lg-3">
+                <label class="k-option">
+                    <span class="k-option__control">
+                        <span class="k-radio k-radio--check-bold">
+                            <input type="radio" name="postgresInstanceType" value="internal" checked>
+                            <span></span>
+                        </span>
+                    </span>
+                    <span class="k-option__label">
+                        <span class="k-option__head">
+                            <span class="k-option__title">
+                                Internal Postgres Instance
+                            </span>
+                        </span>
+                        <span class="k-option__body">
+                            Postgres instance runs within kubernetes network.
+                        </span>
+                    </span>
+                </label>
+            </div>
+            <div class="col-lg-3">
+                <label class="k-option">
+                    <span class="k-option__control">
+                        <span class="k-radio k-radio--check-bold">
+                            <input type="radio" name="postgresInstanceType" value="external">
+                            <span></span>
+                        </span>
+                    </span>
+                    <span class="k-option__label">
+                        <span class="k-option__head">
+                            <span class="k-option__title">
+                                External Postgres Instance
+                            </span>
+                        </span>
+                        <span class="k-option__body">
+                            Postgres instance running outside kubernetes network.
+                        </span>
+                    </span>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="postgres"></div>
+</div>
+
 {{outlet}}
