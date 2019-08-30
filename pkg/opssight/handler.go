@@ -200,10 +200,10 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 func (h *Handler) updateState(state State, errorMessage string, opssight *opssightapi.OpsSight) (*opssightapi.OpsSight, error) {
 	newOpssight, err := util.GetOpsSight(h.OpsSightClient, h.Config.CrdNamespace, opssight.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Annotate(err, "unable to get the opssigh to update the state of opssight object")
+		return nil, errors.Annotate(err, "unable to get the opssight to update the state of opssight object")
 	}
 
-	if !reflect.DeepEqual(newOpssight.Status.State, opssight.Status.State) || !reflect.DeepEqual(newOpssight.Status.ErrorMessage, opssight.Status.ErrorMessage) {
+	if !reflect.DeepEqual(newOpssight.Status.State, string(state)) || !reflect.DeepEqual(newOpssight.Status.ErrorMessage, errorMessage) {
 		newOpssight.Spec = opssight.Spec
 		newOpssight.Status.State = string(state)
 		newOpssight.Status.ErrorMessage = errorMessage
