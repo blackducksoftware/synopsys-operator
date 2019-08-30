@@ -18,7 +18,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
@@ -69,21 +68,13 @@ func (r *BlackduckReconciler) GetCustomResource(req ctrl.Request) (v1.Object, er
 
 func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
 	blackduck := cr.(*synopsysv1.Blackduck)
-	// 1. Get List of Runtime Objects (Base Yamls)
-	// TODO: either read contents of yaml from locally mounted file
-	// read content of full desired yaml from externally hosted file
-	// FinalYamlUrl := "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
-	// byteArrayContentFromFile, err := controllers_utils.HttpGet(FinalYamlUrl)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	FinalYamlPath := "config/samples/blackduck/2018.12.4/blackduck_base.yaml"
-	byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
+
+	// get the base yaml for the app
+	content, err := controllers_utils.GetBaseYaml(controllers_utils.BLACKDUCK, blackduck.Spec.Version)
 	if err != nil {
 		return nil, err
 	}
 
-	content := string(byteArrayContentFromFile)
 	content = strings.ReplaceAll(content, "${NAME}", blackduck.Name)
 	content = strings.ReplaceAll(content, "${ADMIN_DB_PASSWORD}", blackduck.Spec.AdminPassword)
 	content = strings.ReplaceAll(content, "${USER_DB_PASSWORD}", blackduck.Spec.UserPassword)
