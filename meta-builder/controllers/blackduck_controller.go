@@ -38,8 +38,9 @@ import (
 // BlackduckReconciler reconciles a Black Duck object
 type BlackduckReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	Log    logr.Logger
+	Scheme      *runtime.Scheme
+	Log         logr.Logger
+	IsOpenShift bool
 }
 
 func (r *BlackduckReconciler) GetClient() client.Client {
@@ -80,7 +81,7 @@ func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	content = strings.ReplaceAll(content, "${USER_DB_PASSWORD}", blackduck.Spec.UserPassword)
 	content = strings.ReplaceAll(content, "${POSTGRES_DB_PASSWORD}", blackduck.Spec.PostgresPassword)
 
-	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	// TODO: [yash commented this] figure out why this didn't work for black duck, probably just a namespace thing
 	//for _, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
 	//	// set an owner reference

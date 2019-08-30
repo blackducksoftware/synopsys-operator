@@ -70,6 +70,35 @@ rules:
   - list
   - update
   - watch
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+  resourceNames:
+  - privileged
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "ClusterRole"
+    app: opssight
+    component: scanner
+    name: ${NAME}
+  name: ${NAME}-opssight-scanner
+rules:
+- apiGroups:
+  - ""
+  - image.openshift.io
+  resources:
+  - imagestreams/layers
+  verbs:
+  - get
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -128,7 +157,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: synopsys-operator-admin
+  name: ${NAME}-opssight-scanner
 subjects:
 - kind: ServiceAccount
   name: ${NAME}-opssight-image-getter
@@ -237,9 +266,9 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSightCore"
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secret"
   labels:
-    operator.synopsys.com/group-id: "OpsSight"
+    operator.synopsys.com/group-id: "OpsSightCore"
     app: opssight
     component: core
     name: ${NAME}
@@ -263,9 +292,9 @@ kind: Service
 metadata:
   creationTimestamp: null
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSightCore"
+    operator.synopsys.com/group-dependencies: "OpsSight,OpsSightCore"
   labels:
-    operator.synopsys.com/group-id: "ExposeService"
+    operator.synopsys.com/group-id: "ExposeCore"
     app: opssight
     name: ${NAME}
     component: core-exposed
@@ -288,9 +317,9 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSightScanner"
+    operator.synopsys.com/group-dependencies: "OpsSight"
   labels:
-    operator.synopsys.com/group-id: "OpsSight"
+    operator.synopsys.com/group-id: "OpsSightScanner"
     app: opssight
     component: scanner
     name: ${NAME}
@@ -313,9 +342,9 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSightScanner"
+    operator.synopsys.com/group-dependencies: "OpsSight"
   labels:
-    operator.synopsys.com/group-id: "OpsSight"
+    operator.synopsys.com/group-id: "OpsSightScanner"
     app: opssight
     component: scanner
     name: ${NAME}
@@ -338,9 +367,9 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSightPodProcessor"
+    operator.synopsys.com/group-dependencies: "OpsSight"
   labels:
-    operator.synopsys.com/group-id: "OpsSight"
+    operator.synopsys.com/group-id: "OpsSightPodProcessor"
     app: opssight
     component: pod-processor
     name: ${NAME}
@@ -363,9 +392,9 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSightImageProcessor"
+    operator.synopsys.com/group-dependencies: "OpsSight"
   labels:
-    operator.synopsys.com/group-id: "OpsSight"
+    operator.synopsys.com/group-id: "OpsSightImageProcessor"
     app: opssight
     component: image-processor
     name: ${NAME}
@@ -389,9 +418,9 @@ kind: Service
 metadata:
   annotations:
     prometheus.io/scrape: "true"
-    operator.synopsys.com/group-dependencies: "OpsSightPrometheus"
+    operator.synopsys.com/group-dependencies: "OpsSight"
   labels:
-    operator.synopsys.com/group-id: "OpsSight"
+    operator.synopsys.com/group-id: "OpsSightPrometheus"
     app: opssight
     component: prometheus
     name: ${NAME}
@@ -417,7 +446,7 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "OpsSightPrometheus"
   labels:
-    operator.synopsys.com/group-id: "ExposeService"
+    operator.synopsys.com/group-id: "ExposePrometheus"
     app: opssight
     name: ${NAME}
     component: prometheus-exposed
@@ -770,7 +799,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSight,OpsSightCore"
+    operator.synopsys.com/group-dependencies: "OpsSightCore"
   labels:
     operator.synopsys.com/group-id: "OpsSightCoreRoute"
     app: opssight
@@ -793,7 +822,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "OpsSight,OpsSightPrometheus"
+    operator.synopsys.com/group-dependencies: "OpsSightPrometheus"
   labels:
     operator.synopsys.com/group-id: "OpsSightPrometheusRoute"
     app: opssight

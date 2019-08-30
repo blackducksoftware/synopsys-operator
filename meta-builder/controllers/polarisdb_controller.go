@@ -37,8 +37,9 @@ import (
 // PolarisDBReconciler reconciles a PolarisDB object
 type PolarisDBReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	Log    logr.Logger
+	Scheme      *runtime.Scheme
+	Log         logr.Logger
+	IsOpenShift bool
 }
 
 func (r *PolarisDBReconciler) GetClient() client.Client {
@@ -82,7 +83,7 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polarisDbCr.Spec.EnvironmentName)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisDbCr.Spec.ImagePullSecrets)
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
 		if err := ctrl.SetControllerReference(polarisDbCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
@@ -99,7 +100,7 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 
 func (r *PolarisDBReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	instructionManualLocation := "config/samples/dependency_manual_polarisdb.yaml"
-	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation, mapOfUniqueIdToDesiredRuntimeObject)
+	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation)
 	if err != nil {
 		return nil, err
 	}

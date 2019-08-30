@@ -29,6 +29,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers"
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 	routev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -74,13 +75,15 @@ func main() {
 
 	if isOpenShift {
 		_ = routev1.AddToScheme(scheme)
+		_ = securityv1.AddToScheme(scheme)
 	}
 
 	// setting up Alert Controller
 	if err = (&controllers.AlertReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Alert"),
-		Scheme: mgr.GetScheme(), // we've added this ourselves
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("Alert"),
+		Scheme:      mgr.GetScheme(), // we've added this ourselves
+		IsOpenShift: isOpenShift,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Alert")
 		os.Exit(1)
@@ -88,9 +91,10 @@ func main() {
 
 	// setting up Black Duck Controller
 	if err = (&controllers.BlackduckReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Black Duck"),
-		Scheme: mgr.GetScheme(), // we've added this ourselves
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("Black Duck"),
+		Scheme:      mgr.GetScheme(), // we've added this ourselves
+		IsOpenShift: isOpenShift,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Black Duck")
 		os.Exit(1)
@@ -107,11 +111,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	// setting up OpsSightBlackDuckReconciler Controller
+	if err = (&controllers.OpsSightBlackDuckReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("OpsSightBlackDuck"),
+		Scheme: mgr.GetScheme(), // we've added this ourselves
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "OpsSight")
+		os.Exit(1)
+	}
+
 	// setting up Polaris Controller
 	if err = (&controllers.PolarisReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Polaris"),
-		Scheme: mgr.GetScheme(), // we've added this ourselves
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("Polaris"),
+		Scheme:      mgr.GetScheme(), // we've added this ourselves
+		IsOpenShift: isOpenShift,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Polaris")
 		os.Exit(1)
@@ -119,9 +134,10 @@ func main() {
 
 	// setting up Reporting Controller
 	if err = (&controllers.ReportingReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Reporting"),
-		Scheme: mgr.GetScheme(), // we've added this ourselves
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("Reporting"),
+		Scheme:      mgr.GetScheme(), // we've added this ourselves
+		IsOpenShift: isOpenShift,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Reporting")
 		os.Exit(1)
@@ -129,9 +145,10 @@ func main() {
 
 	// setting up PolarisDB Controller
 	if err = (&controllers.PolarisDBReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("PolarisDB"),
-		Scheme: mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("PolarisDB"),
+		Scheme:      mgr.GetScheme(),
+		IsOpenShift: isOpenShift,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PolarisDB")
 		os.Exit(1)

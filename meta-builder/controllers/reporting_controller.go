@@ -39,8 +39,9 @@ import (
 // ReportingReconciler reconciles a Reporting object
 type ReportingReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	Log    logr.Logger
+	Scheme      *runtime.Scheme
+	Log         logr.Logger
+	IsOpenShift bool
 }
 
 func (r *ReportingReconciler) GetClient() client.Client {
@@ -80,7 +81,7 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	fmt.Println(controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Password))
 	fmt.Println("---------------------------------")
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		if err := ctrl.SetControllerReference(reportingCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
 			return mapOfUniqueIdToBaseRuntimeObject, nil
@@ -93,7 +94,7 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 
 func (r *ReportingReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	instructionManualLocation := "config/samples/dependency_manual_reporting.yaml"
-	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation, mapOfUniqueIdToDesiredRuntimeObject)
+	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation)
 	if err != nil {
 		return nil, err
 	}

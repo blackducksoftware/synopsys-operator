@@ -3,15 +3,16 @@ package flying_dutchman
 import (
 	"context"
 	"fmt"
+
 	scheduler "github.com/blackducksoftware/synopsys-operator/meta-builder/go-scheduler"
+
 	"github.com/go-logr/logr"
+
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-
-	//"k8s.io/apimachinery/pkg/util/strategicpatch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"

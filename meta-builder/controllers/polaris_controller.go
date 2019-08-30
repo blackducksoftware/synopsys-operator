@@ -38,8 +38,9 @@ import (
 // PolarisReconciler reconciles a Polaris object
 type PolarisReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	Log    logr.Logger
+	Scheme      *runtime.Scheme
+	Log         logr.Logger
+	IsOpenShift bool
 }
 
 func (r *PolarisReconciler) GetClient() client.Client {
@@ -86,7 +87,7 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polarisCr.Spec.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisCr.Spec.ImagePullSecrets)
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	removeAuthServerRuntimeObjects(&mapOfUniqueIdToBaseRuntimeObject)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
@@ -110,7 +111,7 @@ func removeAuthServerRuntimeObjects(objects *map[string]runtime.Object) {
 
 func (r *PolarisReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	instructionManualLocation := "config/samples/dependency_manual_polaris.yaml"
-	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation, mapOfUniqueIdToDesiredRuntimeObject)
+	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation)
 	if err != nil {
 		return nil, err
 	}

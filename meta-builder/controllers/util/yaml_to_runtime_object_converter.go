@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	routev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -12,7 +13,7 @@ import (
 )
 
 // ConvertYamlFileToRuntimeObjects converts the yaml file string to map of runtime object
-func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Object {
+func ConvertYamlFileToRuntimeObjects(stringContent string, isOpenShift bool) map[string]runtime.Object {
 	// TODO: use logr.Logr
 	log := ctrl.Log.WithName("ConvertYamlFileToRuntimeObjects")
 
@@ -26,6 +27,8 @@ func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Ob
 		}
 
 		routev1.AddToScheme(scheme.Scheme)
+		securityv1.AddToScheme(scheme.Scheme)
+
 		decode := scheme.Codecs.UniversalDeserializer().Decode
 		runtimeObject, groupVersionKind, err := decode([]byte(singleYaml), nil, nil)
 		if err != nil {
