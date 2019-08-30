@@ -36,68 +36,64 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Port to serve on
+var serverPort = "8081"
+
 // serveUICmd edits Synopsys resources
 var serveUICmd = &cobra.Command{
 	Use:   "serve-ui",
 	Short: "Starts a service running the User Interface and listens for events",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// // Start Running the ember User Interface on localhost
-		log.Debug("Starting User Interface's Ember Front End...")
-		// r := mux.NewRouter()
-
-		// // Serve static assets directly.
-		// static := "../../operator-ui-ember/dist"
-		// r.PathPrefix("/dist").Handler(http.FileServer(http.Dir(static)))
-
-		// // Route for base route
-		// entry := "../../operator-ui-ember/dist/index.html"
-		// r.PathPrefix("/").HandlerFunc(IndexHandler(entry))
-
-		// port := "8090"
-		// log.Debug(fmt.Sprintf("listening and serving at localhost:%s", port))
-		// srv := &http.Server{
-		// 	Handler: handlers.LoggingHandler(os.Stdout, r),
-		// 	Addr:    "localhost:" + port,
-		// 	// Good practice: enforce timeouts for servers you create!
-		// 	WriteTimeout: 15 * time.Second,
-		// 	ReadTimeout:  15 * time.Second,
-		// }
-
-		// log.Fatal(srv.ListenAndServe())
+		log.Debug("Starting User Interface Server...")
 
 		// Start Running a backend server that listens for input from the User Interface
-		log.Debug("Listening for api calls...")
 		router := mux.NewRouter()
 
+		// api route - deploy Polaris
 		router.HandleFunc("/api/deploy_polaris", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("Received Polaris Data: %q\n", html.EscapeString(r.URL.Path))
+			fmt.Printf("Handler Deploy Polaris: %q\n", html.EscapeString(r.URL.Path))
 			reqBody, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				log.Fatal(err)
 			}
 			fmt.Printf("Data from Polaris Body: %s\n", reqBody)
 		})
+
+		// api route - deploy Black Duck
 		router.HandleFunc("/api/deploy_black_duck", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("Received Black Duck Data: %q\n", html.EscapeString(r.URL.Path))
+			fmt.Printf("Handler Deploy Black Duck: %q\n", html.EscapeString(r.URL.Path))
 			reqBody, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				log.Fatal(err)
 			}
 			fmt.Printf("Data from Black Duck Body: %s\n", reqBody)
 		})
+
+		// // Serve static assets directly.
+		// static := "../../operator-ui-ember/dist"
+		// r.PathPrefix("/dist").Handler(http.FileServer(http.Dir(static)))
+
+		// base route
+		// pathToIndex := "../../operator-ui-ember/dist/index.html"
 		router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("Data: %q\n", html.EscapeString(r.URL.Path))
-			reqBody, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Printf("Data: %s\n", reqBody)
+			fmt.Printf("Handler Base Route: %q\n", html.EscapeString(r.URL.Path))
 		})
 
-		apiPort := "8081"
-		fmt.Printf("Listening for data with api: localhost:%s\n", apiPort)
-		fmt.Printf("api:\n  - /api/deploy_polaris\n  - /api/deploy_black_duck\n\n")
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", apiPort), handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(router)))
+		fmt.Printf("==================================\n")
+		fmt.Printf("Serving at: http://localhost:%s\n", serverPort)
+		fmt.Printf("api:\n  - /api/deploy_polaris\n  - /api/deploy_black_duck\n")
+		fmt.Printf("==================================\n")
+		fmt.Printf("\n")
+
+		// Serving the server
+		// srv := &http.Server{
+		// 	Handler: handlers.LoggingHandler(os.Stdout, r),
+		// 	Addr:    "localhost:" + serverPort,
+		// 	// Good practice: enforce timeouts for servers you create!
+		// 	WriteTimeout: 15 * time.Second,
+		// 	ReadTimeout:  15 * time.Second,
+		// }
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", serverPort), handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(router)))
 
 		return nil
 	},
@@ -114,4 +110,5 @@ func IndexHandler(entry string) func(w http.ResponseWriter, r *http.Request) {
 
 func init() {
 	rootCmd.AddCommand(serveUICmd)
+	serveUICmd.Flags().StringVarP(&serverPort, "port", "p", serverPort, "Port to listen for UI requests")
 }
