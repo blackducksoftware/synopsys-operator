@@ -33,6 +33,7 @@ export default Component.extend({
                 version: this.version
             }
             alert(BlackDuckSpecData)
+            //alert(this)
             alert(this.dbMigrate)
             var dataString = "Hello Black Duck";
             $.ajax({

@@ -1,90 +1,5 @@
 <div class="k-content k-grid__item k-grid__item--fluid k-grid k-grid--hor" id="k_content">
     <form class="k-form k-form--label-right" id="polaris-options-form">
-        <div class="form-group">
-            <label for="deploymentPlatform"><b>DEPLOYMENT PLATFORM</b></label>
-            <div class="row">
-                <div class="col-lg-3">
-                    <label class="k-option">
-                        <span class="k-option__control">
-                            <span class="k-radio k-radio--check-bold">
-                                <input type="radio" name="deploymentPlatform" value="on-prem">
-                                <span></span>
-                            </span>
-                        </span>
-                        <span class="k-option__label">
-                            <span class="k-option__head">
-                                <span class="k-option__title">
-                                    On-Premises
-                                </span>
-                            </span>
-                            <span class="k-option__body">
-                                On-Premises Kubernetes Infrastructure
-                            </span>
-                        </span>
-                    </label>
-                </div>
-                <div class="col-lg-3">
-                    <label class="k-option">
-                        <span class="k-option__control">
-                            <span class="k-radio k-radio--check-bold">
-                                <input type="radio" name="deploymentPlatform" value="aws">
-                                <span></span>
-                            </span>
-                        </span>
-                        <span class="k-option__label">
-                            <span class="k-option__head">
-                                <span class="k-option__title">
-                                    EKS
-                                </span>
-                            </span>
-                            <span class="k-option__body">
-                                Elastic Kubernetes Service - Amazon Web Services
-                            </span>
-                        </span>
-                    </label>
-                </div>
-                <div class="col-lg-3">
-                    <label class="k-option">
-                        <span class="k-option__control">
-                            <span class="k-radio k-radio--check-bold">
-                                <input type="radio" name="deploymentPlatform" value="gcp">
-                                <span></span>
-                            </span>
-                        </span>
-                        <span class="k-option__label">
-                            <span class="k-option__head">
-                                <span class="k-option__title">
-                                    GKE
-                                </span>
-                            </span>
-                            <span class="k-option__body">
-                                Google Kubernetes Engine - Google Cloud Platform
-                            </span>
-                        </span>
-                    </label>
-                </div>
-                <div class="col-lg-3">
-                    <label class="k-option">
-                        <span class="k-option__control">
-                            <span class="k-radio k-radio--check-bold">
-                                <input type="radio" name="deploymentPlatform" value="azure">
-                                <span></span>
-                            </span>
-                        </span>
-                        <span class="k-option__label">
-                            <span class="k-option__head">
-                                <span class="k-option__title">
-                                    AKS
-                                </span>
-                            </span>
-                            <span class="k-option__body">
-                                Azure Kubernetes Service - Microsoft Azure
-                            </span>
-                        </span>
-                    </label>
-                </div>
-            </div>
-        </div>
         <div id="deployOptions"></div>
         <div class="form-group">
             <label for="smtpDetails"><b>SMTP SERVER DETAILS (For exchanging emails)</b></label>
@@ -112,133 +27,87 @@
                 </div>
             </div>
         </div>
+
+        <div class="form-group">
+            <label for="polarisEnvironmentName">ENVIRONMENT NAME</label>
+            <div class="input-group">
+                <input type="text" class="form-control" name="polarisEnvironmentName" id="polarisEnvironmentName"
+                    required placeholder="Please enter a name for your Environment">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="polarisEnvironmentAddress">ENVIRONMENT ADDRESS (DNS)</label>
+            <div class="input-group">
+                <input type="text" class="form-control" name="polarisEnvironmentAddress" id="polarisEnvironmentAddress"
+                    required placeholder="Please enter a desired url for polaris">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="namespace">NAMESPACE</label>
+            <div class="input-group">
+                <input type="text" class="form-control" name="namespace" id="namespace" required
+                    placeholder="Namespace where polaris need to be deployed" value="default">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="storageClass">STORAGE CLASS</label>
+            <div class="input-group">
+                <input type="text" class="form-control" name="storageClass" id="storageClass" required
+                    placeholder="Storage class to be used for Persistent Volumes">
+            </div>
+        </div>
+        <div id="ssl"></div>
+        <div class="form-group">
+            <label for="polarisEnvironmentTemplate"><b>POSTGRES INSTANCE TYPE</b></label>
+            <div class="row">
+                <div class="col-lg-3">
+                    <label class="k-option">
+                        <span class="k-option__control">
+                            <span class="k-radio k-radio--check-bold">
+                                <input type="radio" name="postgresInstanceType" value="internal" checked>
+                                <span></span>
+                            </span>
+                        </span>
+                        <span class="k-option__label">
+                            <span class="k-option__head">
+                                <span class="k-option__title">
+                                    Internal Postgres Instance
+                                </span>
+                            </span>
+                            <span class="k-option__body">
+                                Postgres instance runs within kubernetes network.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+                <div class="col-lg-3">
+                    <label class="k-option">
+                        <span class="k-option__control">
+                            <span class="k-radio k-radio--check-bold">
+                                <input type="radio" name="postgresInstanceType" value="external">
+                                <span></span>
+                            </span>
+                        </span>
+                        <span class="k-option__label">
+                            <span class="k-option__head">
+                                <span class="k-option__title">
+                                    External Postgres Instance
+                                </span>
+                            </span>
+                            <span class="k-option__body">
+                                Postgres instance running outside kubernetes network.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
         <div class="form-group">
             <button {{action "deployPolaris"}} type="submit" class="btn btn-primary btn-create">Submit</button>
         </div>
     </form>
 </div>
 
-<div id="other-on-prem">
-    <div class="form-group">
-        <label for="polarisEnvironmentName">ENVIRONMENT NAME</label>
-        <div class="input-group">
-            <input type="text" class="form-control" name="polarisEnvironmentName" id="polarisEnvironmentName" required
-                placeholder="Please enter a name for your Environment">
-        </div>
-    </div>
-    <div class="form-group">
-        <label for="polarisEnvironmentAddress">ENVIRONMENT ADDRESS (DNS)</label>
-        <div class="input-group">
-            <input type="text" class="form-control" name="polarisEnvironmentAddress" id="polarisEnvironmentAddress"
-                required placeholder="Please enter a desired url for polaris">
-        </div>
-    </div>
-    <div class="form-group">
-        <label for="namespace">NAMESPACE</label>
-        <div class="input-group">
-            <input type="text" class="form-control" name="namespace" id="namespace" required
-                placeholder="Namespace where polaris need to be deployed" value="default">
-        </div>
-    </div>
-    <div class="form-group">
-        <label for="storageClass">STORAGE CLASS</label>
-        <div class="input-group">
-            <input type="text" class="form-control" name="storageClass" id="storageClass" required
-                placeholder="Storage class to be used for Persistent Volumes">
-        </div>
-    </div>
-    <div class="form-group">
-        <label for="sslCertsType"><b>SSL CERTIFICATE TYPE FOR POLARIS(HTTPS)</b></label>
-        <div class="row">
-            <div class="col-lg-3">
-                <label class="k-option">
-                    <span class="k-option__control">
-                        <span class="k-radio k-radio--check-bold">
-                            <input type="radio" name="sslCertsType" value="self-signed" checked>
-                            <span></span>
-                        </span>
-                    </span>
-                    <span class="k-option__label">
-                        <span class="k-option__head">
-                            <span class="k-option__title">
-                                Self-Signed Certificate
-                            </span>
-                        </span>
-                        <span class="k-option__body">
-                            Configures polaris application with self-signed certificate
-                        </span>
-                    </span>
-                </label>
-            </div>
-            <div class="col-lg-3">
-                <label class="k-option">
-                    <span class="k-option__control">
-                        <span class="k-radio k-radio--check-bold">
-                            <input type="radio" name="sslCertsType" value="custom">
-                            <span></span>
-                        </span>
-                    </span>
-                    <span class="k-option__label">
-                        <span class="k-option__head">
-                            <span class="k-option__title">
-                                Custom Certificate
-                            </span>
-                        </span>
-                        <span class="k-option__body">
-                            Configures polaris application with user provided certificate
-                        </span>
-                    </span>
-                </label>
-            </div>
-        </div>
-    </div>
-    <div id="ssl"></div>
-    <div class="form-group">
-        <label for="polarisEnvironmentTemplate"><b>POSTGRES INSTANCE TYPE</b></label>
-        <div class="row">
-            <div class="col-lg-3">
-                <label class="k-option">
-                    <span class="k-option__control">
-                        <span class="k-radio k-radio--check-bold">
-                            <input type="radio" name="postgresInstanceType" value="internal" checked>
-                            <span></span>
-                        </span>
-                    </span>
-                    <span class="k-option__label">
-                        <span class="k-option__head">
-                            <span class="k-option__title">
-                                Internal Postgres Instance
-                            </span>
-                        </span>
-                        <span class="k-option__body">
-                            Postgres instance runs within kubernetes network.
-                        </span>
-                    </span>
-                </label>
-            </div>
-            <div class="col-lg-3">
-                <label class="k-option">
-                    <span class="k-option__control">
-                        <span class="k-radio k-radio--check-bold">
-                            <input type="radio" name="postgresInstanceType" value="external">
-                            <span></span>
-                        </span>
-                    </span>
-                    <span class="k-option__label">
-                        <span class="k-option__head">
-                            <span class="k-option__title">
-                                External Postgres Instance
-                            </span>
-                        </span>
-                        <span class="k-option__body">
-                            Postgres instance running outside kubernetes network.
-                        </span>
-                    </span>
-                </label>
-            </div>
-        </div>
-    </div>
-    <div id="postgres"></div>
-</div>
 
 {{outlet}}
