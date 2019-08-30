@@ -5,23 +5,141 @@
 <div id="contact_form">
     <form name="bd-form" action="" class="form-horizontal">
         <div class="form-group">
-            <label for="name" class="col-md-2 control-label">Name</label>
+            <label for="name" class="col-md-2 control-label">Name *</label>
             <div class="col-md-5">
                 {{input value=this.name class="form-control"}}
             </div>
         </div>
         <div class="form-group">
-            <label for="namespace" class="col-md-2 control-label">Namespace</label>
+            <label for="namespace" class="col-md-2 control-label">Namespace *</label>
             <div class="col-md-5">
                 {{input value=this.namespace class="form-control"}}
             </div>
         </div>
         <div class="form-group">
-            <label for="version" class="col-md-2 control-label">Version</label>
+            <label for="version" class="col-md-2 control-label">Black Duck Version</label>
             <div class="col-md-5">
                 {{input value=this.version class="form-control"}}
             </div>
         </div>
+        <div class="form-group">
+            <label for="license-key" class="col-md-2 control-label">License Key</label>
+            <div class="col-md-5">
+                {{input value=this.licenseKey class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="db-migrate" class="col-md-2 control-label">DbMigrate</label>
+            <div class="col-md-5">
+                <Input @type="checkbox" @checked={{this.dbMigrate}} />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="size" class="col-md-2 control-label">Size</label>
+            <div class="col-md-5">
+                {{input value=this.size class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="expose-service" class="col-md-2 control-label">Expose Service</label>
+            <div class="col-md-5">
+                {{input value=this.exposeService class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="black-duck-type" class="col-md-2 control-label">Black Duck Type (OpsSight specific)</label>
+            <div class="col-md-5">
+                {{input value=this.blackDuckType class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="db-migrate" class="col-md-2 control-label">Use Binary Uploads</label>
+            <div class="col-md-5">
+                <Input @type="checkbox" @checked={{this.useBinaryUploads}} />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="db-migrate" class="col-md-2 control-label">Enable Source Uploads</label>
+            <div class="col-md-5">
+                <Input @type="checkbox" @checked={{this.enableSourceUploads}} />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="db-migrate" class="col-md-2 control-label">Liveness Probes</label>
+            <div class="col-md-5">
+                <Input @type="checkbox" @checked={{this.livenessProbes}} />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="db-migrate" class="col-md-2 control-label">Persistent Storage</label>
+            <div class="col-md-5">
+                <Input @type="checkbox" @checked={{this.persistentStorage}} />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="black-duck-type" class="col-md-2 control-label">Clone DB</label>
+            <div class="col-md-5">
+                {{input value=this.cloneDb class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="black-duck-type" class="col-md-2 control-label">PVC Storage Class</label>
+            <div class="col-md-5">
+                {{input value=this.PVCStorageClass class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="black-duck-type" class="col-md-2 control-label">Scan Type</label>
+            <div class="col-md-5">
+                {{input value=this.scanType class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="db-migrate" class="col-md-2 control-label">External Database</label>
+            <div class="col-md-5">
+                <Input @type="checkbox" @checked={{this.externalDatabase}} />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="black-duck-type" class="col-md-2 control-label">PostgresSQL User Password *</label>
+            <div class="col-md-5">
+                {{input value=this.postgresSQLUserPassword class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="black-duck-type" class="col-md-2 control-label">PostgresSQL Admin Password *</label>
+            <div class="col-md-5">
+                {{input value=this.postgresSQLAdminPassword class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="black-duck-type" class="col-md-2 control-label">PostgresSQL Postgres Password *</label>
+            <div class="col-md-5">
+                {{input value=this.postgresSQLPostgresPassword class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="black-duck-type" class="col-md-2 control-label">Certificate Name</label>
+            <div class="col-md-5">
+                {{input value=this.certificateName class="form-control"}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="db-migrate" class="col-md-2 control-label">Custom CA for certificate authentication</label>
+            <div class="col-md-5">
+                <Input @type="checkbox" @checked={{this.customCACertificateAuthentication}} />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="db-migrate" class="col-md-2 control-label">Proxy Root Certificate</label>
+            <div class="col-md-5">
+                <Textarea @value={{this.proxyRootCertificate}} @cols="80" @rows="6" />
+                </div>
+        </div>
+
+
+
+
         <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
                 <button {{action "deployBlackDuck"}} class="btn btn-sm btn-primary">Submit</button>

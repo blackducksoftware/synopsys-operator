@@ -4,6 +4,25 @@ export default Component.extend({
     name: "",
     namespace: "",
     version: "",
+    licenseKey: "",
+    dbMigrate: false,
+    size: "small",
+    exposeService: "",
+    blackDuckType: "",
+    useBinaryUploads: false,
+    enableSourceUploads: false,
+    livenessProbes: false,
+    persistentStorage: true,
+    cloneDB: "",
+    PVCStorageClass: "",
+    scanType: "",
+    externalDatabase: false,
+    postgresSQLUserPassword: "",
+    postgresSQLAdminPassword: "",
+    postgresSQLPostgresPassword: "",
+    certificateName: "",
+    customCACertificateAuthentication: false,
+    proxyRootCertificate: "",
     actions: {
         deployBlackDuck() {
             alert("Running AJAX for Black Duck...")
@@ -14,6 +33,7 @@ export default Component.extend({
                 version: this.version
             }
             alert(BlackDuckSpecData)
+            alert(this.dbMigrate)
             var dataString = "Hello Black Duck";
             $.ajax({
                 type: "POST",
