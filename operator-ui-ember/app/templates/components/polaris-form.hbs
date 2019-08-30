@@ -1,0 +1,114 @@
+<div class="k-content k-grid__item k-grid__item--fluid k-grid k-grid--hor" id="k_content">
+    <form class="k-form k-form--label-right" id="polaris-options-form">
+        <div id="deployOptions"></div>
+        <div class="form-group">
+            <label for="smtpDetails"><b>SMTP SERVER DETAILS (For exchanging emails)</b></label>
+            <div class="row">
+                <div class="col-6">
+                    <label for="smtpHost">SMTP HOST</label>
+                    <Input @value={{this.spec.SMTPHost}} type="text" class="form-control" name="smtpHost" id="smtpHost"
+                        required placeholder="Please enter smtp host" />
+                </div>
+                <div class="col-6">
+                    <label for="smtpPort">SMTP PORT</label>
+                    <Input @value={{this.spec.SMTPPort}} type="text" class="form-control" name="smtpPort" id="smtpPort"
+                        required placeholder="Please enter smtp port" />
+                </div>
+                <div class="col-6">
+                    <label for="smtpUsername">SMTP USERNAME</label>
+                    <Input @value={{this.spec.SMTPUsername}} type="text" class="form-control" name="smtpUsername"
+                        id="smtpUsername" placeholder="Please enter smtp username" />
+                </div>
+                <div class="col-6">
+                    <label for="smtpPassword">SMTP PASSWORD</label>
+                    <Input @value={{this.spec.SMTPPassword}} type="password" class="form-control" name="smtpPassword"
+                        id="smtpPassword" placeholder="Please enter smtp password" />
+                    <button id="smtp-button" type="button" class="btn btn-secondary btn-create">Test Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="polarisEnvironmentName">ENVIRONMENT NAME</label>
+            <div class="input-group">
+                <Input @value={{this.spec.environmentName}} type="text" class="form-control"
+                    name="polarisEnvironmentName" id="polarisEnvironmentName" required
+                    placeholder="Please enter a name for your Environment" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="polarisEnvironmentAddress">ENVIRONMENT ADDRESS (DNS)</label>
+            <div class="input-group">
+                <Input @value={{this.spec.environmentAddress}} type="text" class="form-control"
+                    name="polarisEnvironmentAddress" id="polarisEnvironmentAddress" required
+                    placeholder="Please enter a desired url for polaris" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="namespace">NAMESPACE</label>
+            <div class="input-group">
+                <Input @value={{this.spec.namespace}} type="text" class="form-control" name="namespace" id="namespace"
+                    required placeholder="Namespace where polaris need to be deployed" value="default" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="storageClass">STORAGE CLASS</label>
+            <div class="input-group">
+                <Input @value={{this.spec.storageClass}} type="text" class="form-control" name="storageClass"
+                    id="storageClass" required placeholder="Storage class to be used for Persistent Volumes" />
+            </div>
+        </div>
+        <div id="ssl"></div>
+        <div class="form-group">
+            <label for="polarisEnvironmentTemplate"><b>POSTGRES INSTANCE TYPE</b></label>
+            <div class="row">
+                <div class="col-lg-3">
+                    <label class="k-option">
+                        <span class="k-option__control">
+                            <span class="k-radio k-radio--check-bold">
+                                <Input type="radio" onclick={{action "setInternalPostgresInstance"}}
+                                    name="postgresInstanceType" value="internal" checked />
+                                <span></span>
+                            </span>
+                        </span>
+                        <span class="k-option__label">
+                            <span class="k-option__head">
+                                <span class="k-option__title">
+                                    Internal Postgres Instance
+                                </span>
+                            </span>
+                            <span class="k-option__body">
+                                Postgres instance runs within kubernetes network.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+                <div class="col-lg-3">
+                    <label class="k-option">
+                        <span class="k-option__control">
+                            <span class="k-radio k-radio--check-bold">
+                                <Input type="radio" onclick={{action "setExternalPostgresInstance"}}
+                                    name="postgresInstanceType" value="external" />
+                                <span></span>
+                            </span>
+                        </span>
+                        <span class="k-option__label">
+                            <span class="k-option__head">
+                                <span class="k-option__title">
+                                    External Postgres Instance
+                                </span>
+                            </span>
+                            <span class="k-option__body">
+                                Postgres instance running outside kubernetes network.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <button {{action "deployPolaris"}} class="btn btn-sm btn-primary">Submit</button>
+        </div>
+    </form>
+</div>
