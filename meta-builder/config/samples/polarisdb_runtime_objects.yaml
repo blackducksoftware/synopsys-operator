@@ -984,27 +984,6 @@ spec:
           claimName: "mongodb"
 
 ---
-# Source: swip-db/templates/vault-exporter.yaml
-
-apiVersion: "v1"
-kind: "Service"
-metadata:
-  name: "vault-exporter"
-  labels:    
-    environment: "${ENVIRONMENT_NAME}"
-    service: "vault-exporter"
-    component: "swip-db"
-    componentVersion: "0.0.740"
-    chart: "swip-db"
-    chartVersion: "0.0.740"
-spec:
-  ports:
-  - port: 9410
-    name: "http"
-  selector:
-    app: "vault"
-  type: "ClusterIP"
----
 # Source: swip-db/templates/eventstore-init.yaml
 
 apiVersion: "v1"

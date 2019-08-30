@@ -90,6 +90,7 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisCr.Spec.ImagePullSecrets)
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
+	removeAuthServerRuntimeObjects(&mapOfUniqueIdToBaseRuntimeObject)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
 		if err := ctrl.SetControllerReference(polarisCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
@@ -102,6 +103,12 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 	mapOfUniqueIdToDesiredRuntimeObject := patchPolaris(polarisCr, mapOfUniqueIdToBaseRuntimeObject, meta.NewAccessor())
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
+}
+
+func removeAuthServerRuntimeObjects(objects *map[string]runtime.Object) {
+	for _, entry := range controllers_utils.GetAuthObjectsList() {
+		delete(*objects, entry)
+	}
 }
 
 func (r *PolarisReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {

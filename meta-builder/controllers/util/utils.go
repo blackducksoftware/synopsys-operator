@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // HTTPGet returns the http response for the api
@@ -38,4 +40,23 @@ func GetBaseYaml(appName string, version string) (string, error) {
 		return "", err
 	}
 	return string(versionBaseYamlAsByteArray), nil
+}
+
+func GetAuthObjectsList() []string {
+	return []string{
+		"ServiceAccount.auth-server",
+		"Role.leaderElector",
+		"RoleBinding.leaderElector",
+		"Deployment.auth-server",
+		"HorizontalPodAutoscaler.auth-server",
+		"Service.auth-server",
+	}
+}
+
+func GetAuthServerRuntimeObjects(objects map[string]runtime.Object) map[string]runtime.Object {
+	authServerRuntimeObjects := make(map[string]runtime.Object, 0)
+	for _, entry := range GetAuthObjectsList() {
+		authServerRuntimeObjects[entry] = objects[entry]
+	}
+	return authServerRuntimeObjects
 }

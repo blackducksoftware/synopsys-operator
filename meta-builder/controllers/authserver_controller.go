@@ -89,7 +89,10 @@ func (r *AuthServerReconciler) GetRuntimeObjects(cr interface{}) (map[string]run
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", authServerCr.Spec.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", authServerCr.Spec.ImagePullSecrets)
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.GetAuthServerRuntimeObjects(controllers_utils.ConvertYamlFileToRuntimeObjects(content))
+
+	// filter auth-server runtimeobjects
+
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
 		if err := ctrl.SetControllerReference(authServerCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {

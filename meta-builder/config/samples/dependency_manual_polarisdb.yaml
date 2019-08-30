@@ -60,6 +60,11 @@ runtimeobjectdependencies:
     isdependenton:
       - Roles
       - ServiceAccounts
+  - obj: JobsToRunBefore
+    isdependenton:
+      - Roles
+      - ServiceAccounts
+      - RoleBindings
   - obj: Deployments
     isdependenton:
       - RoleBindings
