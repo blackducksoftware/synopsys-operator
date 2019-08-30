@@ -26,6 +26,8 @@ import (
 	"html"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	// "os"
 	// "time"
@@ -69,15 +71,12 @@ var serveUICmd = &cobra.Command{
 			fmt.Printf("Data from Black Duck Body: %s\n", reqBody)
 		})
 
-		// // Serve static assets directly.
-		// static := "../../operator-ui-ember/dist"
-		// r.PathPrefix("/dist").Handler(http.FileServer(http.Dir(static)))
-
-		// base route
-		// pathToIndex := "../../operator-ui-ember/dist/index.html"
-		router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("Handler Base Route: %q\n", html.EscapeString(r.URL.Path))
-		})
+		// Serve files for UI
+		spa := spaHandler{
+			staticPath: "../../operator-ui-ember/dist",
+			indexPath:  "../../operator-ui-ember/dist/index.html",
+		}
+		router.PathPrefix("/").Handler(spa)
 
 		fmt.Printf("==================================\n")
 		fmt.Printf("Serving at: http://localhost:%s\n", serverPort)
@@ -86,26 +85,55 @@ var serveUICmd = &cobra.Command{
 		fmt.Printf("\n")
 
 		// Serving the server
-		// srv := &http.Server{
-		// 	Handler: handlers.LoggingHandler(os.Stdout, r),
-		// 	Addr:    "localhost:" + serverPort,
-		// 	// Good practice: enforce timeouts for servers you create!
-		// 	WriteTimeout: 15 * time.Second,
-		// 	ReadTimeout:  15 * time.Second,
-		// }
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", serverPort), handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(router)))
 
 		return nil
 	},
 }
 
-func IndexHandler(entry string) func(w http.ResponseWriter, r *http.Request) {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		log.Debugf("Handling route %s", r.URL.Path)
-		http.ServeFile(w, r, entry)
+// Copied From: https://github.com/gorilla/mux#serving-single-page-applications
+// spaHandler implements the http.Handler interface, so we can use it
+// to respond to HTTP requests. The path to the static directory and
+// path to the index file within that static directory are used to
+// serve the SPA in the given static directory.
+type spaHandler struct {
+	staticPath string
+	indexPath  string
+}
+
+// Copied From: https://github.com/gorilla/mux#serving-single-page-applications
+// ServeHTTP inspects the URL path to locate a file within the static dir
+// on the SPA handler. If a file is found, it will be served. If not, the
+// file located at the index path on the SPA handler will be served. This
+// is suitable behavior for serving an SPA (single page application).
+func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// get the absolute path to prevent directory traversal
+	path, err := filepath.Abs(r.URL.Path)
+	if err != nil {
+		// if we failed to get the absolute path respond with a 400 bad request
+		// and stop
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	return http.HandlerFunc(fn)
+	// prepend the path with the path to the static directory
+	path = filepath.Join(h.staticPath, path)
+
+	// check whether a file exists at the given path
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		// file does not exist, serve index.html
+		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
+		return
+	} else if err != nil {
+		// if we got an error (that wasn't that the file doesn't exist) stating the
+		// file, return a 500 internal server error and stop
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// otherwise, use http.FileServer to serve the static dir
+	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
 }
 
 func init() {
