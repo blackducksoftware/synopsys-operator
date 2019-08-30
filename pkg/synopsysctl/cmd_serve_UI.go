@@ -22,6 +22,7 @@ under the License.
 package synopsysctl
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"io/ioutil"
@@ -36,6 +37,9 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Port to serve on
@@ -68,7 +72,14 @@ var serveUICmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("Data from Black Duck Body: %s\n", reqBody)
+			fmt.Printf("Data from Black Duck Body: %s\n\n", reqBody)
+			bd := createBlackDuckSpec(reqBody)
+			fmt.Printf("Black Duck CR: %+v\n\n", bd)
+			_, err = blackDuckClient.SynopsysV1().Blackducks(operatorNamespace).Create(bd)
+			if err != nil {
+				fmt.Printf("error creating Black Duck '%s' in namespace '%s' due to %+v", bd.Name, bd.Spec.Namespace, err)
+			}
+			fmt.Printf("Successfully deployed Black Duck: %+v\n\n", bd.Name)
 		})
 
 		// Serve files for UI
@@ -80,7 +91,9 @@ var serveUICmd = &cobra.Command{
 
 		fmt.Printf("==================================\n")
 		fmt.Printf("Serving at: http://localhost:%s\n", serverPort)
-		fmt.Printf("api:\n  - /api/deploy_polaris\n  - /api/deploy_black_duck\n")
+		fmt.Printf("api:\n")
+		fmt.Printf("  - /api/deploy_polaris\n")
+		fmt.Printf("  - /api/deploy_black_duck\n")
 		fmt.Printf("==================================\n")
 		fmt.Printf("\n")
 
@@ -139,4 +152,61 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func init() {
 	rootCmd.AddCommand(serveUICmd)
 	serveUICmd.Flags().StringVarP(&serverPort, "port", "p", serverPort, "Port to listen for UI requests")
+}
+
+type blackDuckUIRequestConfig struct {
+	Name                              string `json:"name"`
+	Namespace                         string `json:"namespace"`
+	Version                           string `json:"version"`
+	LicenseKey                        string `json:"licenseKey"`
+	DbMigrate                         bool   `json:"dbMigrate"`
+	Size                              string `json:"size"`
+	ExposeService                     string `json:"exposeService"`
+	BlackDuckType                     string `json:"blackDuckType"`
+	UseBinaryUploads                  bool   `json:"useBinaryUploads"`
+	EnableSourceUploads               bool   `json:"enableSourceUploads"`
+	LivenessProbes                    bool   `json:"livenessProbes"`
+	PersistentStorage                 bool   `json:"persistentStorage"`
+	CloneDB                           string `json:"cloneDB"`
+	PVCStorageClass                   string `json:"PVCStorageClass"`
+	ScanType                          string `json:"scanType"`
+	ExternalDatabase                  bool   `json:"externalDatabase"`
+	PostgresSQLUserPassword           string `json:"postgresSQLUserPassword"`
+	PostgresSQLAdminPassword          string `json:"postgresSQLAdminPassword"`
+	PostgresSQLPostgresPassword       string `json:"postgresSQLPostgresPassword"`
+	CertificateName                   string `json:"certificateName"`
+	CustomCACertificateAuthentication bool   `json:"customCACertificateAuthentication"`
+	ProxyRootCertificate              string `json:"proxyRootCertificate"`
+}
+
+func createBlackDuckSpec(data []byte) *blackduckv1.Blackduck {
+	bdConfig := blackDuckUIRequestConfig{}
+	err := json.Unmarshal(data, &bdConfig)
+	if err != nil {
+		fmt.Printf("Failed to Unmarshal: %s\n\n", err)
+		return nil
+	}
+	blackDuck := &blackduckv1.Blackduck{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      bdConfig.Name,
+			Namespace: bdConfig.Namespace,
+		},
+		Spec: blackduckv1.BlackduckSpec{
+			Namespace:         bdConfig.Namespace,
+			Size:              bdConfig.Size,
+			Version:           bdConfig.Version,
+			ExposeService:     bdConfig.ExposeService,
+			PVCStorageClass:   bdConfig.PVCStorageClass,
+			LivenessProbes:    bdConfig.LivenessProbes,
+			ScanType:          bdConfig.ScanType,
+			PersistentStorage: bdConfig.PersistentStorage,
+			LicenseKey:        bdConfig.LicenseKey,
+			AdminPassword:     bdConfig.PostgresSQLAdminPassword,
+			UserPassword:      bdConfig.PostgresSQLUserPassword,
+			PostgresPassword:  bdConfig.PostgresSQLPostgresPassword,
+		},
+	}
+	blackDuck.Kind = "Blackduck"
+	blackDuck.APIVersion = "synopsys.com/v1"
+	return blackDuck
 }
