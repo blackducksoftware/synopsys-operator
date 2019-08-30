@@ -26,14 +26,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	alertScheme "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned/scheme"
-	blackduckScheme "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned/scheme"
-	opssightScheme "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/scheme"
 	"io"
 	"io/ioutil"
 	"reflect"
 	"strings"
 	"time"
+
+	alertScheme "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned/scheme"
+	blackduckScheme "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned/scheme"
+	opssightScheme "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/scheme"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -1772,18 +1773,20 @@ func CheckResourceNamespace(kubeClient *kubernetes.Clientset, namespace string, 
 // DeleteResourceNamespace deletes the namespace if none of the other resource types are running
 func DeleteResourceNamespace(kubeClient *kubernetes.Clientset, resourceName string, namespace string, name string, isOperator bool) error {
 	isExist, err := CheckResourceNamespace(kubeClient, namespace, fmt.Sprintf("synopsys.com/%s.%s", resourceName, name), isOperator)
-	if !isExist {
-		return err
-	} else if isExist && err == nil {
-		log.Infof("deleting %s namespace", namespace)
-		err = DeleteNamespace(kubeClient, namespace)
-		if err != nil {
-			return fmt.Errorf("unable to delete the %s namespace because %+v", namespace, err)
-		}
-	} else {
-		_, checkErr := CheckAndUpdateNamespace(kubeClient, resourceName, namespace, name, "", true)
-		if checkErr != nil {
-			return fmt.Errorf("%+v and hence deleting the Synopsys label from the namespace. %+v", err, checkErr)
+	if isExist {
+		// if namespace exist and there is no error,
+		// check for owner label, if exist, then delete the namespace otherwise patch the namespace to remove the app label
+		if err == nil && IsOwnerLabelExistInNamespace(kubeClient, namespace) {
+			log.Infof("deleting %s namespace", namespace)
+			err = DeleteNamespace(kubeClient, namespace)
+			if err != nil {
+				return fmt.Errorf("unable to delete the %s namespace because %+v", namespace, err)
+			}
+		} else {
+			_, checkErr := CheckAndUpdateNamespace(kubeClient, resourceName, namespace, name, "", true)
+			if checkErr != nil {
+				return fmt.Errorf("deleting the Synopsys label for the namespace %s failed due to %+v", namespace, checkErr)
+			}
 		}
 	}
 	return err
