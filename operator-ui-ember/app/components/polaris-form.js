@@ -15,10 +15,9 @@ export default Component.extend({
     },
     actions: {
         deployPolaris() {
-            alert("Running AJAX for Polaris...")
             $.ajax({
                 type: "POST",
-                url: "http://localhost:8081/api/deploy_polaris",
+                url: "/api/deploy_polaris",
                 data: JSON.stringify(this.polarisConfig),
                 success: function () {
                     alert("success")
