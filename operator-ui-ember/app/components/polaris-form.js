@@ -1,7 +1,7 @@
 import Component from '@ember/component';
 
 export default Component.extend({
-    spec: {
+    polarisConfig: {
         SMTPHost: "",
         SMTPPort: "",
         SMTPUsername: "",
@@ -18,20 +18,20 @@ export default Component.extend({
             alert("Running AJAX for Polaris...")
             $.ajax({
                 type: "POST",
-                url: "http://localhost:8081/",
-                data: JSON.stringify(this.spec),
+                url: "http://localhost:8081/api/deploy_polaris",
+                data: JSON.stringify(this.polarisConfig),
                 success: function () {
                     alert("success")
                 }
             });
         },
         setInternalPostgresInstance() {
-            this.spec.internalPostgresInstance = true
-            this.spec.externalPostgresInstance = false
+            this.polarisConfig.internalPostgresInstance = true
+            this.polarisConfig.externalPostgresInstance = false
         },
         setExternalPostgresInstance() {
-            this.spec.internalPostgresInstance = false
-            this.spec.externalPostgresInstance = true
+            this.polarisConfig.internalPostgresInstance = false
+            this.polarisConfig.externalPostgresInstance = true
         }
     }
 });
