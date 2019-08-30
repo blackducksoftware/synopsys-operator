@@ -414,6 +414,15 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *horizoncomponents.Cluste
 			APIGroups: []string{"image.openshift.io"},
 			Resources: []string{"images"},
 		})
+
+		// add layers rule to pull the image from OpenShift internal registry
+		if len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.OpsSightCRDName) {
+			synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+				Verbs:     []string{"get"},
+				APIGroups: []string{"image.openshift.io", ""},
+				Resources: []string{"imagestreams/layers"},
+			})
+		}
 	} else { // Kube or Error
 		log.Debug("Skipping Openshift Cluster Role Rules")
 	}
