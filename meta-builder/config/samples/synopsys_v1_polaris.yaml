@@ -8,3 +8,4 @@ spec:
   environment: onprem
   environment_address: onprem.dev.polaris.synopsys.com
   image_pull_secrets: gcr-json-key
+  version: test

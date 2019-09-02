@@ -36,6 +36,7 @@ type AuthServerSpec struct {
 	EnvironmentName  string `json:"environment"`
 	EnvironmentDNS   string `json:"environment_address"`
 	ImagePullSecrets string `json:"image_pull_secrets"`
+	Version          string `json:"version"`
 }
 
 // AuthServerStatus defines the observed state of AuthServer

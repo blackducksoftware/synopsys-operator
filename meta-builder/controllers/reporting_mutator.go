@@ -30,6 +30,8 @@ func (p *ReportingPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
 		p.patchReportStorageSpec,
+		p.patchPostgresSecret,
+		p.patchPostgresConfigMap,
 	}
 	for _, f := range patches {
 		err := f()
@@ -43,6 +45,34 @@ func (p *ReportingPatcher) patch() map[string]runtime.Object {
 func (p *ReportingPatcher) patchNamespace() error {
 	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
 		p.accessor.SetNamespace(runtimeObject, p.reportingCr.Spec.Namespace)
+	}
+	return nil
+}
+
+func (p *ReportingPatcher) patchPostgresSecret() error {
+	PostgresSecretUniqueID := "Secret." + "postgres"
+	postgresSecretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[PostgresSecretUniqueID]
+	if !ok {
+		return nil
+	}
+	postgresSecretInstance := postgresSecretRuntimeObject.(*corev1.Secret)
+	postgresSecretInstance.StringData = map[string]string{
+		"reporting_db_username": p.reportingCr.Spec.PostgresDetails.Username,
+		"reporting_db_password": p.reportingCr.Spec.PostgresDetails.Password,
+	}
+	return nil
+}
+
+func (p *ReportingPatcher) patchPostgresConfigMap() error {
+	PostgresConfigMapUniqueID := "ConfigMap." + "postgres"
+	postgresConfigMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[PostgresConfigMapUniqueID]
+	if !ok {
+		return nil
+	}
+	postgresConfigMapInstance := postgresConfigMapRuntimeObject.(*corev1.ConfigMap)
+	postgresConfigMapInstance.Data = map[string]string{
+		"postgres_host": p.reportingCr.Spec.PostgresDetails.Hostname,
+		"postgres_port": fmt.Sprint(p.reportingCr.Spec.PostgresDetails.Port),
 	}
 	return nil
 }

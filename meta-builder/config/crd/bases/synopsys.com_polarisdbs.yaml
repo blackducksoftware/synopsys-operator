@@ -124,6 +124,8 @@ spec:
                       type: string
                   type: object
               type: object
+            version:
+              type: string
           required:
           - environment
           - environment_address
@@ -131,6 +133,7 @@ spec:
           - postgres
           - postgres_instance_type
           - smtp_details
+          - version
           type: object
         status:
           description: PolarisDBStatus defines the observed state of PolarisDB

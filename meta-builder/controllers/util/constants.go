@@ -48,4 +48,9 @@ const (
 	BLACKDUCK = "blackduck"
 	// OPSSIGHT is the name of an OpsSight app
 	OPSSIGHT = "opssight"
+	// Releases repo details
+	POLARIS     = "polaris"
+	POLARISDB   = "polaris"
+	REPORTING   = "reporting"
+	AUTHSERVICE = "polaris"
 )

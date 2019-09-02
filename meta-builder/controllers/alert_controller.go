@@ -70,7 +70,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	//TODO: either read contents of yaml from locally mounted file
 
 	// get the base yaml for the app
-	latestBaseYamlAsString, err := controllers_utils.GetBaseYaml(controllers_utils.ALERT, alertCr.Spec.Version)
+	latestBaseYamlAsString, err := controllers_utils.GetBaseYaml(controllers_utils.ALERT, alertCr.Spec.Version, "")
 	if err != nil {
 		return nil, err
 	}

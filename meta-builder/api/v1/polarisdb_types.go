@@ -30,6 +30,7 @@ type PolarisDBSpec struct {
 	EnvironmentName        string                 `json:"environment"`
 	EnvironmentDNS         string                 `json:"environment_address"`
 	ImagePullSecrets       string                 `json:"image_pull_secrets"`
+	Version                string                 `json:"version"`
 	SMTPDetails            SMTPDetails            `json:"smtp_details"`
 	PostgresInstanceType   string                 `json:"postgres_instance_type"`
 	PostgresStorageDetails PostgresStorageDetails `json:"postgres_storage_details,omitempty"`

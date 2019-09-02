@@ -70,7 +70,7 @@ func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	blackduck := cr.(*synopsysv1.Blackduck)
 
 	// get the base yaml for the app
-	content, err := controllers_utils.GetBaseYaml(controllers_utils.BLACKDUCK, blackduck.Spec.Version)
+	content, err := controllers_utils.GetBaseYaml(controllers_utils.BLACKDUCK, blackduck.Spec.Version, "")
 	if err != nil {
 		return nil, err
 	}

@@ -17,9 +17,11 @@ package controllers
 
 import (
 	"context"
-	"io/ioutil"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+
+	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
@@ -60,13 +62,25 @@ func (r *ReportingReconciler) GetCustomResource(req ctrl.Request) (metav1.Object
 
 func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
 	reportingCr := cr.(*synopsysv1.Reporting)
-	FinalYamlPath := "config/samples/reporting_runtime_objects.yaml"
-	byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
+	content, err := controllers_utils.GetBaseYaml(controllers_utils.REPORTING, reportingCr.Spec.Version, "")
 	if err != nil {
 		return nil, err
 	}
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(string(byteArrayContentFromFile))
+	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", reportingCr.Spec.EnvironmentName)
+	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", reportingCr.Spec.EnvironmentDNS)
+	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", reportingCr.Spec.PostgresDetails.Hostname)
+	content = strings.ReplaceAll(content, "${POSTGRES_PORT}", fmt.Sprint(reportingCr.Spec.PostgresDetails.Port))
+	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Username))
+	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Password))
+	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", reportingCr.Spec.ImagePullSecrets)
+
+	fmt.Println("---------------------------------")
+	fmt.Println(controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Username))
+	fmt.Println(controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Password))
+	fmt.Println("---------------------------------")
+
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		if err := ctrl.SetControllerReference(reportingCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
 			return mapOfUniqueIdToBaseRuntimeObject, nil

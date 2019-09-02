@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	b64 "encoding/base64"
+
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -23,7 +25,7 @@ func HTTPGet(url string) (content []byte, err error) {
 }
 
 // GetBaseYaml returns the base yaml as string for the given app and version
-func GetBaseYaml(appName string, version string) (string, error) {
+func GetBaseYaml(appName string, version string, fileName string) (string, error) {
 	// only fetch the location of the latest if the version in the spec is not given
 	if 0 == len(version) {
 		latestBaseYamlURL := fmt.Sprintf("https://raw.githubusercontent.com/blackducksoftware/releases/master/%s/latest", appName)
@@ -34,8 +36,14 @@ func GetBaseYaml(appName string, version string) (string, error) {
 		version = string(latestArrayOfByte)
 	}
 
-	versionBaseYamlURL := fmt.Sprintf("https://raw.githubusercontent.com/blackducksoftware/releases/master/%s/%s/%s_base.yaml", appName, version, appName)
-	versionBaseYamlAsByteArray, err := HTTPGet(versionBaseYamlURL)
+	if 0 == len(fileName) {
+		return downloadAndConvertYamlToByteArray(fmt.Sprintf("https://raw.githubusercontent.com/blackducksoftware/releases/master/%s/%s/%s_base.yaml", appName, version, appName))
+	}
+	return downloadAndConvertYamlToByteArray(fmt.Sprintf("https://raw.githubusercontent.com/blackducksoftware/releases/master/%s/%s/%s_base.yaml", appName, version, fileName))
+}
+
+func downloadAndConvertYamlToByteArray(url string) (string, error) {
+	versionBaseYamlAsByteArray, err := HTTPGet(url)
 	if err != nil {
 		return "", err
 	}
@@ -59,4 +67,8 @@ func GetAuthServerRuntimeObjects(objects map[string]runtime.Object) map[string]r
 		authServerRuntimeObjects[entry] = objects[entry]
 	}
 	return authServerRuntimeObjects
+}
+
+func EncodeStringToBase64(str string) string {
+	return b64.StdEncoding.EncodeToString([]byte(str))
 }

@@ -17,7 +17,6 @@ package controllers
 
 import (
 	"context"
-	"io/ioutil"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -75,14 +74,12 @@ func (r *AuthServerReconciler) GetRuntimeObjects(cr interface{}) (map[string]run
 	// if err != nil {
 	// 	return nil, err
 	// }
-	FinalYamlPath := "config/samples/polaris_runtime_objects.yaml"
-	byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
+	content, err := controllers_utils.GetBaseYaml(controllers_utils.AUTHSERVICE, authServerCr.Spec.Version, "polaris")
 	if err != nil {
 		return nil, err
 	}
 
 	// regex patching
-	content := string(byteArrayContentFromFile)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", authServerCr.Spec.EnvironmentName)
 	content = strings.ReplaceAll(content, "${POLARIS_ENVIRONMENT_NAME}", authServerCr.Spec.EnvironmentName)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_DNS}", authServerCr.Spec.EnvironmentDNS)

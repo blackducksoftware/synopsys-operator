@@ -17,7 +17,6 @@ package controllers
 
 import (
 	"context"
-	"io/ioutil"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -74,14 +73,12 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	// if err != nil {
 	// 	return nil, err
 	// }
-	FinalYamlPath := "config/samples/polarisdb_runtime_objects.yaml"
-	byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
+	content, err := controllers_utils.GetBaseYaml(controllers_utils.POLARISDB, polarisDbCr.Spec.Version, "polarisdb")
 	if err != nil {
 		return nil, err
 	}
 
 	// regex patching
-	content := string(byteArrayContentFromFile)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polarisDbCr.Spec.EnvironmentName)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisDbCr.Spec.ImagePullSecrets)
 

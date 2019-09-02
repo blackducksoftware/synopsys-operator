@@ -89,7 +89,7 @@ func (r *OpsSightReconciler) GetRuntimeObjects(cr interface{}) (map[string]runti
 	// 	return nil, err
 	// }
 	// get the base yaml for the app
-	latestBaseYamlAsString, err := controllers_utils.GetBaseYaml(controllers_utils.OPSSIGHT, opsSight.Spec.Version)
+	latestBaseYamlAsString, err := controllers_utils.GetBaseYaml(controllers_utils.OPSSIGHT, opsSight.Spec.Version, "")
 	if err != nil {
 		return nil, err
 	}

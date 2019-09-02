@@ -71,12 +71,15 @@ spec:
               required:
               - volume
               type: object
+            version:
+              type: string
           required:
           - environment
           - environment_address
           - image_pull_secrets
           - isReportingStandalone
           - postgres
+          - version
           type: object
         status:
           description: ReportingStatus defines the observed state of Reporting
