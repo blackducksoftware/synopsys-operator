@@ -59,8 +59,21 @@ spec:
               - port
               - username
               type: object
-            report-storage:
+            report_storage:
               properties:
+                image_details:
+                  properties:
+                    image:
+                      type: string
+                    repository:
+                      type: string
+                    tag:
+                      type: string
+                  required:
+                  - image
+                  - repository
+                  - tag
+                  type: object
                 volume:
                   properties:
                     size:
@@ -68,8 +81,102 @@ spec:
                   required:
                   - size
                   type: object
-              required:
-              - volume
+              type: object
+            rp_frontend:
+              properties:
+                image_details:
+                  properties:
+                    image:
+                      type: string
+                    repository:
+                      type: string
+                    tag:
+                      type: string
+                  required:
+                  - image
+                  - repository
+                  - tag
+                  type: object
+              type: object
+            rp_issue_manager:
+              properties:
+                image_details:
+                  properties:
+                    image:
+                      type: string
+                    repository:
+                      type: string
+                    tag:
+                      type: string
+                  required:
+                  - image
+                  - repository
+                  - tag
+                  type: object
+              type: object
+            rp_portfolio_service:
+              properties:
+                image_details:
+                  properties:
+                    image:
+                      type: string
+                    repository:
+                      type: string
+                    tag:
+                      type: string
+                  required:
+                  - image
+                  - repository
+                  - tag
+                  type: object
+              type: object
+            rp_report_service:
+              properties:
+                image_details:
+                  properties:
+                    image:
+                      type: string
+                    repository:
+                      type: string
+                    tag:
+                      type: string
+                  required:
+                  - image
+                  - repository
+                  - tag
+                  type: object
+              type: object
+            rp_swagger_doc:
+              properties:
+                image_details:
+                  properties:
+                    image:
+                      type: string
+                    repository:
+                      type: string
+                    tag:
+                      type: string
+                  required:
+                  - image
+                  - repository
+                  - tag
+                  type: object
+              type: object
+            rp_tools_portfolio_service:
+              properties:
+                image_details:
+                  properties:
+                    image:
+                      type: string
+                    repository:
+                      type: string
+                    tag:
+                      type: string
+                  required:
+                  - image
+                  - repository
+                  - tag
+                  type: object
               type: object
             version:
               type: string

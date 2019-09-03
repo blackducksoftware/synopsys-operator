@@ -6,6 +6,7 @@ import (
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,6 +33,12 @@ func (p *ReportingPatcher) patch() map[string]runtime.Object {
 		p.patchReportStorageSpec,
 		p.patchPostgresSecret,
 		p.patchPostgresConfigMap,
+		p.patchReportingFrontendSpec,
+		p.patchReportingIssueManagerSpec,
+		p.patchReportingPortfolioServiceSpec,
+		p.patchReportingReportServiceSpec,
+		p.patchReportingToolsPortfolioServiceSpec,
+		p.patchReportingSwaggerDoc,
 	}
 	for _, f := range patches {
 		err := f()
@@ -84,8 +91,98 @@ func (p *ReportingPatcher) patchReportStorageSpec() error {
 		return nil
 	}
 	reportStorageInstance := reportStorageRuntimeObject.(*corev1.PersistentVolumeClaim)
-	if size, err := resource.ParseQuantity(p.reportingCr.Spec.ReportServiceSpec.Volume.Size); err == nil {
+	if size, err := resource.ParseQuantity(p.reportingCr.Spec.ReportStorageSpec.Volume.Size); err == nil {
 		reportStorageInstance.Spec.Resources.Requests[v1.ResourceStorage] = size
+	}
+	return nil
+}
+
+func (p *ReportingPatcher) patchReportingFrontendSpec() error {
+	if p.reportingCr.Spec.ReportingFrontendSpec.ImageDetails != nil {
+		DeploymentUniqueID := "Deployment.rp-frontend"
+		deploymentRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[DeploymentUniqueID]
+		if !ok {
+			return nil
+		}
+		PatchImageForService(
+			p.reportingCr.Spec.ReportingFrontendSpec.ImageDetails,
+			deploymentRuntimeObject.(*appsv1.Deployment),
+		)
+	}
+	return nil
+}
+
+func (p *ReportingPatcher) patchReportingIssueManagerSpec() error {
+	if p.reportingCr.Spec.ReportingIssueManagerSpec.ImageDetails != nil {
+		DeploymentUniqueID := "Deployment.rp-issue-manager"
+		deploymentRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[DeploymentUniqueID]
+		if !ok {
+			return nil
+		}
+		PatchImageForService(
+			p.reportingCr.Spec.ReportingIssueManagerSpec.ImageDetails,
+			deploymentRuntimeObject.(*appsv1.Deployment),
+		)
+	}
+	return nil
+}
+
+func (p *ReportingPatcher) patchReportingPortfolioServiceSpec() error {
+	if p.reportingCr.Spec.ReportingPortfolioServiceSpec.ImageDetails != nil {
+		DeploymentUniqueID := "Deployment.rp-portfolio-service"
+		deploymentRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[DeploymentUniqueID]
+		if !ok {
+			return nil
+		}
+		PatchImageForService(
+			p.reportingCr.Spec.ReportingPortfolioServiceSpec.ImageDetails,
+			deploymentRuntimeObject.(*appsv1.Deployment),
+		)
+	}
+	return nil
+}
+
+func (p *ReportingPatcher) patchReportingReportServiceSpec() error {
+	if p.reportingCr.Spec.ReportingReportServiceSpec.ImageDetails != nil {
+		DeploymentUniqueID := "Deployment.rp-report-service"
+		deploymentRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[DeploymentUniqueID]
+		if !ok {
+			return nil
+		}
+		PatchImageForService(
+			p.reportingCr.Spec.ReportingReportServiceSpec.ImageDetails,
+			deploymentRuntimeObject.(*appsv1.Deployment),
+		)
+	}
+	return nil
+}
+
+func (p *ReportingPatcher) patchReportingToolsPortfolioServiceSpec() error {
+	if p.reportingCr.Spec.ReportingToolsPortfolioServiceSpec.ImageDetails != nil {
+		DeploymentUniqueID := "Deployment.rp-tools-portfolio-service"
+		deploymentRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[DeploymentUniqueID]
+		if !ok {
+			return nil
+		}
+		PatchImageForService(
+			p.reportingCr.Spec.ReportingToolsPortfolioServiceSpec.ImageDetails,
+			deploymentRuntimeObject.(*appsv1.Deployment),
+		)
+	}
+	return nil
+}
+
+func (p *ReportingPatcher) patchReportingSwaggerDoc() error {
+	if p.reportingCr.Spec.ReportingSwaggerDoc.ImageDetails != nil {
+		DeploymentUniqueID := "Deployment.rp-swagger-doc"
+		deploymentRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[DeploymentUniqueID]
+		if !ok {
+			return nil
+		}
+		PatchImageForService(
+			p.reportingCr.Spec.ReportingSwaggerDoc.ImageDetails,
+			deploymentRuntimeObject.(*appsv1.Deployment),
+		)
 	}
 	return nil
 }

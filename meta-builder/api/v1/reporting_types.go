@@ -26,14 +26,44 @@ import (
 type ReportingSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Namespace             string                   `json:"namespace,omitempty"`
-	EnvironmentName       string                   `json:"environment"`
-	EnvironmentDNS        string                   `json:"environment_address"`
-	ImagePullSecrets      string                   `json:"image_pull_secrets"`
-	Version               string                   `json:"version"`
-	PostgresDetails       ReportingPostgresDetails `json:"postgres"`
-	ReportServiceSpec     ReportStorageSpec        `json:"report-storage,omitempty"`
-	IsReportingStandalone bool                     `json:"isReportingStandalone"`
+	Namespace                          string                             `json:"namespace,omitempty"`
+	EnvironmentName                    string                             `json:"environment"`
+	EnvironmentDNS                     string                             `json:"environment_address"`
+	ImagePullSecrets                   string                             `json:"image_pull_secrets"`
+	Version                            string                             `json:"version"`
+	PostgresDetails                    ReportingPostgresDetails           `json:"postgres"`
+	IsReportingStandalone              bool                               `json:"isReportingStandalone"`
+	ReportingFrontendSpec              ReportingFrontendSpec              `json:"rp_frontend,omitempty"`
+	ReportingIssueManagerSpec          ReportingIssueManagerSpec          `json:"rp_issue_manager,omitempty"`
+	ReportingPortfolioServiceSpec      ReportingPortfolioServiceSpec      `json:"rp_portfolio_service,omitempty"`
+	ReportingReportServiceSpec         ReportingReportServiceSpec         `json:"rp_report_service,omitempty"`
+	ReportingToolsPortfolioServiceSpec ReportingToolsPortfolioServiceSpec `json:"rp_tools_portfolio_service,omitempty"`
+	ReportingSwaggerDoc                ReportingSwaggerDoc                `json:"rp_swagger_doc,omitempty"`
+	ReportStorageSpec                  ReportStorageSpec                  `json:"report_storage,omitempty"`
+}
+
+type ReportingFrontendSpec struct {
+	ImageDetails *ImageDetails `json:"image_details,omitempty"`
+}
+
+type ReportingIssueManagerSpec struct {
+	ImageDetails *ImageDetails `json:"image_details,omitempty"`
+}
+
+type ReportingPortfolioServiceSpec struct {
+	ImageDetails *ImageDetails `json:"image_details,omitempty"`
+}
+
+type ReportingReportServiceSpec struct {
+	ImageDetails *ImageDetails `json:"image_details,omitempty"`
+}
+
+type ReportingToolsPortfolioServiceSpec struct {
+	ImageDetails *ImageDetails `json:"image_details,omitempty"`
+}
+
+type ReportingSwaggerDoc struct {
+	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type ReportingPostgresDetails struct {
@@ -44,7 +74,8 @@ type ReportingPostgresDetails struct {
 }
 
 type ReportStorageSpec struct {
-	Volume VolumeSpec `json:"volume"`
+	Volume       VolumeSpec   `json:"volume,omitempty"`
+	ImageDetails ImageDetails `json:"image_details,omitempty"`
 }
 
 type VolumeSpec struct {
