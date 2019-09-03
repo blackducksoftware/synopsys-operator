@@ -1,66 +1,72 @@
 <div class="k-portlet">
   <div class="k-portlet__head">
     <div class="k-portlet__head-label">
-      <h3 class="k-portlet__head-title">Install / Upgrade Operator</h3>
+      <h3 class="k-portlet__head-title">Install / Upgrade Synopsys Operator</h3>
     </div>
   </div>
   <div class="k-portlet__body">
     {{#if this.operator.isInstalled }}
-      <div class="row">
-        <div class="col-12 alert" role="alert">
-          <div class="alert-text">You are running Polaris Operator version : {{ this.operator.currentVersion }}</div>
-        </div>
-        {{#if (not-eq this.operator.currentVersion this.operator.latestVersion) }}
-          <div class="col-5 alert alert-warning" role="alert">
-            <div class="alert-text">New version of Polaris Operator is available ! Latest Version : {{ this.operator.latestVersion }}</div><br>
-          </div>
-          <div class="col-12">
-            <h3>Operator Upgrade</h3>
-            <form class="k-form k-form--label-right" id="operator-deploy-form">
-              <div class="form-group">
-                <label for="polarisOperatorVersion">POLARIS VERSION</label>
-                <div class="input-group">
-                  <input type="text" class="form-control" name="polarisOperatorVersion" id="polarisOperatorVersion" required
-                    placeholder="Please enter polaris version to be deployed" value={{ this.operator.latestVersion }}>
-                  <input type="hidden" name="operationType" value="upgrade">
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-create">Upgrade</button>
-            </form>
-          </div>
-        {{/if}}
+    <div class="row">
+      <div class="col-12 alert" role="alert">
+        <div class="alert-text">You are running Synopsys Operator version : {{ this.operator.currentVersion }}</div>
       </div>
+      {{#if (not-eq this.operator.currentVersion this.operator.latestVersion) }}
+      <div class="col-5 alert alert-warning" role="alert">
+        <div class="alert-text">New version of Synopsys Operator is available ! Latest Version :
+          {{ this.operator.latestVersion }}</div><br>
+      </div>
+      <div class="col-12">
+        <h3>Operator Upgrade</h3>
+        <form class="k-form k-form--label-right" id="operator-deploy-form">
+          <div class="form-group">
+            <label for="polarisOperatorVersion">POLARIS VERSION</label>
+            <div class="input-group">
+              <input type="text" class="form-control" name="polarisOperatorVersion" id="polarisOperatorVersion" required
+                placeholder="Please enter polaris version for Synopsys Operator to deploy"
+                value={{ this.operator.latestVersion }}>
+              <input type="hidden" name="operationType" value="upgrade">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-create">Upgrade</button>
+        </form>
+      </div>
+      {{/if}}
+    </div>
     {{/if}}
     {{#unless this.operator.isInstalled}}
-      <div class="row">
-        <div class="col-12 alert" role="alert">
-          <div class="alert-text">Polaris Operator is not installed. Install it using below form.</div>
-        </div>
-        <div class="col-12 alert" role="alert">
-          <div class="alert-text">Latest Version: {{ this.operator.latestVersion }}</div>
-        </div>
-        <div class="col-12">
-          <h3>Install Operator</h3>
-          <form class="k-form k-form--label-right" id="operator-deploy-form">
-            <div class="form-group">
-              <label for="polarisOperatorVersion">POLARIS VERSION</label>
-              <div class="input-group">
-                <input type="text" class="form-control" name="polarisOperatorVersion" id="polarisOperatorVersion" required
-                  placeholder="Please enter polaris version to be deployed" value={{ this.operator.latestVersion }}>
-                <input type="hidden" name="operationType" value="install">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="gcrToken">GCR TOKEN</label>
-              <div class="input-group">
-                <textarea class="form-control" name="gcrToken" id="gcrToken" required
-                  placeholder="Please enter the private GCR token(json)"></textarea>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary btn-create">Install</button>
-          </form>
+    <div class="row">
+      <div class="col-12 alert" role="alert">
+        <div class="alert-text">
+          <h5>Synopsys Operator is not installed. </h5>
+          <p>Complete the Install Operator fields to install Synopsys Operator.</p>
         </div>
       </div>
+      <div class="col-12 alert" role="alert">
+        <div class="alert-text">Latest Version: {{ this.operator.latestVersion }}</div>
+      </div>
+      <div class="col-12">
+        <h3>Install Operator</h3>
+        <form class="k-form k-form--label-right" id="operator-deploy-form">
+          <div class="form-group">
+            <label for="polarisOperatorVersion">POLARIS VERSION</label>
+            <div class="input-group">
+              <input type="text" class="form-control" name="polarisOperatorVersion" id="polarisOperatorVersion" required
+                placeholder="Please enter polaris version for Synopsys Operator to deploy"
+                value={{ this.operator.latestVersion }}>
+              <input type="hidden" name="operationType" value="install">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="gcrToken">GCR Token</label>
+            <div class="input-group">
+              <textarea class="form-control" name="gcrToken" id="gcrToken" required
+                placeholder="Please enter the private GCR token (json)"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-create">Install</button>
+        </form>
+      </div>
+    </div>
     {{/unless}}
   </div>
 </div>
