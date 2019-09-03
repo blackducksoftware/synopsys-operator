@@ -2,16 +2,19 @@ import Component from '@ember/component';
 
 export default Component.extend({
     polarisConfig: {
-        SMTPHost: "",
-        SMTPPort: "",
-        SMTPUsername: "",
-        SMTPPassword: "",
+        version: "",
         environmentName: "",
-        environmentAddress: "",
-        namespace: "",
+        environmentDNS: "",
         storageClass: "",
-        internalPostgresInstance: false,
-        externalPostgresInstance: false,
+        namespace: "",
+        imagePullSecrets: "",
+        postgresHost: "",
+        postgresPort: "",
+        postgresUsername: "",
+        postgresPassword: "",
+        postgresSize: "",
+        uploadServerSize: "",
+        eventstoreSize: ""
     },
     actions: {
         deployPolaris() {
@@ -23,14 +26,6 @@ export default Component.extend({
                     alert("success")
                 }
             });
-        },
-        setInternalPostgresInstance() {
-            this.polarisConfig.internalPostgresInstance = true
-            this.polarisConfig.externalPostgresInstance = false
-        },
-        setExternalPostgresInstance() {
-            this.polarisConfig.internalPostgresInstance = false
-            this.polarisConfig.externalPostgresInstance = true
         }
     }
 });
