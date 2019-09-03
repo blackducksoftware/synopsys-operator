@@ -133,111 +133,111 @@ func getCrdConfigs(namespace string, isClusterScoped bool, crds []string) ([]*ap
 		case utils.PolarisDBCRDName:
 			crdConfig = &apiextensions.CustomResourceDefinition{
 				ObjectMeta: v1.ObjectMeta{
-					Name:                       utils.PolarisDBCRDName,
-					Namespace:                  namespace,
+					Name:      utils.PolarisDBCRDName,
+					Namespace: namespace,
 				},
-				Spec:       apiextensions.CustomResourceDefinitionSpec{
-					Group:                    "synopsys.com",
-					Version:                  "v1",
-					Names:                    apiextensions.CustomResourceDefinitionNames{
-						Plural:     "polarisdbs",
-						Singular:   "polarisdb",
-						Kind:       "PolarisDB",
+				Spec: apiextensions.CustomResourceDefinitionSpec{
+					Group:   "synopsys.com",
+					Version: "v1",
+					Names: apiextensions.CustomResourceDefinitionNames{
+						Plural:   "polarisdbs",
+						Singular: "polarisdb",
+						Kind:     "PolarisDB",
 					},
-					Scope:                    crdScope,
+					Scope: crdScope,
 				},
 			}
 		case utils.PolarisCRDName:
 			crdConfig = &apiextensions.CustomResourceDefinition{
 				ObjectMeta: v1.ObjectMeta{
-					Name:                       utils.PolarisCRDName,
-					Namespace:                  namespace,
+					Name:      utils.PolarisCRDName,
+					Namespace: namespace,
 				},
-				Spec:       apiextensions.CustomResourceDefinitionSpec{
-					Group:                    "synopsys.com",
-					Version:                  "v1",
-					Names:                    apiextensions.CustomResourceDefinitionNames{
-						Plural:     "polaris",
-						Singular:   "polaris",
-						Kind:       "Polaris",
+				Spec: apiextensions.CustomResourceDefinitionSpec{
+					Group:   "synopsys.com",
+					Version: "v1",
+					Names: apiextensions.CustomResourceDefinitionNames{
+						Plural:   "polaris",
+						Singular: "polaris",
+						Kind:     "Polaris",
 					},
-					Scope:                    crdScope,
+					Scope: crdScope,
 				},
 			}
 		case utils.AuthServerCRDName:
 			crdConfig = &apiextensions.CustomResourceDefinition{
 				ObjectMeta: v1.ObjectMeta{
-					Name:                       utils.AuthServerCRDName,
-					Namespace:                  namespace,
+					Name:      utils.AuthServerCRDName,
+					Namespace: namespace,
 				},
-				Spec:       apiextensions.CustomResourceDefinitionSpec{
-					Group:                    "synopsys.com",
-					Version:                  "v1",
-					Names:                    apiextensions.CustomResourceDefinitionNames{
-						Plural:     "authservers",
-						Singular:   "authserver",
-						Kind:       "AuthServer",
+				Spec: apiextensions.CustomResourceDefinitionSpec{
+					Group:   "synopsys.com",
+					Version: "v1",
+					Names: apiextensions.CustomResourceDefinitionNames{
+						Plural:   "authservers",
+						Singular: "authserver",
+						Kind:     "AuthServer",
 					},
-					Scope:                    crdScope,
+					Scope: crdScope,
 				},
 			}
 		case utils.BlackDuckCRDName:
 			crdConfig = &apiextensions.CustomResourceDefinition{
 				ObjectMeta: v1.ObjectMeta{
-					Name:                       utils.BlackDuckCRDName,
-					Namespace:                  namespace,
+					Name:      utils.BlackDuckCRDName,
+					Namespace: namespace,
 				},
-				Spec:       apiextensions.CustomResourceDefinitionSpec{
-					Group:                    "synopsys.com",
-					Version:                  "v1",
-					Names:                    apiextensions.CustomResourceDefinitionNames{
+				Spec: apiextensions.CustomResourceDefinitionSpec{
+					Group:   "synopsys.com",
+					Version: "v1",
+					Names: apiextensions.CustomResourceDefinitionNames{
 						Plural:     "blackducks",
 						Singular:   "blackduck",
 						ShortNames: []string{"bds", "bd"},
 						Kind:       "Blackduck",
 					},
-					Scope:                    crdScope,
+					Scope: crdScope,
 				},
 			}
 		case utils.AlertCRDName:
 			crdConfig = &apiextensions.CustomResourceDefinition{
 				ObjectMeta: v1.ObjectMeta{
-					Name:                       utils.AlertCRDName,
-					Namespace:                  namespace,
+					Name:      utils.AlertCRDName,
+					Namespace: namespace,
 				},
-				Spec:       apiextensions.CustomResourceDefinitionSpec{
-					Group:                    "synopsys.com",
-					Version:                  "v1",
-					Names:                    apiextensions.CustomResourceDefinitionNames{
-						Plural:     "alerts",
-						Singular:   "alert",
-						Kind:       "Alert",
+				Spec: apiextensions.CustomResourceDefinitionSpec{
+					Group:   "synopsys.com",
+					Version: "v1",
+					Names: apiextensions.CustomResourceDefinitionNames{
+						Plural:   "alerts",
+						Singular: "alert",
+						Kind:     "Alert",
 					},
-					Scope:                    crdScope,
+					Scope: crdScope,
 				},
 			}
 
 		case utils.OpsSightCRDName:
 			crdConfig = &apiextensions.CustomResourceDefinition{
 				ObjectMeta: v1.ObjectMeta{
-					Name:                       utils.OpsSightCRDName,
-					Namespace:                  namespace,
+					Name:      utils.OpsSightCRDName,
+					Namespace: namespace,
 				},
-				Spec:       apiextensions.CustomResourceDefinitionSpec{
-					Group:                    "synopsys.com",
-					Version:                  "v1",
-					Names:                    apiextensions.CustomResourceDefinitionNames{
+				Spec: apiextensions.CustomResourceDefinitionSpec{
+					Group:   "synopsys.com",
+					Version: "v1",
+					Names: apiextensions.CustomResourceDefinitionNames{
 						Plural:     "opssights",
 						Singular:   "opssight",
 						Kind:       "OpsSight",
 						ShortNames: []string{"ops"},
 					},
-					Scope:                    crdScope,
+					Scope: crdScope,
 				},
 			}
 		}
 		if crdConfig != nil {
-			crdConfig.Labels= map[string]string{"app": "synopsys-operator", "component": "operator", fmt.Sprintf("synopsys.com/operator.%s", namespace): namespace}
+			crdConfig.Labels = map[string]string{"app": "synopsys-operator", "component": "operator", fmt.Sprintf("synopsys.com/operator.%s", namespace): namespace}
 			crdConfigs = append(crdConfigs, crdConfig)
 		}
 	}
@@ -346,7 +346,6 @@ var deployCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 
 		//// Add Size CRD
 		// TODO
@@ -520,4 +519,3 @@ func initFlags() {
 	//addNativeFormatFlag(deployNativeCmd)
 	//deployCmd.AddCommand(deployNativeCmd)
 }
-

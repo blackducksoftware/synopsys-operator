@@ -56,7 +56,6 @@ func addMockFlag(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Print the resource spec in the specified format instead of creating it (json|yaml)")
 }
 
-
 // FlagWasSet returns true if a flag was changed and it exists, otherwise it returns false
 func FlagWasSet(flagset *pflag.FlagSet, flagName string) bool {
 	if flagset.Lookup(flagName) != nil && flagset.Lookup(flagName).Changed {

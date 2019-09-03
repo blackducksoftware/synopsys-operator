@@ -85,8 +85,6 @@ func (ctl *AlertCRSpecBuilderFromCobraFlags) SetCRSpec(spec interface{}) error {
 	return nil
 }
 
-
-
 // SetPredefinedCRSpec sets the alertSpec to a predefined spec
 func (ctl *AlertCRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) error {
 	switch specType {
@@ -213,7 +211,6 @@ func (ctl *AlertCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag)
 		log.Debugf("flag '%s': UNCHANGED", f.Name)
 	}
 }
-
 
 // BoolToPtr will convert bool to pointer
 func BoolToPtr(b bool) *bool {

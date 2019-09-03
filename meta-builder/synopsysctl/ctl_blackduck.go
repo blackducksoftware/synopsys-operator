@@ -246,8 +246,6 @@ func (ctl *BlackduckCRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *p
 	return nil
 }
 
-
-
 // GenerateCRSpecFromFlags checks if a flag was changed and updates the blackDuckSpec with the value that's stored
 // in the corresponding struct field
 func (ctl *BlackduckCRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *pflag.FlagSet) (interface{}, error) {

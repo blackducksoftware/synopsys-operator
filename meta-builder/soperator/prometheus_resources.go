@@ -158,12 +158,12 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() (*appv1.Deploy
 							},
 						},
 					},
-					InitContainers:                nil,
+					InitContainers: nil,
 					Containers: []v1.Container{
 						{
-							Name:                     "prometheus",
-							Image:                    specConfig.Image,
-							Args:                     []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/"},
+							Name:  "prometheus",
+							Image: specConfig.Image,
+							Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/"},
 							Ports: []v1.ContainerPort{
 								{
 									Name:          "web",
@@ -173,12 +173,12 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() (*appv1.Deploy
 							},
 							VolumeMounts: []v1.VolumeMount{
 								{
-									Name:             "data",
-									MountPath:        "/data",
+									Name:      "data",
+									MountPath: "/data",
 								},
 								{
-									Name:             "config-volume",
-									MountPath:        "/etc/prometheus",
+									Name:      "config-volume",
+									MountPath: "/etc/prometheus",
 								},
 							},
 						},
@@ -220,17 +220,16 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() (*v1.ConfigMap,
 	cmData["Image"] = specConfig.Image
 	cmData["Expose"] = specConfig.Expose
 
-
 	prometheusConfigMap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       "prometheus",
-			Namespace:  specConfig.Namespace,
+			Name:      "prometheus",
+			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "prometheus",
 			},
 		},
-		Data:       cmData,
+		Data: cmData,
 	}
 	return prometheusConfigMap, nil
 }

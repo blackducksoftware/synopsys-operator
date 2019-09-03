@@ -42,7 +42,6 @@ func CreateAlert(restClient *rest.RESTClient, obj *synopsysv1.Alert) (*synopsysv
 	return result, err
 }
 
-
 // ListAlerts will list all alerts in the cluster
 func ListAlerts(restClient *rest.RESTClient, namespace string, opts metav1.ListOptions) (*synopsysv1.AlertList, error) {
 	result := &synopsysv1.AlertList{}
@@ -97,11 +96,6 @@ func DeleteAlert(restClient *rest.RESTClient, name string, namespace string, opt
 	return req.Do().Error()
 }
 
-
-
-
-
-
 // CreateBlackduck will create alert in the cluster
 func CreateBlackduck(restClient *rest.RESTClient, obj *synopsysv1.Blackduck) (*synopsysv1.Blackduck, error) {
 	result := &synopsysv1.Blackduck{}
@@ -114,7 +108,6 @@ func CreateBlackduck(restClient *rest.RESTClient, obj *synopsysv1.Blackduck) (*s
 	err := req.Do().Into(result)
 	return result, err
 }
-
 
 // ListBlackduck will list all alerts in the cluster
 func ListBlackduck(restClient *rest.RESTClient, namespace string, opts metav1.ListOptions) (*synopsysv1.BlackduckList, error) {
@@ -170,11 +163,6 @@ func DeleteBlackduck(restClient *rest.RESTClient, name string, namespace string,
 	return req.Do().Error()
 }
 
-
-
-
-
-
 // CreateOpsSight will create alert in the cluster
 func CreateOpsSight(restClient *rest.RESTClient, obj *synopsysv1.OpsSight) (*synopsysv1.OpsSight, error) {
 	result := &synopsysv1.OpsSight{}
@@ -187,7 +175,6 @@ func CreateOpsSight(restClient *rest.RESTClient, obj *synopsysv1.OpsSight) (*syn
 	err := req.Do().Into(result)
 	return result, err
 }
-
 
 // ListOpsSight will list all alerts in the cluster
 func ListOpsSight(restClient *rest.RESTClient, namespace string, opts metav1.ListOptions) (*synopsysv1.OpsSightList, error) {
@@ -243,12 +230,6 @@ func DeleteOpsSight(restClient *rest.RESTClient, name string, namespace string, 
 	return req.Do().Error()
 }
 
-
-
-
-
-
-
 // CreatePolaris will create alert in the cluster
 func CreatePolaris(restClient *rest.RESTClient, obj *synopsysv1.Polaris) (*synopsysv1.Polaris, error) {
 	result := &synopsysv1.Polaris{}
@@ -261,7 +242,6 @@ func CreatePolaris(restClient *rest.RESTClient, obj *synopsysv1.Polaris) (*synop
 	err := req.Do().Into(result)
 	return result, err
 }
-
 
 // ListPolaris will list all alerts in the cluster
 func ListPolaris(restClient *rest.RESTClient, namespace string, opts metav1.ListOptions) (*synopsysv1.PolarisList, error) {
@@ -317,15 +297,6 @@ func DeletePolaris(restClient *rest.RESTClient, name string, namespace string, o
 	return req.Do().Error()
 }
 
-
-
-
-
-
-
-
-
-
 // CreatePolarisDB will create alert in the cluster
 func CreatePolarisDB(restClient *rest.RESTClient, obj *synopsysv1.PolarisDB) (*synopsysv1.PolarisDB, error) {
 	result := &synopsysv1.PolarisDB{}
@@ -338,7 +309,6 @@ func CreatePolarisDB(restClient *rest.RESTClient, obj *synopsysv1.PolarisDB) (*s
 	err := req.Do().Into(result)
 	return result, err
 }
-
 
 // ListPolarisDB will list all alerts in the cluster
 func ListPolarisDB(restClient *rest.RESTClient, namespace string, opts metav1.ListOptions) (*synopsysv1.PolarisDBList, error) {
@@ -394,11 +364,6 @@ func DeletePolarisDB(restClient *rest.RESTClient, name string, namespace string,
 	return req.Do().Error()
 }
 
-
-
-
-
-
 // CreateAuthServer will create alert in the cluster
 func CreateAuthServer(restClient *rest.RESTClient, obj *synopsysv1.AuthServer) (*synopsysv1.AuthServer, error) {
 	result := &synopsysv1.AuthServer{}
@@ -411,7 +376,6 @@ func CreateAuthServer(restClient *rest.RESTClient, obj *synopsysv1.AuthServer) (
 	err := req.Do().Into(result)
 	return result, err
 }
-
 
 // ListAuthServer will list all alerts in the cluster
 func ListAuthServer(restClient *rest.RESTClient, namespace string, opts metav1.ListOptions) (*synopsysv1.AuthServerList, error) {
@@ -466,7 +430,3 @@ func DeleteAuthServer(restClient *rest.RESTClient, name string, namespace string
 	}
 	return req.Do().Error()
 }
-
-
-
-

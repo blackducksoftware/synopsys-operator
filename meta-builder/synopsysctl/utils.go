@@ -93,7 +93,6 @@ func setResourceClients() error {
 	kubeconfig.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
 	kubeconfig.UserAgent = rest.DefaultKubernetesUserAgent()
 
-
 	restClient, err = rest.UnversionedRESTClientFor(&kubeconfig)
 	if err != nil {
 		panic(err)
@@ -260,5 +259,3 @@ func getInstanceInfo(mock bool, crdName string, appName string, namespace string
 
 	return name, namespace, crdScope, nil
 }
-
-

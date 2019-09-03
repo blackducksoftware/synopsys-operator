@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"strings"
 
-
 	"github.com/juju/errors"
 	//routev1 "github.com/openshift/api/route/v1"
 	//log "github.com/sirupsen/logrus"
@@ -45,67 +44,66 @@ func (specConfig *SpecConfig) getOperatorDeployment() (*appv1.Deployment, error)
 
 	synopsysOperator := &appv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "synopsys-operator",
+			Name:      "synopsys-operator",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
-		Spec:       appv1.DeploymentSpec{
-			Replicas:                &synopsysOperatorReplicas,
-			Selector:                &metav1.LabelSelector{
+		Spec: appv1.DeploymentSpec{
+			Replicas: &synopsysOperatorReplicas,
+			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": "synopsys-operator",
+					"app":       "synopsys-operator",
 					"component": "operator",
 				},
 			},
-			Template:                v1.PodTemplateSpec{},
+			Template: v1.PodTemplateSpec{},
 		},
 	}
 
 	synopsysOperator.Spec.Template = v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
-		Spec:       v1.PodSpec{
+		Spec: v1.PodSpec{
 			ServiceAccountName: "synopsys-operator",
 			Volumes: []v1.Volume{
 				{
-					Name:         "synopsys-operator",
+					Name: "synopsys-operator",
 					VolumeSource: v1.VolumeSource{
-						ConfigMap:             &v1.ConfigMapVolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
 							LocalObjectReference: v1.LocalObjectReference{
 								Name: "synopsys-operator",
 							},
-							DefaultMode:          &synopsysOperatorVolumeDefaultMode,
+							DefaultMode: &synopsysOperatorVolumeDefaultMode,
 						},
 					},
 				},
 				{
-					Name:         "synopsys-operator-tls",
+					Name: "synopsys-operator-tls",
 					VolumeSource: v1.VolumeSource{
 						Secret: &v1.SecretVolumeSource{
 							SecretName:  "synopsys-operator-tls",
-							DefaultMode:  &synopsysOperatorVolumeDefaultMode,
+							DefaultMode: &synopsysOperatorVolumeDefaultMode,
 						},
 					},
 				},
 				{
-					Name:         "tmp-logs",
+					Name: "tmp-logs",
 					VolumeSource: v1.VolumeSource{
-						EmptyDir:              &v1.EmptyDirVolumeSource{
-							Medium:    v1.StorageMediumDefault,
+						EmptyDir: &v1.EmptyDirVolumeSource{
+							Medium: v1.StorageMediumDefault,
 						},
 					},
 				},
 			},
 		},
 	}
-
 
 	//synopsysOperatorContainer, err := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 	//	Name:       "synopsys-operator",
@@ -119,46 +117,46 @@ func (specConfig *SpecConfig) getOperatorDeployment() (*appv1.Deployment, error)
 	//}
 
 	synopsysOperatorContainer := v1.Container{
-		Name:                     "synopsys-operator",
-		Image:                    specConfig.Image,
-		Command:                  []string{"./operator"},
-		Args:                     []string{"/etc/synopsys-operator/config.json"},
-		WorkingDir:               "",
-		Ports: 	[]v1.ContainerPort{
+		Name:       "synopsys-operator",
+		Image:      specConfig.Image,
+		Command:    []string{"./operator"},
+		Args:       []string{"/etc/synopsys-operator/config.json"},
+		WorkingDir: "",
+		Ports: []v1.ContainerPort{
 			{
 				Name:          "8080-tcp",
 				ContainerPort: 8080,
 				Protocol:      v1.ProtocolTCP,
 			},
 		},
-		EnvFrom:                  nil,
+		EnvFrom: nil,
 		Env: []v1.EnvVar{
 			{
-				Name:      "SEAL_KEY",
+				Name: "SEAL_KEY",
 				ValueFrom: &v1.EnvVarSource{
-					SecretKeyRef:     &v1.SecretKeySelector{
+					SecretKeyRef: &v1.SecretKeySelector{
 						LocalObjectReference: v1.LocalObjectReference{
 							Name: "blackduck-secret",
 						},
-						Key:                  "SEAL_KEY",
-						Optional:             nil,
+						Key:      "SEAL_KEY",
+						Optional: nil,
 					},
 				},
 			},
 		},
-		Resources:                v1.ResourceRequirements{},
+		Resources: v1.ResourceRequirements{},
 		VolumeMounts: []v1.VolumeMount{
 			{
-				Name:             "synopsys-operator",
-				MountPath:        "/etc/synopsys-operator",
+				Name:      "synopsys-operator",
+				MountPath: "/etc/synopsys-operator",
 			},
 			{
-				Name:             "synopsys-operator-tls",
-				MountPath:        "/opt/synopsys-operator/tls",
+				Name:      "synopsys-operator-tls",
+				MountPath: "/opt/synopsys-operator/tls",
 			},
 			{
-				Name:             "tmp-logs",
-				MountPath:        "/tmp",
+				Name:      "tmp-logs",
+				MountPath: "/tmp",
 			},
 		},
 		VolumeDevices:            nil,
@@ -174,44 +172,43 @@ func (specConfig *SpecConfig) getOperatorDeployment() (*appv1.Deployment, error)
 		TTY:                      false,
 	}
 
-
 	synopsysOperatorUIContainer := v1.Container{
-		Name:                     "synopsys-operator-ui",
-		Image:                    specConfig.Image,
-		Command:                  []string{"./app"},
-		Args:                     nil,
-		WorkingDir:               "",
+		Name:       "synopsys-operator-ui",
+		Image:      specConfig.Image,
+		Command:    []string{"./app"},
+		Args:       nil,
+		WorkingDir: "",
 		Ports: []v1.ContainerPort{{
 			Name:          "3000-TCP",
 			ContainerPort: 3000,
 			Protocol:      v1.ProtocolTCP,
 		}},
-		EnvFrom:                  nil,
+		EnvFrom: nil,
 		Env: []v1.EnvVar{
 			{
-				Name:      "CONFIG_FILE_PATH",
-				Value:      "/etc/synopsys-operator/config.json",
+				Name:  "CONFIG_FILE_PATH",
+				Value: "/etc/synopsys-operator/config.json",
 			},
 			{
-				Name:      "ADDR",
-				Value:      "0.0.0.0",
+				Name:  "ADDR",
+				Value: "0.0.0.0",
 			},
 			{
-				Name:      "PORT",
-				Value:      "3000",
+				Name:  "PORT",
+				Value: "3000",
 			},
 			{
-				Name:      "GO_ENV",
-				Value:      "development",
+				Name:  "GO_ENV",
+				Value: "development",
 			},
 		},
-		Resources:                v1.ResourceRequirements{},
+		Resources: v1.ResourceRequirements{},
 		VolumeMounts: []v1.VolumeMount{
 			{
-				Name:             "synopsys-operator",
-				MountPath:        "/etc/synopsys-operator",
+				Name:      "synopsys-operator",
+				MountPath: "/etc/synopsys-operator",
 			},
-		} ,
+		},
 		VolumeDevices:            nil,
 		LivenessProbe:            nil,
 		ReadinessProbe:           nil,
@@ -224,9 +221,6 @@ func (specConfig *SpecConfig) getOperatorDeployment() (*appv1.Deployment, error)
 		StdinOnce:                false,
 		TTY:                      false,
 	}
-
-
-
 
 	synopsysOperator.Spec.Template.Spec.Containers = append(synopsysOperator.Spec.Template.Spec.Containers, synopsysOperatorContainer)
 
@@ -250,14 +244,14 @@ func (specConfig *SpecConfig) getOperatorService() []*v1.Service {
 
 	synopsysOperatorService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "synopsys-operator",
+			Name:      "synopsys-operator",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
-		Spec:       v1.ServiceSpec{
+		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
 				{
 					Name:       "synopsys-operator-ui",
@@ -285,7 +279,7 @@ func (specConfig *SpecConfig) getOperatorService() []*v1.Service {
 				},
 			},
 			Selector: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 			ClusterIP:                "",
@@ -323,19 +317,19 @@ func (specConfig *SpecConfig) getOperatorService() []*v1.Service {
 
 		synopsysOperatorExposedService := &v1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "synopsys-operator-exposed",
+				Name:      "synopsys-operator-exposed",
 				Namespace: specConfig.Namespace,
 				Labels: map[string]string{
-					"app": "synopsys-operator",
+					"app":       "synopsys-operator",
 					"component": "operator",
 				},
 			},
-			Spec:       v1.ServiceSpec{
+			Spec: v1.ServiceSpec{
 				Selector: map[string]string{
-					"app": "synopsys-operator",
+					"app":       "synopsys-operator",
 					"component": "operator",
 				},
-				Type:exposedServiceType,
+				Type: exposedServiceType,
 				Ports: []v1.ServicePort{
 					{
 						Name:       "synopsys-operator-ui",
@@ -382,14 +376,14 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*v1.ConfigMap, error) {
 
 	synopsysOperatorConfigMap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "synopsys-operator",
+			Name:      "synopsys-operator",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
-		Data:       cmData,
+		Data: cmData,
 	}
 	return synopsysOperatorConfigMap, nil
 }
@@ -397,11 +391,11 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*v1.ConfigMap, error) {
 //getOperatorServiceAccount creates a ServiceAccount Horizon component for Synopsys Operaotor
 func (specConfig *SpecConfig) getOperatorServiceAccount() *v1.ServiceAccount {
 	synopsysOperatorServiceAccount := &v1.ServiceAccount{
-		ObjectMeta:                   metav1.ObjectMeta{
-			Name:  "synopsys-operator",
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "synopsys-operator",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
@@ -413,10 +407,10 @@ func (specConfig *SpecConfig) getOperatorServiceAccount() *v1.ServiceAccount {
 func (specConfig *SpecConfig) getOperatorClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 	synopsysOperatorClusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "synopsys-operator-admin",
+			Name:      "synopsys-operator-admin",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
@@ -427,7 +421,7 @@ func (specConfig *SpecConfig) getOperatorClusterRoleBinding() *rbacv1.ClusterRol
 				Namespace: specConfig.Namespace,
 			},
 		},
-		RoleRef:    rbacv1.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			APIGroup: "",
 			Kind:     "ClusterRole",
 			Name:     "synopsys-operator-admin",
@@ -435,6 +429,7 @@ func (specConfig *SpecConfig) getOperatorClusterRoleBinding() *rbacv1.ClusterRol
 	}
 	return synopsysOperatorClusterRoleBinding
 }
+
 //
 //// getOperatorRoleBinding creates a RoleBinding Horizon component for Synopsys Operator
 func (specConfig *SpecConfig) getOperatorRoleBinding() *rbacv1.RoleBinding {
@@ -447,10 +442,10 @@ func (specConfig *SpecConfig) getOperatorRoleBinding() *rbacv1.RoleBinding {
 
 	synopsysOperatorRoleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "synopsys-operator-admin",
+			Name:      "synopsys-operator-admin",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
@@ -462,7 +457,7 @@ func (specConfig *SpecConfig) getOperatorRoleBinding() *rbacv1.RoleBinding {
 				Namespace: "specConfig.Namespace",
 			},
 		},
-		RoleRef:    rbacv1.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			APIGroup: "",
 			Kind:     "Role",
 			Name:     "synopsys-operator-admin",
@@ -470,23 +465,24 @@ func (specConfig *SpecConfig) getOperatorRoleBinding() *rbacv1.RoleBinding {
 	}
 	return synopsysOperatorRoleBinding
 }
+
 //
 //// getOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys Operator
 func (specConfig *SpecConfig) getOperatorClusterRole() *rbacv1.ClusterRole {
 	synopsysOperatorClusterRole := &rbacv1.ClusterRole{
-		ObjectMeta:      metav1.ObjectMeta{
-			Name: "synopsys-operator-admin",
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "synopsys-operator-admin",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
-				Verbs: []string{"get", "list"},
-				APIGroups:       []string{"apiextensions.k8s.io"},
-				Resources:       []string{"customresourcedefinitions"},
+				Verbs:     []string{"get", "list"},
+				APIGroups: []string{"apiextensions.k8s.io"},
+				Resources: []string{"customresourcedefinitions"},
 			},
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
@@ -537,7 +533,6 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *rbacv1.ClusterRole {
 		AggregationRule: nil,
 	}
 
-
 	// Add Openshift rules
 	if specConfig.ClusterType == OpenshiftClusterType {
 		synopsysOperatorClusterRole.Rules = append(synopsysOperatorClusterRole.Rules, rbacv1.PolicyRule{
@@ -567,10 +562,10 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *rbacv1.ClusterRole {
 func (specConfig *SpecConfig) getOperatorRole() *rbacv1.Role {
 	synopsysOperatorRole := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "synopsys-operator-admin",
+			Name:      "synopsys-operator-admin",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
@@ -635,17 +630,17 @@ func (specConfig *SpecConfig) getOperatorRole() *rbacv1.Role {
 func (specConfig *SpecConfig) getTLSCertificateSecret() *v1.Secret {
 	tlsSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "synopsys-operator-tls",
+			Name:      "synopsys-operator-tls",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},
 		Data: map[string][]byte{
 			"cert.crt": []byte(specConfig.Certificate),
 			"cert.key": []byte(specConfig.CertificateKey),
-		} ,
+		},
 		Type: v1.SecretTypeOpaque,
 	}
 	return tlsSecret
@@ -656,10 +651,10 @@ func (specConfig *SpecConfig) getOperatorSecret() *v1.Secret {
 	//// create a secret
 	synopsysOperatorSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "blackduck-secret",
+			Name:      "blackduck-secret",
 			Namespace: specConfig.Namespace,
 			Labels: map[string]string{
-				"app": "synopsys-operator",
+				"app":       "synopsys-operator",
 				"component": "operator",
 			},
 		},

@@ -33,7 +33,6 @@ import (
 	"strings"
 	"time"
 
-
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -52,8 +51,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
-
-
 
 // CreateSecretFromFile will create the secret from file
 func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, namespace string, name string, dataKey string) (*corev1.Secret, error) {
@@ -279,8 +276,6 @@ func DeletePersistentVolume(clientset *kubernetes.Clientset, name string) error 
 	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{})
 }
 
-
-
 // ValidateServiceEndpoint will validate whether the service endpoint is ready to serve
 func ValidateServiceEndpoint(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Endpoints, error) {
 	var endpoint *corev1.Endpoints
@@ -405,8 +400,6 @@ func DeletePVC(clientset *kubernetes.Clientset, namespace string, name string) e
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
-
-
 // IntToPtr will convert int to pointer
 func IntToPtr(i int) *int {
 	return &i
@@ -466,7 +459,6 @@ func RandomString(n int) (string, error) {
 	return Base64Encode(b), err
 }
 
-
 // GetServiceAccount get a service account
 func GetServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ServiceAccount, error) {
 	return clientset.CoreV1().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
@@ -486,8 +478,6 @@ func UpdateServiceAccount(clientset *kubernetes.Clientset, namespace string, ser
 func DeleteServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) error {
 	return clientset.CoreV1().ServiceAccounts(namespace).Delete(name, &metav1.DeleteOptions{})
 }
-
-
 
 // GetClusterRoleBinding get a cluster role
 func GetClusterRoleBinding(clientset *kubernetes.Clientset, name string) (*rbacv1.ClusterRoleBinding, error) {
@@ -641,8 +631,6 @@ func ListRoutes(routeClient *routeclient.RouteV1Client, namespace string, labelS
 func UpdateRoute(routeClient *routeclient.RouteV1Client, namespace string, route *routev1.Route) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Update(route)
 }
-
-
 
 // CreateRoute creates an OpenShift routes
 func CreateRoute(routeClient *routeclient.RouteV1Client, namespace string, route *routev1.Route) (*routev1.Route, error) {
@@ -1307,7 +1295,6 @@ func WaitForCRD(name string, interval time.Duration, timeout time.Duration, apie
 		return false, nil
 	})
 }
-
 
 // MergeEnvMaps will merge the source and destination environs. If the same value exist in both, source environ will given more preference
 func MergeEnvMaps(source, destination map[string]string) map[string]string {

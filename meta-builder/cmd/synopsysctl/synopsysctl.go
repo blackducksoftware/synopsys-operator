@@ -31,13 +31,10 @@ import (
 
 var version string
 
-
-
 func main() {
 	synopsysv1.AddToScheme(scheme.Scheme)
 
 	//
-
 
 	log.Debugf("version: %s", version)
 	synopsysctl.Execute(version)
