@@ -14,7 +14,6 @@ Router.map(function() {
     this.route('on-premises');
     this.route('prerequisites');
     this.route('home');
-    this.route('overview');
     this.route('deploy-operator');
   });
   this.route('ui');

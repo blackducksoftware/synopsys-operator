@@ -7,17 +7,12 @@ let menu_entries = [
         link: "/documentation/home"
     },
     {
-        name: "Overview",
-        id: "overview",
-        link: "/documentation/overview"
-    },
-    {
         name: "Prerequisites",
         id: "prerequisites",
         link: "/documentation/prerequisites"
     },
     {
-        name: "Deploy (or) Upgrade Operator",
+        name: "Installing or Upgrading Synopsys Operator",
         id: "deploy-operator",
         link: "/documentation/deploy-operator"
     },

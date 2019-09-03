@@ -1,5 +1,5 @@
-$(function() {
-    $('#polaris-options-form').on("submit",function(e) {
+$(function () {
+    $('#polaris-options-form').on("submit", function (e) {
         e.preventDefault(); // cancel the actual submit
         swal({
             title: "Confirmation",
@@ -8,7 +8,7 @@ $(function() {
             showCancelButton: true,
             closeOnConfirm: false,
             showLoaderOnConfirm: true
-          }, function () {
+        }, function () {
             $.ajax({
                 url: '/install',
                 type: 'POST',
@@ -20,9 +20,9 @@ $(function() {
                         text: response.responseText,
                         type: 'success'
                     },
-                    function(){
-                        location.href = '/complete';
-                    });
+                        function () {
+                            location.href = '/complete';
+                        });
                 },
                 error: function (error) {
                     swal({
@@ -32,12 +32,12 @@ $(function() {
                     });
                 }
             });
-        });          
+        });
     });
 });
 
-$(function() {
-    $('#operator-deploy-form').on("submit",function(e) {
+$(function () {
+    $('#operator-deploy-form').on("submit", function (e) {
         e.preventDefault(); // cancel the actual submit
         swal({
             title: "Confirmation",
@@ -46,7 +46,7 @@ $(function() {
             showCancelButton: true,
             closeOnConfirm: false,
             showLoaderOnConfirm: true
-          }, function () {
+        }, function () {
             $.ajax({
                 url: '/deploy',
                 type: 'POST',
@@ -58,9 +58,9 @@ $(function() {
                         text: response.responseText,
                         type: 'success'
                     },
-                    function(){
-                        location.href = '/operator';
-                    });
+                        function () {
+                            location.href = '/operator';
+                        });
                 },
                 error: function (error) {
                     swal({
@@ -70,11 +70,11 @@ $(function() {
                     });
                 }
             });
-        });          
+        });
     });
 });
 
-$(document).on('change', 'input[type=radio][name=postgresInstanceType]', function() {
+$(document).on('change', 'input[type=radio][name=postgresInstanceType]', function () {
     if (this.value == 'external') {
         $.ajax({
             url: '/postgres_form',
@@ -96,7 +96,7 @@ $(document).on('change', 'input[type=radio][name=postgresInstanceType]', functio
     }
 });
 
-$(document).on('change', 'input[type=radio][name=sslCertsType]', function() {
+$(document).on('change', 'input[type=radio][name=sslCertsType]', function () {
     if (this.value == 'custom') {
         $.ajax({
             url: '/ssl_form',
@@ -118,7 +118,7 @@ $(document).on('change', 'input[type=radio][name=sslCertsType]', function() {
     }
 });
 
-$(document).on('change', 'input[type=radio][name=deploymentPlatform]', function() {
+$(document).on('change', 'input[type=radio][name=deploymentPlatform]', function () {
     if (this.value == 'on-prem') {
         $.ajax({
             url: '/on_prem_deploy_form',
@@ -185,7 +185,7 @@ $(document).on('change', 'input[type=radio][name=deploymentPlatform]', function(
     }
 });
 
-$(document).on('click', 'button[id=smtp-button]', function() {
+$(document).on('click', 'button[id=smtp-button]', function () {
     swal({
         html: true,
         title: "Test SMTP Settings",
@@ -236,22 +236,22 @@ $(document).on('click', 'button[id=smtp-button]', function() {
     });
 });
 
-$(document).on('click', 'a[id=deploy_polaris]', function() {
+$(document).on('click', 'a[id=deploy_polaris]', function () {
     $.ajax({
         url: '/operator/status',
         type: 'GET',
         success: function (response) {
-            if (response.isInstalled){
+            if (response.isInstalled) {
                 location.href = '/deploy_polaris';
-            }else{
+            } else {
                 swal({
                     title: "Warning",
-                    text: "Polaris Operator is not deployed. Redirecting to operator installtion page. !",
+                    text: "Synopsys Operator is not deployed. Redirecting to installtion page. !",
                     type: 'info'
                 },
-                function(){
-                    location.href = '/operator';
-                });
+                    function () {
+                        location.href = '/operator';
+                    });
             }
         },
         error: function (error) {
