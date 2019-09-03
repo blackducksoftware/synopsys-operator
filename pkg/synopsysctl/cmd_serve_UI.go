@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	// "os"
 	// "time"
@@ -38,6 +39,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	synopsysV1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -62,7 +64,11 @@ var serveUICmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("Data from Polaris Body: %s\n", reqBody)
+			fmt.Printf("Data from Polaris Body: %s\n\n", reqBody)
+			p1, p2, p3 := createPolarisSpec(reqBody)
+			fmt.Printf("authSpec: %+v\n", p1)
+			fmt.Printf("polarisDBSpec: %+v\n", p2)
+			fmt.Printf("polarisSpec: %+v\n", p3)
 		})
 
 		// api route - deploy Black Duck
@@ -209,4 +215,74 @@ func createBlackDuckSpec(data []byte) *blackduckv1.Blackduck {
 	blackDuck.Kind = "Blackduck"
 	blackDuck.APIVersion = "synopsys.com/v1"
 	return blackDuck
+}
+
+type PolarisUIRequestConfig struct {
+	Version          string `json:"version"`
+	EnvironmentName  string `json:"environmentName"`
+	EnvironmentDNS   string `json:"environmentDNS"`
+	ImagePullSecrets string `json:"imagePullSecrets"`
+	StorageClass     string `json:"storageClass"`
+	Namespace        string `json:"namespace"`
+
+	PostgresHost     string `json:"postgresHost"`
+	PostgresPort     string `json:"postgresPort"`
+	PostgresUsername string `json:"postgresUsername"`
+	PostgresPassword string `json:"postgresPassword"`
+	PostgresSize     string `json:"postgresSize"`
+
+	UploadServerSize string `json:"uploadServerSize"`
+	EventstoreSize   string `json:"eventstoreSize"`
+}
+
+func createPolarisSpec(data []byte) (*synopsysV1.AuthServerSpec, *synopsysV1.PolarisDBSpec, *synopsysV1.PolarisSpec) {
+	pConfig := PolarisUIRequestConfig{}
+	err := json.Unmarshal(data, &pConfig)
+	if err != nil {
+		fmt.Printf("Failed to Unmarshal: %s\n\n", err)
+		return nil, nil, nil
+	}
+	return convertPolarisUIResponseToSpecs(pConfig)
+}
+
+func convertPolarisUIResponseToSpecs(polarisUIRequestConfig PolarisUIRequestConfig) (*synopsysV1.AuthServerSpec, *synopsysV1.PolarisDBSpec, *synopsysV1.PolarisSpec) {
+	// Populate Auth Service Spec
+	authSpec := &synopsysV1.AuthServerSpec{}
+	authSpec.Namespace = polarisUIRequestConfig.Namespace
+	authSpec.Version = polarisUIRequestConfig.Version
+	authSpec.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
+	authSpec.EnvironmentName = polarisUIRequestConfig.EnvironmentName
+	authSpec.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
+
+	// Populate Polaris Database Spec
+	polarisDBSpec := &synopsysV1.PolarisDBSpec{}
+	polarisDBSpec.Namespace = polarisUIRequestConfig.Namespace
+	polarisDBSpec.Version = polarisUIRequestConfig.Version
+	polarisDBSpec.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
+	polarisDBSpec.EnvironmentName = polarisUIRequestConfig.EnvironmentName
+	polarisDBSpec.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
+	polarisDBSpec.PostgresStorageDetails.StorageClass = &polarisUIRequestConfig.StorageClass
+	polarisDBSpec.UploadServerDetails.Storage.StorageClass = &polarisUIRequestConfig.StorageClass
+	polarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost
+	postPort, err := strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 32)
+	if err != nil {
+		fmt.Printf("[ERROR]: Falied to convert port to an int %s\n", polarisUIRequestConfig.PostgresPort)
+	}
+	castedPostPort := int32(postPort)
+	polarisDBSpec.PostgresDetails.Port = &castedPostPort
+	polarisDBSpec.PostgresDetails.Username = polarisUIRequestConfig.PostgresUsername
+	polarisDBSpec.PostgresDetails.Password = polarisUIRequestConfig.PostgresPassword
+	polarisDBSpec.PostgresStorageDetails.StorageSize = polarisUIRequestConfig.PostgresSize
+	polarisDBSpec.UploadServerDetails.Storage.StorageSize = polarisUIRequestConfig.UploadServerSize
+	polarisDBSpec.EventstoreDetails.StorageSize = polarisUIRequestConfig.EventstoreSize
+
+	// Populate Polaris Spec
+	polarisSpec := &synopsysV1.PolarisSpec{}
+	polarisSpec.Namespace = polarisUIRequestConfig.Namespace
+	polarisSpec.Version = polarisUIRequestConfig.Version
+	polarisSpec.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
+	polarisSpec.EnvironmentName = polarisUIRequestConfig.EnvironmentName
+	polarisSpec.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
+
+	return authSpec, polarisDBSpec, polarisSpec
 }
