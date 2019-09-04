@@ -1,15 +1,28 @@
 import Component from '@ember/component';
 
 export default Component.extend({
-  didInsertElement() {
-    fetch("http://10.145.119.53:8080/operator/status").then(
-      function(response){
-        return response.json();
-      }
-    ).then(
-      data => {
-        this.set('operator', data);
-      }
-    );
+  operatorConfig: {
+    namespace: "",
+    clusterScoped: false,
+    enableAlert: false,
+    enableBlackDuck: false,
+    enableOpsSight: false,
+    enablePolaris: false,
+    exposeMetrics: "",
+    exposeUI: "",
+    metricsImage: "",
+    operatorImage: ""
+  },
+  actions: {
+    deployOperator() {
+      $.ajax({
+        type: "POST",
+        url: "/api/deploy_operator",
+        data: JSON.stringify(this.operatorConfig),
+        success: function () {
+          alert("success")
+        }
+      });
+    }
   }
 });

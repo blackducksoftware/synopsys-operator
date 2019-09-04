@@ -30,6 +30,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	// "os"
 	// "time"
@@ -41,6 +42,9 @@ import (
 
 	synopsysV1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/size"
+	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -56,6 +60,20 @@ var serveUICmd = &cobra.Command{
 
 		// Start Running a backend server that listens for input from the User Interface
 		router := mux.NewRouter()
+
+		// api route - deploy Operator
+		router.HandleFunc("/api/deploy_operator", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("Handler Deploy Operator: %q\n", html.EscapeString(r.URL.Path))
+			reqBody, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("Data from Operator Body: %s\n\n", reqBody)
+			err = deployOperator(reqBody)
+			if err != nil {
+				fmt.Printf("[ERROR] Failed to deploy Operator: %s", err)
+			}
+		})
 
 		// api route - deploy Polaris
 		router.HandleFunc("/api/deploy_polaris", func(w http.ResponseWriter, r *http.Request) {
@@ -98,6 +116,7 @@ var serveUICmd = &cobra.Command{
 		fmt.Printf("==================================\n")
 		fmt.Printf("Serving at: http://localhost:%s\n", serverPort)
 		fmt.Printf("api:\n")
+		fmt.Printf("  - /api/deploy_operator\n")
 		fmt.Printf("  - /api/deploy_polaris\n")
 		fmt.Printf("  - /api/deploy_black_duck\n")
 		fmt.Printf("==================================\n")
@@ -158,6 +177,130 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func init() {
 	rootCmd.AddCommand(serveUICmd)
 	serveUICmd.Flags().StringVarP(&serverPort, "port", "p", serverPort, "Port to listen for UI requests")
+}
+
+type operatorUIRequestConfig struct {
+	Namespace       string `json:"namespace"`
+	ClusterScoped   bool   `json:"clusterScoped"`
+	EnableAlert     bool   `json:"enableAlert"`
+	EnableBlackDuck bool   `json:"enableBlackDuck"`
+	EnableOpsSight  bool   `json:"enableOpsSight"`
+	EnablePolaris   bool   `json:"enablePolaris"`
+	ExposeMetrics   string `json:"exposeMetrics"`
+	ExposeUI        string `json:"exposeUI"`
+	MetricsImage    string `json:"metricsImage"`
+	OperatorImage   string `json:"operatorImage"`
+}
+
+func deployOperator(data []byte) error {
+	oConfig := operatorUIRequestConfig{}
+	err := json.Unmarshal(data, &oConfig)
+	if err != nil {
+		fmt.Printf("Failed to Unmarshal: %s\n\n", err)
+		return nil
+	}
+	// Set Global Flags for cmd_deploy - use defaults for other flags
+	if oConfig.Namespace != "" {
+		operatorNamespace = oConfig.Namespace
+	}
+	if oConfig.ExposeUI != "" {
+		exposeUI = oConfig.ExposeUI
+	}
+	if oConfig.OperatorImage != "" {
+		synopsysOperatorImage = oConfig.OperatorImage
+	}
+	if oConfig.MetricsImage != "" {
+		metricsImage = oConfig.MetricsImage
+	}
+	if oConfig.ExposeMetrics != "" {
+		exposeMetrics = oConfig.ExposeMetrics
+	}
+	isEnabledAlert = oConfig.EnableAlert
+	isEnabledBlackDuck = oConfig.EnableAlert
+	isEnabledOpsSight = oConfig.EnableAlert
+	isEnabledPrm = oConfig.EnablePolaris
+	isClusterScoped = oConfig.ClusterScoped
+
+	/* Call the same functions as cmd_deploy */
+
+	// validate each CRD enable parameter is enabled/disabled and cluster scope are from supported values
+	crds, err := getEnabledCrds()
+	if err != nil {
+		return err
+	}
+
+	// Add Size CRD
+	crds = append(crds, util.SizeCRDName)
+
+	log.Debugf("Got CRDs to Enable: %+v", crds)
+
+	// Get CRD configs
+	crdConfigs, err := getCrdConfigs(operatorNamespace, isClusterScoped, crds)
+	if err != nil {
+		return err
+	}
+	if len(crdConfigs) <= 1 {
+		return fmt.Errorf("no resources are enabled (include flag(s): --enable-alert --enable-blackduck --enable-opssight )")
+	}
+	// Create Synopsys Operator Spec
+	soperatorSpec, err := getSpecToDeploySOperator(crds)
+	if err != nil {
+		return err
+	}
+
+	// check if namespace exist in namespace scope, if not throw an error
+	if !isClusterScoped {
+		_, err = util.GetNamespace(kubeClient, operatorNamespace)
+		if err != nil {
+			return fmt.Errorf("please create the namespace '%s' to deploy the Synopsys Operator in namespace scoped", operatorNamespace)
+		}
+	}
+
+	// check if operator is already installed
+	_, err = util.GetOperatorNamespace(kubeClient, operatorNamespace)
+	if err == nil {
+		return fmt.Errorf("the Synopsys Operator instance is already deployed in namespace '%s'", namespace)
+	}
+
+	log.Infof("deploying Synopsys Operator in namespace '%s'...", operatorNamespace)
+
+	log.Debugf("creating custom resource definitions")
+	err = deployCrds(operatorNamespace, isClusterScoped, crdConfigs)
+	if err != nil {
+		return err
+	}
+
+	// In some rare cases, the CRD may not be available when we create the default sizes.
+	log.Debugf("Waiting for CRDs...")
+	if err := util.WaitForCRD(util.SizeCRDName, time.Second, time.Minute*3, apiExtensionClient); err != nil {
+		return err
+	}
+
+	// Create default sizes
+	log.Debugf("Getting Default Sizes...")
+	for _, v := range size.GetAllDefaultSizes() {
+		_, err = sizeClient.SynopsysV1().Sizes(operatorNamespace).Create(v)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Debugf("creating Synopsys Operator components")
+	sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
+	err = sOperatorCreater.UpdateSOperatorComponents(soperatorSpec)
+	if err != nil {
+		return fmt.Errorf("error deploying Synopsys Operator due to %+v", err)
+	}
+
+	log.Debugf("creating Metrics components")
+	promtheusSpec := soperator.NewPrometheus(operatorNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
+	err = sOperatorCreater.UpdatePrometheus(promtheusSpec)
+	if err != nil {
+		return fmt.Errorf("error deploying metrics due to %s", err)
+	}
+
+	log.Infof("successfully submitted Synopsys Operator into namespace '%s'", operatorNamespace)
+	return nil
 }
 
 type blackDuckUIRequestConfig struct {
