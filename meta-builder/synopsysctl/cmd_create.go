@@ -133,34 +133,34 @@ func updatePolarisSpecWithFlags(cmd *cobra.Command, name string, namespace strin
 	polarisMultiCR := &polarisMultiCR{
 		auth: &synopsysv1.AuthServer{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
-				Namespace:namespace,
+				Name:      name,
+				Namespace: namespace,
 			},
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "synopsys.com/v1",
-				Kind: "AuthServer",
+				Kind:       "AuthServer",
 			},
 			Spec: *multiCRSpec.authSpec,
 		},
 		polarisDB: &synopsysv1.PolarisDB{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
-				Namespace:namespace,
+				Name:      name,
+				Namespace: namespace,
 			},
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "synopsys.com/v1",
-				Kind: "PolarisDB",
+				Kind:       "PolarisDB",
 			},
 			Spec: *multiCRSpec.polarisDBSpec,
 		},
 		polaris: &synopsysv1.Polaris{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
-				Namespace:namespace,
+				Name:      name,
+				Namespace: namespace,
 			},
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "synopsys.com/v1",
-				Kind: "Polaris",
+				Kind:       "Polaris",
 			},
 			Spec: *multiCRSpec.polarisSpec,
 		},
@@ -590,6 +590,11 @@ var createPolarisCmd = &cobra.Command{
 			cmd.Help()
 			return err
 		}
+		cobra.MarkFlagRequired(cmd.Flags(), "version")
+		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
+		cobra.MarkFlagRequired(cmd.Flags(), "environment-name")
+		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
+		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
