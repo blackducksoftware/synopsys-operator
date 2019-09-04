@@ -49,8 +49,8 @@ const (
 	// SizeCRDName is the name of the Size CRD
 	SizeCRDName = "sizes.synopsys.com"
 
-	PolarisCRDName = "polaris.synopsys.com"
-	PolarisDBCRDName = "polarisdbs.synopsys.com"
+	PolarisCRDName    = "polaris.synopsys.com"
+	PolarisDBCRDName  = "polarisdbs.synopsys.com"
 	AuthServerCRDName = "authservers.synopsys.com"
 
 	// OperatorName is the name of an Operator
@@ -63,6 +63,8 @@ const (
 	OpsSightName = "opssight"
 	// PrmName is the name of the Prm app
 	PrmName = "prm"
+
+	PolarisName = "polaris"
 )
 
 // GetSampleDefaultValue creates a sample crd configuration object with defaults
@@ -518,23 +520,22 @@ func GetAlertDefault() *synopsysv1.AlertSpec {
 	}
 }
 
-
 // GetPolarisDBDefault returns PolarisDB default configuration
 func GetPolarisDBDefault() *synopsysv1.PolarisDBSpec {
 	return &synopsysv1.PolarisDBSpec{
-			EnvironmentName:        "polaris",
-			SMTPDetails:            synopsysv1.SMTPDetails{},
-			PostgresInstanceType:   "internal",
-			PostgresStorageDetails: synopsysv1.PostgresStorageDetails{},
-			PostgresDetails:        synopsysv1.PostgresDetails{
-				Host:     "postgres",
-				Port:     IntToInt32(5432),
-			},
-			EventstoreDetails:      synopsysv1.EventstoreDetails{
-				Replicas:IntToInt32(3),
-			},
-			UploadServerDetails:    synopsysv1.UploadServerDetails{
-				Replicas:IntToInt32(1),
-			},
-		}
+		EnvironmentName:        "polaris",
+		SMTPDetails:            synopsysv1.SMTPDetails{},
+		PostgresInstanceType:   "internal",
+		PostgresStorageDetails: synopsysv1.PostgresStorageDetails{},
+		PostgresDetails: synopsysv1.PostgresDetails{
+			Host: "postgres",
+			Port: IntToInt32(5432),
+		},
+		EventstoreDetails: synopsysv1.EventstoreDetails{
+			Replicas: IntToInt32(3),
+		},
+		UploadServerDetails: synopsysv1.UploadServerDetails{
+			Replicas: IntToInt32(1),
+		},
+	}
 }

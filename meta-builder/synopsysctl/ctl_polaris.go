@@ -109,7 +109,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "EnvironmentDNS")
 	cmd.Flags().StringVar(&ctl.EnvironmentName, "environment-name", ctl.EnvironmentName, "EnvironmentName")
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
-	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class",  ctl.StorageClass, "Storage class")
+	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
 
 	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
 	//cmd.Flags().Int32Var(&ctl.PostgresPort, "postgres-port",  ctl.PostgresPort, "")
@@ -171,13 +171,12 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.polarisDBSpec.PostgresDetails.Username = ctl.PostgresUsername
 		case "postgres-password":
 			ctl.spec.polarisDBSpec.PostgresDetails.Password = ctl.PostgresPassword
-			ctl.spec.polarisDBSpec.PostgresDetails.Username = ctl.PostgresUsername
 		case "postgres-size":
 			ctl.spec.polarisDBSpec.PostgresStorageDetails.StorageSize = ctl.PostgresSize
 		case "uploadserver-size":
-			ctl.spec.polarisDBSpec.UploadServerDetails.Storage.StorageSize= ctl.UploadServerSize
+			ctl.spec.polarisDBSpec.UploadServerDetails.Storage.StorageSize = ctl.UploadServerSize
 		case "eventstore-size":
-			ctl.spec.polarisDBSpec.EventstoreDetails.StorageSize= ctl.EventstoreSize
+			ctl.spec.polarisDBSpec.EventstoreDetails.StorageSize = ctl.EventstoreSize
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}

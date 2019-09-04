@@ -59,7 +59,7 @@ var deleteAlertCmd = &cobra.Command{
 				return err
 			}
 			log.Infof("deleting Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-			err = utils.DeleteAlert(restClient,alertName,alertNamespace, &metav1.DeleteOptions{})
+			err = utils.DeleteAlert(restClient, alertName, alertNamespace, &metav1.DeleteOptions{})
 			if err != nil {
 				return fmt.Errorf("error deleting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 			}
@@ -123,7 +123,7 @@ var deleteOpsSightCmd = &cobra.Command{
 				return err
 			}
 			log.Infof("deleting OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-			err = utils.DeleteOpsSight(restClient, opsSightName, opsSightNamespace, &metav1.DeleteOptions{} )
+			err = utils.DeleteOpsSight(restClient, opsSightName, opsSightNamespace, &metav1.DeleteOptions{})
 			if err != nil {
 				return fmt.Errorf("error deleting OpsSight '%s' in namespace '%s' due to '%s'", opsSightName, opsSightNamespace, err)
 			}
@@ -132,8 +132,6 @@ var deleteOpsSightCmd = &cobra.Command{
 		return nil
 	},
 }
-
-
 
 // deletePolarisCmd deletes Polaris instances from the cluster
 var deletePolarisCmd = &cobra.Command{
@@ -150,7 +148,22 @@ var deletePolarisCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO
+		polarisName, polarisNamespace, _, err := getInstanceInfo(false, utils.PolarisDBCRDName, utils.PolarisName, namespace, args[0])
+		if err != nil {
+			return err
+		}
+
+		if err := utils.DeletePolaris(restClient, polarisName, polarisNamespace, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+
+		if err := utils.DeletePolarisDB(restClient, polarisName, polarisNamespace, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+
+		if err := utils.DeleteAuthServer(restClient, polarisName, polarisNamespace, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
 		return nil
 	},
 }
