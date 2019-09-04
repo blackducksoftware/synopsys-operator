@@ -38,8 +38,9 @@ import (
 // AuthServerReconciler reconciles a AuthServer object
 type AuthServerReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	Log    logr.Logger
+	Scheme      *runtime.Scheme
+	Log         logr.Logger
+	IsOpenShift bool
 }
 
 func (r *AuthServerReconciler) GetClient() client.Client {
@@ -86,7 +87,7 @@ func (r *AuthServerReconciler) GetRuntimeObjects(cr interface{}) (map[string]run
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", authServerCr.Spec.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", authServerCr.Spec.ImagePullSecrets)
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.GetAuthServerRuntimeObjects(controllers_utils.ConvertYamlFileToRuntimeObjects(content))
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.GetAuthServerRuntimeObjects(controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift))
 
 	// filter auth-server runtimeobjects
 
@@ -106,7 +107,7 @@ func (r *AuthServerReconciler) GetRuntimeObjects(cr interface{}) (map[string]run
 
 func (r *AuthServerReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	instructionManualLocation := "config/samples/dependency_manual_authserver.yaml"
-	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation, mapOfUniqueIdToDesiredRuntimeObject)
+	instructionManual, err := controllers_utils.CreateInstructionManualFromYaml(instructionManualLocation)
 	if err != nil {
 		return nil, err
 	}

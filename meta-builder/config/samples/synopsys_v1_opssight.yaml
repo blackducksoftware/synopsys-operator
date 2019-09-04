@@ -4,7 +4,7 @@ metadata:
   name: opssight-sample
 spec:
   blackduck:
-    blackduckPassword: ""
+    blackduckPassword: "YmxhY2tkdWNr"
     blackduckSpec:
       adminPassword: ""
       authCustomCa: ""
@@ -58,3 +58,5 @@ spec:
     scanner:
       clientTimeoutSeconds: 600
     scannerReplicaCount: 1
+  size: small
+  version: 2.2.4

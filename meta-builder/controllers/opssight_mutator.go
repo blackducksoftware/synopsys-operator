@@ -23,25 +23,35 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 
+	"github.com/go-logr/logr"
+
+	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func patchOpsSight(client client.Client, opsSight *synopsysv1.OpsSight, runtimeObjects map[string]runtime.Object) map[string]runtime.Object {
+func patchOpsSight(client client.Client, scheme *runtime.Scheme, opsSight *synopsysv1.OpsSight, runtimeObjects map[string]runtime.Object, log logr.Logger, isOpenShift bool) map[string]runtime.Object {
+	log.Info("patching")
 	patcher := OpsSightPatcher{
 		Client:         client,
+		scheme:         scheme,
 		opsSight:       opsSight,
 		runtimeObjects: runtimeObjects,
+		log:            log,
+		isOpenShift:    isOpenShift,
 	}
 	return patcher.patch()
 }
@@ -49,8 +59,11 @@ func patchOpsSight(client client.Client, opsSight *synopsysv1.OpsSight, runtimeO
 // OpsSightPatcher applies the patches to OpsSight
 type OpsSightPatcher struct {
 	client.Client
+	scheme         *runtime.Scheme
 	opsSight       *synopsysv1.OpsSight
 	runtimeObjects map[string]runtime.Object
+	log            logr.Logger
+	isOpenShift    bool
 }
 
 func (p *OpsSightPatcher) patch() map[string]runtime.Object {
@@ -66,8 +79,10 @@ func (p *OpsSightPatcher) patch() map[string]runtime.Object {
 		p.patchPrometheusMetrics,
 		p.patchProcessor,
 		p.patchCoreModelUI,
-		p.patchWithSize,
+		// p.patchWithSize,
 		p.patchReplicas,
+		p.patchAddRegistryAuth,
+		p.patchSecretData,
 	}
 	for _, f := range patches {
 		err := f()
@@ -147,6 +162,8 @@ func (p *OpsSightPatcher) patchImageProcessor() error {
 		delete(p.runtimeObjects, fmt.Sprintf("ClusterRoleBinding.%s-opssight-image-processor", p.opsSight.Name))
 		delete(p.runtimeObjects, fmt.Sprintf("Service.%s-opssight-image-processor", p.opsSight.Name))
 		delete(p.runtimeObjects, fmt.Sprintf("ReplicationController.%s-opssight-image-processor", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("ClusterRole.%s-opssight-scanner", p.opsSight.Name))
+		delete(p.runtimeObjects, fmt.Sprintf("ClusterRoleBinding.%s-opssight-scanner", p.opsSight.Name))
 	}
 	return nil
 }
@@ -169,7 +186,7 @@ func (p *OpsSightPatcher) patchPrometheusMetrics() error {
 		delete(p.runtimeObjects, fmt.Sprintf("Route.%s-opssight-prometheus-metrics", p.opsSight.Name))
 	} else {
 		// TODO need to check if the cluster is OpenShift
-		if p.opsSight.Spec.Prometheus.Expose != "OPENSHIFT" {
+		if !p.isOpenShift || p.opsSight.Spec.Prometheus.Expose != "OPENSHIFT" {
 			delete(p.runtimeObjects, fmt.Sprintf("Route.%s-opssight-prometheus-metrics", p.opsSight.Name))
 		}
 	}
@@ -178,7 +195,7 @@ func (p *OpsSightPatcher) patchPrometheusMetrics() error {
 
 func (p *OpsSightPatcher) patchCoreModelUI() error {
 	// TODO need to check if the cluster is OpenShift
-	if p.opsSight.Spec.Perceptor.Expose != "OPENSHIFT" {
+	if !p.isOpenShift || p.opsSight.Spec.Perceptor.Expose != "OPENSHIFT" {
 		delete(p.runtimeObjects, fmt.Sprintf("Route.%s-opssight-core", p.opsSight.Name))
 	}
 	return nil
@@ -266,6 +283,156 @@ func (p *OpsSightPatcher) patchReplicas() error {
 			switch strings.ToUpper(p.opsSight.Spec.DesiredState) {
 			case "STOP":
 				v.(*appsv1.Deployment).Spec.Replicas = func(i int32) *int32 { return &i }(0)
+			}
+		}
+	}
+	return nil
+}
+
+func (p *OpsSightPatcher) patchAddRegistryAuth() error {
+	// if OpenShift, get the registry auth informations
+	if !p.isOpenShift {
+		return nil
+	}
+
+	internalRegistries := []*string{}
+
+	// Adding default image registry routes
+	routes := map[string]string{"default": "docker-registry", "openshift-image-registry": "image-registry"}
+	for namespace, name := range routes {
+		route := &routev1.Route{}
+		err := p.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, route)
+		if err != nil {
+			continue
+		}
+		internalRegistries = append(internalRegistries, &route.Spec.Host)
+		routeHostPort := fmt.Sprintf("%s:443", route.Spec.Host)
+		internalRegistries = append(internalRegistries, &routeHostPort)
+	}
+
+	// Adding default OpenShift internal Docker/image registry service
+	labelSelectors := []string{"docker-registry=default", "router in (router,router-default)"}
+	for _, labelSelector := range labelSelectors {
+		selector, err := labels.Parse(labelSelector)
+		if err != nil {
+			p.log.Error(err, "label selector", "selector", labelSelector)
+			continue
+		}
+		registrySvcs := &corev1.ServiceList{}
+		err = p.Client.List(context.TODO(), registrySvcs, MatchingLabels{LabelSelector: selector})
+		if err != nil {
+			continue
+		}
+		for _, registrySvc := range registrySvcs.Items {
+			if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
+				for _, port := range registrySvc.Spec.Ports {
+					clusterIPSvc := fmt.Sprintf("%s:%d", registrySvc.Spec.ClusterIP, port.Port)
+					internalRegistries = append(internalRegistries, &clusterIPSvc)
+					clusterIPSvcPort := fmt.Sprintf("%s.%s.svc:%d", registrySvc.Name, registrySvc.Namespace, port.Port)
+					internalRegistries = append(internalRegistries, &clusterIPSvcPort)
+				}
+			}
+		}
+	}
+
+	// read the operator service account token to set it as password to pull the image from an OpenShift internal Docker registry
+	file, err := controllers_utils.ReadFileData("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err != nil {
+		p.log.Error(err, "unable to read the service account token file")
+	} else {
+		for _, internalRegistry := range internalRegistries {
+			p.opsSight.Spec.ScannerPod.ImageFacade.InternalRegistries = append(p.opsSight.Spec.ScannerPod.ImageFacade.InternalRegistries, &synopsysv1.RegistryAuth{URL: *internalRegistry, User: "admin", Password: string(file)})
+		}
+	}
+	return nil
+}
+
+func (p *OpsSightPatcher) patchSecretData() error {
+	blackDuckHosts := make(map[string]*synopsysv1.Host)
+	// adding External Black Duck credentials
+	for _, host := range p.opsSight.Spec.Blackduck.ExternalHosts {
+		blackDuckHosts[host.Domain] = host
+	}
+
+	// adding Internal Black Duck credentials
+	opsSightUpdater := NewOpsSightBlackDuckReconciler(p.Client, p.scheme, p.log)
+	blackDuckType := p.opsSight.Spec.Blackduck.BlackduckSpec.Type
+	blackDuckPassword, err := controllers_utils.Base64Decode(p.opsSight.Spec.Blackduck.BlackduckPassword)
+	if err != nil {
+		return fmt.Errorf("unable to decode Black Duck Password due to %+v", err)
+	}
+
+	allBlackDucks := opsSightUpdater.GetAllBlackDucks(blackDuckType, blackDuckPassword)
+	blackDuckMergedHosts := opsSightUpdater.AppendBlackDuckSecrets(blackDuckHosts, p.opsSight.Status.InternalHosts, allBlackDucks)
+
+	// add internal hosts to status
+	p.opsSight.Status.InternalHosts = opsSightUpdater.AppendBlackDuckHosts(p.opsSight.Status.InternalHosts, allBlackDucks)
+
+	for _, v := range p.runtimeObjects {
+		switch v.(type) {
+		case *corev1.Secret:
+			// marshal the blackduck credentials to bytes
+			bytes, err := json.Marshal(blackDuckMergedHosts)
+			if err != nil {
+				return fmt.Errorf("unable to marshal Black Duck passwords due to %+v", err)
+			}
+			v.(*corev1.Secret).Data[p.opsSight.Spec.Blackduck.ConnectionsEnvironmentVariableName] = bytes
+
+			// adding Secured registries credentials
+			securedRegistries := make(map[string]*synopsysv1.RegistryAuth)
+			for _, internalRegistry := range p.opsSight.Spec.ScannerPod.ImageFacade.InternalRegistries {
+				securedRegistries[internalRegistry.URL] = internalRegistry
+			}
+			// marshal the Secured registries credentials to bytes
+			bytes, err = json.Marshal(securedRegistries)
+			if err != nil {
+				return fmt.Errorf("unable to marshal secured registries due to %+v", err)
+			}
+			v.(*corev1.Secret).Data["securedRegistries.json"] = bytes
+		}
+	}
+
+	return nil
+}
+
+func (p *OpsSightPatcher) patchPodProcessorSCC() error {
+	if !p.isOpenShift {
+		return nil
+	}
+
+	for _, v := range p.runtimeObjects {
+		switch v.(type) {
+		case *rbacv1.ClusterRole:
+			if v.(*rbacv1.ClusterRole).GetName() == fmt.Sprintf("%s-opssight-pod-processor", p.opsSight.Name) {
+				rule := rbacv1.PolicyRule{
+					Verbs:         []string{"use"},
+					APIGroups:     []string{"security.openshift.io"},
+					Resources:     []string{"securitycontextconstraints"},
+					ResourceNames: []string{"privileged"},
+				}
+				v.(*rbacv1.ClusterRole).Rules = append(v.(*rbacv1.ClusterRole).Rules, rule)
+			}
+		}
+	}
+	return nil
+}
+
+func (p *OpsSightPatcher) patchScannerSCC() error {
+	if !p.isOpenShift || p.opsSight.Spec.ScannerPod.ImageFacade.ImagePullerType == "skopeo" || !p.opsSight.Spec.Perceiver.EnableImagePerceiver {
+		return nil
+	}
+
+	for _, v := range p.runtimeObjects {
+		switch v.(type) {
+		case *rbacv1.ClusterRole:
+			if v.(*rbacv1.ClusterRole).GetName() == fmt.Sprintf("%s-opssight-scanner", p.opsSight.Name) {
+				rule := rbacv1.PolicyRule{
+					Verbs:         []string{"use"},
+					APIGroups:     []string{"security.openshift.io"},
+					Resources:     []string{"securitycontextconstraints"},
+					ResourceNames: []string{"privileged"},
+				}
+				v.(*rbacv1.ClusterRole).Rules = append(v.(*rbacv1.ClusterRole).Rules, rule)
 			}
 		}
 	}

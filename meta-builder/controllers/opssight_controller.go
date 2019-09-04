@@ -23,7 +23,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
@@ -73,7 +72,6 @@ func (r *OpsSightReconciler) GetCustomResource(req ctrl.Request) (metav1.Object,
 			return nil, nil
 		}
 	}
-	fmt.Printf("get OpsSight: %+v\n", opsSight)
 	return opsSight, nil
 }
 
@@ -97,7 +95,7 @@ func (r *OpsSightReconciler) GetRuntimeObjects(cr interface{}) (map[string]runti
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAME}", opsSight.Name)
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", opsSight.Spec.Namespace)
 
-	mapOfUniqueIDToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString)
+	mapOfUniqueIDToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString, r.IsOpenShift)
 	for _, desiredRuntimeObject := range mapOfUniqueIDToDesiredRuntimeObject {
 		// set an owner reference
 		if err := ctrl.SetControllerReference(opsSight, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
@@ -107,7 +105,7 @@ func (r *OpsSightReconciler) GetRuntimeObjects(cr interface{}) (map[string]runti
 			return mapOfUniqueIDToDesiredRuntimeObject, nil
 		}
 	}
-	objs := patchOpsSight(r.Client, opsSight, mapOfUniqueIDToDesiredRuntimeObject)
+	objs := patchOpsSight(r.Client, r.Scheme, opsSight, mapOfUniqueIDToDesiredRuntimeObject, r.Log, r.IsOpenShift)
 
 	return objs, nil
 }

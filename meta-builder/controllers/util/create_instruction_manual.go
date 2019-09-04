@@ -79,7 +79,8 @@ func CreateInstructionManual(mapOfUniqueIDToDesiredRuntimeObject map[string]runt
 	return dependencyYamlStruct, nil
 }
 
-func CreateInstructionManualFromYaml(instructionManualLocation string, mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
+// CreateInstructionManualFromYaml creates the instruction manual from yaml
+func CreateInstructionManualFromYaml(instructionManualLocation string) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	// Read Dependency YAML File into Struct
 	dependencyYamlBytes, err := ioutil.ReadFile(instructionManualLocation)
 	if err != nil {
