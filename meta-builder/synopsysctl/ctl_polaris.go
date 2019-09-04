@@ -52,6 +52,11 @@ type PolarisCRSpecBuilderFromCobraFlags struct {
 	PostgresPassword string
 	PostgresSize     string
 
+	SMTPHost     string
+	SMTPPort     int32
+	SMTPUsername string
+	SMTPPassword string
+
 	UploadServerSize string
 	EventstoreSize   string
 }
@@ -106,19 +111,24 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType stri
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris")
-	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "EnvironmentDNS")
-	cmd.Flags().StringVar(&ctl.EnvironmentName, "environment-name", ctl.EnvironmentName, "EnvironmentName")
+	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "Environment DNS")
+	cmd.Flags().StringVar(&ctl.EnvironmentName, "environment-name", ctl.EnvironmentName, "Environment name")
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
 
 	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
 	//cmd.Flags().Int32Var(&ctl.PostgresPort, "postgres-port",  ctl.PostgresPort, "")
-	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "")
-	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "")
+	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
+	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
 
-	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", ctl.PostgresSize, "")
-	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", ctl.UploadServerSize, "")
-	cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", ctl.EventstoreSize, "")
+	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", ctl.PostgresSize, "PVC size to use for postgres. e.g. 100Gi")
+	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", ctl.UploadServerSize, "PVC size to use for uploadserver. e.g. 100Gi")
+	cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", ctl.EventstoreSize, "PVC size to use for eventstore. e.g. 100Gi")
+
+	cmd.Flags().StringVar(&ctl.SMTPHost, "smtp-host", ctl.SMTPHost, "SMTP host")
+	cmd.Flags().Int32Var(&ctl.SMTPPort, "smtp-port", ctl.SMTPPort, "SMTP port")
+	cmd.Flags().StringVar(&ctl.SMTPUsername, "smtp-username", ctl.SMTPUsername, "SMTP username")
+	cmd.Flags().StringVar(&ctl.SMTPPassword, "smtp-password", ctl.SMTPPassword, "SMTP password")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
@@ -177,6 +187,14 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.polarisDBSpec.UploadServerDetails.Storage.StorageSize = ctl.UploadServerSize
 		case "eventstore-size":
 			ctl.spec.polarisDBSpec.EventstoreDetails.StorageSize = ctl.EventstoreSize
+		case "smtp-host":
+			ctl.spec.polarisDBSpec.SMTPDetails.Host = ctl.SMTPHost
+		case "smtp-port":
+			ctl.spec.polarisDBSpec.SMTPDetails.Port = &ctl.SMTPPort
+		case "smtp-username":
+			ctl.spec.polarisDBSpec.SMTPDetails.Username = ctl.SMTPUsername
+		case "smtp-password":
+			ctl.spec.polarisDBSpec.SMTPDetails.Password = ctl.SMTPPassword
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}

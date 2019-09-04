@@ -595,6 +595,12 @@ var createPolarisCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "environment-name")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
+
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-port")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-username")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
