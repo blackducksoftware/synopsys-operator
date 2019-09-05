@@ -9,7 +9,9 @@ spec:
   group: synopsys.com
   names:
     kind: Reporting
+    listKind: ReportingList
     plural: reportings
+    singular: reporting
   scope: ""
   validation:
     openAPIV3Schema:

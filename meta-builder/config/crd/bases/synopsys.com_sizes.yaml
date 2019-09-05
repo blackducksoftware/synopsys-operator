@@ -9,7 +9,9 @@ spec:
   group: synopsys.com
   names:
     kind: Size
+    listKind: SizeList
     plural: sizes
+    singular: size
   scope: ""
   validation:
     openAPIV3Schema:

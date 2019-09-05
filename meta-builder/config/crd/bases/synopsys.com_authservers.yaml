@@ -9,7 +9,9 @@ spec:
   group: synopsys.com
   names:
     kind: AuthServer
+    listKind: AuthServerList
     plural: authservers
+    singular: authserver
   scope: ""
   validation:
     openAPIV3Schema:

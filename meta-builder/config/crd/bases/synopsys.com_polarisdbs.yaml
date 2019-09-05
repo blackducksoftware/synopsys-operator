@@ -9,7 +9,9 @@ spec:
   group: synopsys.com
   names:
     kind: PolarisDB
+    listKind: PolarisDBList
     plural: polarisdbs
+    singular: polarisdb
   scope: ""
   validation:
     openAPIV3Schema:

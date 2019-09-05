@@ -9,7 +9,9 @@ spec:
   group: synopsys.com
   names:
     kind: OpsSight
+    listKind: OpsSightList
     plural: opssights
+    singular: opssight
   scope: Cluster
   validation:
     openAPIV3Schema:

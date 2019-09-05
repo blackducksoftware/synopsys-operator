@@ -9,7 +9,9 @@ spec:
   group: synopsys.com
   names:
     kind: Alert
+    listKind: AlertList
     plural: alerts
+    singular: alert
   scope: ""
   validation:
     openAPIV3Schema:
