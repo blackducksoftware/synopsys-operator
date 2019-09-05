@@ -15,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	apijson "k8s.io/apimachinery/pkg/util/json"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -336,19 +338,19 @@ func IsJobCompleted(job *batchv1.Job) error {
 
 // TODO: Borrowed and modified slightly from https://godoc.org/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil#CreateOrUpdate
 // Changes include removing the mutateFn, using semantic.DeepEqual, doing a deepcopy before create cause create will muck with it
-func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object) (controllerutil.OperationResult, error) {
-	key, err := client.ObjectKeyFromObject(obj)
+func CreateOrUpdate(ctx context.Context, c client.Client, desiredRuntimeObject runtime.Object) (controllerutil.OperationResult, error) {
+	key, err := client.ObjectKeyFromObject(desiredRuntimeObject)
 	if err != nil {
 		return controllerutil.OperationResultNone, err
 	}
 
 	// CHANGE #1
-	currentRuntimeObject := obj.DeepCopyObject()
+	currentRuntimeObject := desiredRuntimeObject.DeepCopyObject()
 	if err := c.Get(ctx, key, currentRuntimeObject); err != nil {
 		if !apierrs.IsNotFound(err) {
 			return controllerutil.OperationResultNone, err
 		}
-		if err := c.Create(ctx, obj); err != nil {
+		if err := c.Create(ctx, desiredRuntimeObject); err != nil {
 			return controllerutil.OperationResultNone, err
 		}
 		return controllerutil.OperationResultCreated, nil
@@ -357,13 +359,14 @@ func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object) (c
 	// CHANGE #2
 	// TODO: need more than this cause server puts some default
 	// TODO: good info in issue here: https://github.com/kubernetes-sigs/controller-runtime/issues/464
-	//existing := currentRuntimeObject
-	//if equality.Semantic.DeepEqual(existing, obj) {
+	rawDesiredRuntimeObjectInBytes, _ := apijson.Marshal(desiredRuntimeObject)
+
+	//if equality.Semantic.DeepEqual(existing, desiredRuntimeObject) {
 	//	return controllerutil.OperationResultNone, nil
 	//}
-	//strategicpatch.CreateTwoWayMergePatch(existing, obj, )
+	//strategicpatch.CreateTwoWayMergePatch(existing, desiredRuntimeObject, )
 
-	if err := c.Update(ctx, obj); err != nil {
+	if err := c.Patch(ctx, currentRuntimeObject, client.ConstantPatch(types.MergePatchType, rawDesiredRuntimeObjectInBytes)); err != nil {
 		// CHANGE #3
 		// TODO:
 		return controllerutil.OperationResultNone, nil

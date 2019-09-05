@@ -29,7 +29,6 @@ spec:
   defaultMem: 1300Mi
   desiredState: ""
   enableMetrics: true
-  enableSkyfire: false
   isUpstream: false
   logLevel: debug
   namespace: opssight-sample
