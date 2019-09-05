@@ -41,6 +41,7 @@ import (
 	"github.com/spf13/cobra"
 
 	synopsysV1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/size"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
@@ -83,10 +84,22 @@ var serveUICmd = &cobra.Command{
 				log.Fatal(err)
 			}
 			fmt.Printf("Data from Polaris Body: %s\n\n", reqBody)
-			p1, p2, p3 := createPolarisSpec(reqBody)
+			auth, db, polaris := createPolarisSpec(reqBody)
 			fmt.Printf("authSpec: %+v\n", p1)
 			fmt.Printf("polarisDBSpec: %+v\n", p2)
 			fmt.Printf("polarisSpec: %+v\n", p3)
+			if _, err := utils.CreateAuthServer(restconfig, auth); err != nil {
+				fmt.Printf("[ERROR] failed to deploy Polaris: %s", err)
+				return
+			}
+			if _, err := utils.CreatePolarisDB(restconfig, db); err != nil {
+				fmt.Printf("[ERROR] failed to deploy Polaris: %s", err)
+				return
+			}
+			if _, err := utils.CreatePolaris(restconfig, polaris); err != nil {
+				fmt.Printf("[ERROR] failed to deploy Polaris: %s", err)
+				return
+			}
 		})
 
 		// api route - deploy Black Duck
@@ -99,9 +112,10 @@ var serveUICmd = &cobra.Command{
 			fmt.Printf("Data from Black Duck Body: %s\n\n", reqBody)
 			bd := createBlackDuckSpec(reqBody)
 			fmt.Printf("Black Duck CR: %+v\n\n", bd)
-			_, err = blackDuckClient.SynopsysV1().Blackducks(operatorNamespace).Create(bd)
+			_, err = utils.CreateBlackduck(restconfig, bd)
 			if err != nil {
-				fmt.Printf("error creating Black Duck '%s' in namespace '%s' due to %+v", bd.Name, bd.Spec.Namespace, err)
+				fmt.Errorf("[ERROR] failed to create Black Duck '%s' in namespace '%s' due to %+v", bd.Name, bd.Namespace, err)
+				return
 			}
 			fmt.Printf("Successfully deployed Black Duck: %+v\n\n", bd.Name)
 		})
