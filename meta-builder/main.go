@@ -116,6 +116,7 @@ func main() {
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("OpsSightBlackDuck"),
 		Scheme: mgr.GetScheme(), // we've added this ourselves
+		// TODO: [senthil] add IsOpenShift here?
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OpsSight")
 		os.Exit(1)

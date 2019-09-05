@@ -262,9 +262,15 @@ func CheckForReadiness(myClient client.Client, desiredRuntimeObject runtime.Obje
 	case *batchv1.Job:
 		liveJob := &batchv1.Job{}
 		_ = myClient.Get(context.TODO(), key, liveJob)
-		return IsJobFinished(liveJob)
+		return IsJobCompleted(liveJob)
+
+	case *appsv1.StatefulSet:
+		liveStatefulSet := &appsv1.StatefulSet{}
+		_ = myClient.Get(context.TODO(), key, liveStatefulSet)
+		return IsStatefulSetReady(liveStatefulSet)
 
 	default:
+		fmt.Printf("Unknown type is marked healthy by default")
 		return nil
 
 	}
@@ -302,25 +308,30 @@ func IsReplicationControllerReady(rc *corev1.ReplicationController) error {
 }
 
 func IsDeploymentReady(deployment *appsv1.Deployment) error {
-	if deployment.Status.ReadyReplicas < deployment.Status.Replicas {
+	if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
 		return fmt.Errorf("deployment is not ready: %s/%s", deployment.GetNamespace(), deployment.GetName())
 	}
 	return nil
 }
 
-func IsJobFinished(job *batchv1.Job) error {
+func IsStatefulSetReady(statefulSet *appsv1.StatefulSet) error {
+	if statefulSet.Status.ReadyReplicas != *statefulSet.Spec.Replicas {
+		return fmt.Errorf("statefulSet is not ready: %s/%s", statefulSet.GetNamespace(), statefulSet.GetName())
+	}
+	return nil
+}
+
+func IsJobCompleted(job *batchv1.Job) error {
 	// TODO: https://github.com/kubernetes/kubernetes/issues/68712
 
 	if &job.Status != nil && len(job.Status.Conditions) > 0 {
 		for _, condition := range job.Status.Conditions {
-			// TODO: currently complete and fail are both considered to be finished
-			if (condition.Type == batchv1.JobComplete || condition.Type == batchv1.JobFailed) &&
-				condition.Status == corev1.ConditionTrue {
+			if condition.Type == batchv1.JobComplete && condition.Status == corev1.ConditionTrue {
 				return nil
 			}
 		}
 	}
-	return fmt.Errorf("job is not ready: %s/%s", job.GetNamespace(), job.GetName())
+	return fmt.Errorf("job is still running or failed: %s/%s", job.GetNamespace(), job.GetName())
 }
 
 // TODO: Borrowed and modified slightly from https://godoc.org/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil#CreateOrUpdate

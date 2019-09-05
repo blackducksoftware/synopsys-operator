@@ -75,6 +75,6 @@ func (p *OpsSightBlackDuckReconciler) Reconcile(request ctrl.Request) (ctrl.Resu
 
 // SetupWithManager setup the Controller runtime manager
 func (p *OpsSightBlackDuckReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	builder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Blackduck{})
+	builder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Blackduck{}).Named("OpsSightBlackDuck")
 	return builder.Complete(p)
 }
