@@ -27,7 +27,6 @@ import (
 	"html"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -45,6 +44,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/size"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/gobuffalo/packr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -57,6 +57,7 @@ var serveUICmd = &cobra.Command{
 	Short: "Starts a service running the User Interface and listens for events",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debug("Starting User Interface Server...")
+		box := packr.NewBox("../../operator-ui-ember/dist")
 
 		// Start Running a backend server that listens for input from the User Interface
 		router := mux.NewRouter()
@@ -123,6 +124,7 @@ var serveUICmd = &cobra.Command{
 		spa := spaHandler{
 			staticPath: "../../operator-ui-ember/dist",
 			indexPath:  "../../operator-ui-ember/dist/index.html",
+			box:        &box,
 		}
 		router.PathPrefix("/").Handler(spa)
 
@@ -134,6 +136,12 @@ var serveUICmd = &cobra.Command{
 		fmt.Printf("  - /api/deploy_black_duck\n")
 		fmt.Printf("==================================\n")
 		fmt.Printf("\n")
+
+		s, err := box.FindString("index.html")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(s)
 
 		// Serving the server
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", serverPort), handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(router)))
@@ -150,6 +158,7 @@ var serveUICmd = &cobra.Command{
 type spaHandler struct {
 	staticPath string
 	indexPath  string
+	box        *packr.Box
 }
 
 // Copied From: https://github.com/gorilla/mux#serving-single-page-applications
@@ -159,32 +168,47 @@ type spaHandler struct {
 // is suitable behavior for serving an SPA (single page application).
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// get the absolute path to prevent directory traversal
-	path, err := filepath.Abs(r.URL.Path)
+	ogPath, err := filepath.Abs(r.URL.Path)
 	if err != nil {
 		// if we failed to get the absolute path respond with a 400 bad request
 		// and stop
+		fmt.Printf("there was an error getting abs path\n")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	fmt.Printf("Path: %s\n", ogPath)
 
 	// prepend the path with the path to the static directory
-	path = filepath.Join(h.staticPath, path)
+	path := filepath.Join(h.staticPath, ogPath)
+	fmt.Printf("Joined Path: %s\n", path)
 
 	// check whether a file exists at the given path
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
+
+	//_, err = os.Stat(path)
+	//if os.IsNotExist(err) {
+	if !h.box.Has(ogPath) {
 		// file does not exist, serve index.html
-		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
-		return
-	} else if err != nil {
-		// if we got an error (that wasn't that the file doesn't exist) stating the
-		// file, return a 500 internal server error and stop
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		fmt.Printf("Serving the indexpath\n")
+		fmt.Printf("Joined Paths: %s", filepath.Join(h.staticPath, h.indexPath))
+		//http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
+		file, err := h.box.Open("index.html")
+		if err != nil {
+			fmt.Printf("[ERROR] reading index file from box\n")
+		}
+		http.ServeContent(w, r, filepath.Join(h.staticPath, h.indexPath), time.Now(), file)
 		return
 	}
+	// } else if err != nil {
+	// 	fmt.Printf("there was an error\n")
+	// 	// if we got an error (that wasn't that the file doesn't exist) stating the
+	// 	// file, return a 500 internal server error and stop
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	// otherwise, use http.FileServer to serve the static dir
-	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
+	fmt.Printf("Serving the static directory\n")
+	http.FileServer(h.box).ServeHTTP(w, r)
 }
 
 func init() {
