@@ -41,7 +41,7 @@ import (
 	"github.com/spf13/cobra"
 
 	synopsysV1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/size"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -83,10 +83,22 @@ var serveUICmd = &cobra.Command{
 				log.Fatal(err)
 			}
 			fmt.Printf("Data from Polaris Body: %s\n\n", reqBody)
-			p1, p2, p3 := createPolarisSpec(reqBody)
-			fmt.Printf("authSpec: %+v\n", p1)
-			fmt.Printf("polarisDBSpec: %+v\n", p2)
-			fmt.Printf("polarisSpec: %+v\n", p3)
+			auth, db, polaris := createPolarisSpec(reqBody)
+			fmt.Printf("authSpec: %+v\n", auth)
+			fmt.Printf("polarisDBSpec: %+v\n", db)
+			fmt.Printf("polarisSpec: %+v\n", polaris)
+			if _, err := utils.CreateAuthServer(restClient, auth); err != nil {
+				fmt.Printf("[ERROR] Failed to deploy Polaris: %s", err)
+				return
+			}
+			if _, err := utils.CreatePolarisDB(restClient, db); err != nil {
+				fmt.Printf("[ERROR] Failed to deploy Polaris: %s", err)
+				return
+			}
+			if _, err := utils.CreatePolaris(restClient, polaris); err != nil {
+				fmt.Printf("[ERROR] Failed to deploy Polaris: %s", err)
+				return
+			}
 		})
 
 		// api route - deploy Black Duck
@@ -99,9 +111,10 @@ var serveUICmd = &cobra.Command{
 			fmt.Printf("Data from Black Duck Body: %s\n\n", reqBody)
 			bd := createBlackDuckSpec(reqBody)
 			fmt.Printf("Black Duck CR: %+v\n\n", bd)
-			_, err = blackDuckClient.SynopsysV1().Blackducks(operatorNamespace).Create(bd)
+			_, err = utils.CreateBlackduck(restClient, bd)
 			if err != nil {
-				fmt.Printf("error creating Black Duck '%s' in namespace '%s' due to %+v", bd.Name, bd.Spec.Namespace, err)
+				fmt.Printf("[ERROR] Failed to create Black Duck '%s' in namespace '%s' due to %+v", bd.Name, bd.Namespace, err)
+				return
 			}
 			fmt.Printf("Successfully deployed Black Duck: %+v\n\n", bd.Name)
 		})
@@ -328,19 +341,19 @@ type blackDuckUIRequestConfig struct {
 	ProxyRootCertificate              string `json:"proxyRootCertificate"`
 }
 
-func createBlackDuckSpec(data []byte) *blackduckv1.Blackduck {
+func createBlackDuckSpec(data []byte) *synopsysV1.Blackduck {
 	bdConfig := blackDuckUIRequestConfig{}
 	err := json.Unmarshal(data, &bdConfig)
 	if err != nil {
 		fmt.Printf("Failed to Unmarshal: %s\n\n", err)
 		return nil
 	}
-	blackDuck := &blackduckv1.Blackduck{
+	blackDuck := &synopsysV1.Blackduck{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      bdConfig.Name,
 			Namespace: bdConfig.Namespace,
 		},
-		Spec: blackduckv1.BlackduckSpec{
+		Spec: synopsysV1.BlackduckSpec{
 			Namespace:         bdConfig.Namespace,
 			Size:              bdConfig.Size,
 			Version:           bdConfig.Version,
@@ -383,7 +396,7 @@ type PolarisUIRequestConfig struct {
 	EventstoreSize   string `json:"eventstoreSize"`
 }
 
-func createPolarisSpec(data []byte) (*synopsysV1.AuthServerSpec, *synopsysV1.PolarisDBSpec, *synopsysV1.PolarisSpec) {
+func createPolarisSpec(data []byte) (*synopsysV1.AuthServer, *synopsysV1.PolarisDB, *synopsysV1.Polaris) {
 	pConfig := PolarisUIRequestConfig{}
 	err := json.Unmarshal(data, &pConfig)
 	if err != nil {
@@ -393,16 +406,19 @@ func createPolarisSpec(data []byte) (*synopsysV1.AuthServerSpec, *synopsysV1.Pol
 	return convertPolarisUIResponseToSpecs(pConfig)
 }
 
-func convertPolarisUIResponseToSpecs(polarisUIRequestConfig PolarisUIRequestConfig) (*synopsysV1.AuthServerSpec, *synopsysV1.PolarisDBSpec, *synopsysV1.PolarisSpec) {
+func convertPolarisUIResponseToSpecs(polarisUIRequestConfig PolarisUIRequestConfig) (*synopsysV1.AuthServer, *synopsysV1.PolarisDB, *synopsysV1.Polaris) {
 	// Populate Auth Service Spec
+	auth := &synopsysV1.AuthServer{}
 	authSpec := &synopsysV1.AuthServerSpec{}
 	authSpec.Namespace = polarisUIRequestConfig.Namespace
 	authSpec.Version = polarisUIRequestConfig.Version
 	authSpec.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
 	authSpec.EnvironmentName = polarisUIRequestConfig.EnvironmentName
 	authSpec.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
+	auth.Spec = *authSpec
 
 	// Populate Polaris Database Spec
+	polarisDB := &synopsysV1.PolarisDB{}
 	polarisDBSpec := &synopsysV1.PolarisDBSpec{}
 	polarisDBSpec.Namespace = polarisUIRequestConfig.Namespace
 	polarisDBSpec.Version = polarisUIRequestConfig.Version
@@ -433,14 +449,17 @@ func convertPolarisUIResponseToSpecs(polarisUIRequestConfig PolarisUIRequestConf
 	polarisDBSpec.SMTPDetails.Port = &castedSPort
 	polarisDBSpec.SMTPDetails.Username = polarisUIRequestConfig.SMTPUsername
 	polarisDBSpec.SMTPDetails.Password = polarisUIRequestConfig.SMTPPassword
+	polarisDB.Spec = *polarisDBSpec
 
 	// Populate Polaris Spec
+	polaris := &synopsysV1.Polaris{}
 	polarisSpec := &synopsysV1.PolarisSpec{}
 	polarisSpec.Namespace = polarisUIRequestConfig.Namespace
 	polarisSpec.Version = polarisUIRequestConfig.Version
 	polarisSpec.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
 	polarisSpec.EnvironmentName = polarisUIRequestConfig.EnvironmentName
 	polarisSpec.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
+	polaris.Spec = *polarisSpec
 
-	return authSpec, polarisDBSpec, polarisSpec
+	return auth, polarisDB, polaris
 }
