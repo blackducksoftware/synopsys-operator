@@ -192,7 +192,7 @@ func init() {
 	serveUICmd.Flags().StringVarP(&serverPort, "port", "p", serverPort, "Port to listen for UI requests")
 }
 
-type operatorUIRequestConfig struct {
+type deployOperatorUIRequestConfig struct {
 	Namespace       string `json:"namespace"`
 	ClusterScoped   bool   `json:"clusterScoped"`
 	EnableAlert     bool   `json:"enableAlert"`
@@ -206,7 +206,7 @@ type operatorUIRequestConfig struct {
 }
 
 func deployOperator(data []byte) error {
-	oConfig := operatorUIRequestConfig{}
+	oConfig := deployOperatorUIRequestConfig{}
 	err := json.Unmarshal(data, &oConfig)
 	if err != nil {
 		fmt.Printf("Failed to Unmarshal: %s\n\n", err)
@@ -229,8 +229,8 @@ func deployOperator(data []byte) error {
 		exposeMetrics = oConfig.ExposeMetrics
 	}
 	isEnabledAlert = oConfig.EnableAlert
-	isEnabledBlackDuck = oConfig.EnableAlert
-	isEnabledOpsSight = oConfig.EnableAlert
+	isEnabledBlackDuck = oConfig.EnableBlackDuck
+	isEnabledOpsSight = oConfig.EnableOpsSight
 	isEnabledPrm = oConfig.EnablePolaris
 	isClusterScoped = oConfig.ClusterScoped
 
