@@ -54,7 +54,7 @@
         </div>
 
         <div class="form-group">
-            <label for="smtpDetails"><b>POSTGRES DETAILS</b></label>
+            <label for="postgresDetails"><b>POSTGRES DETAILS</b></label>
             <div class="row">
                 <div class="col-6">
                     <label for="postgresHost">POSTGRES HOST</label>
@@ -80,6 +80,32 @@
                     <label for="postgresSize">POSTGRES SIZE</label>
                     <Input @value={{this.polarisConfig.postgresSize}} type="text" class="form-control"
                         name="postgresSize" id="postgresSize" placeholder="Please enter postgres size" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="smtpDetails"><b>SMTP DETAILS</b></label>
+            <div class="row">
+                <div class="col-6">
+                    <label for="smtpHost">SMTP HOST</label>
+                    <Input @value={{this.polarisConfig.smtpHost}} type="text" class="form-control" name="smtpHost"
+                        id="smtpHost" required placeholder="Please enter smtp host" />
+                </div>
+                <div class="col-6">
+                    <label for="smtpPort">SMTP PORT</label>
+                    <Input @value={{this.polarisConfig.smtpPort}} type="text" class="form-control" name="smtpPort"
+                        id="smtpPort" required placeholder="Please enter smtp port" />
+                </div>
+                <div class="col-6">
+                    <label for="smtpUsername">SMTP USERNAME</label>
+                    <Input @value={{this.polarisConfig.smtpUsername}} type="text" class="form-control"
+                        name="smtpUsername" id="smtpUsername" placeholder="Please enter smtp username" />
+                </div>
+                <div class="col-6">
+                    <label for="postgresPassword">SMTP PASSWORD</label>
+                    <Input @value={{this.polarisConfig.smtpPassword}} type="password" class="form-control"
+                        name="smtpPassword" id="smtpPassword" placeholder="Please enter smtp password" />
                 </div>
             </div>
         </div>

@@ -71,7 +71,7 @@ var serveUICmd = &cobra.Command{
 			fmt.Printf("Data from Operator Body: %s\n\n", reqBody)
 			err = deployOperator(reqBody)
 			if err != nil {
-				fmt.Printf("[ERROR] Failed to deploy Operator: %s", err)
+				fmt.Printf("[ERROR] Failed to deploy Operator: %s\n", err)
 			}
 		})
 
@@ -374,6 +374,11 @@ type PolarisUIRequestConfig struct {
 	PostgresPassword string `json:"postgresPassword"`
 	PostgresSize     string `json:"postgresSize"`
 
+	SMTPHost     string `json:"smtpHost"`
+	SMTPPort     string `json:"smtpPort"`
+	SMTPUsername string `json:"smtpUsername"`
+	SMTPPassword string `json:"smtpPassword"`
+
 	UploadServerSize string `json:"uploadServerSize"`
 	EventstoreSize   string `json:"eventstoreSize"`
 }
@@ -418,6 +423,16 @@ func convertPolarisUIResponseToSpecs(polarisUIRequestConfig PolarisUIRequestConf
 	polarisDBSpec.PostgresStorageDetails.StorageSize = polarisUIRequestConfig.PostgresSize
 	polarisDBSpec.UploadServerDetails.Storage.StorageSize = polarisUIRequestConfig.UploadServerSize
 	polarisDBSpec.EventstoreDetails.StorageSize = polarisUIRequestConfig.EventstoreSize
+
+	polarisDBSpec.SMTPDetails.Host = polarisUIRequestConfig.SMTPHost
+	sPort, err := strconv.ParseInt(polarisUIRequestConfig.SMTPPort, 0, 32)
+	if err != nil {
+		fmt.Printf("[ERROR]: Falied to convert port to an int %s\n", polarisUIRequestConfig.SMTPPort)
+	}
+	castedSPort := int32(sPort)
+	polarisDBSpec.SMTPDetails.Port = &castedSPort
+	polarisDBSpec.SMTPDetails.Username = polarisUIRequestConfig.SMTPUsername
+	polarisDBSpec.SMTPDetails.Password = polarisUIRequestConfig.SMTPPassword
 
 	// Populate Polaris Spec
 	polarisSpec := &synopsysV1.PolarisSpec{}

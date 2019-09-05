@@ -13,6 +13,10 @@ export default Component.extend({
         postgresUsername: "",
         postgresPassword: "",
         postgresSize: "",
+        smtpHost: "",
+        smtpPort: "",
+        smtpUsername: "",
+        smtpPassword: "",
         uploadServerSize: "",
         eventstoreSize: ""
     },
