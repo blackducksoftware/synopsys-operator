@@ -3,6 +3,7 @@ package flying_dutchman
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/equality"
 
 	scheduler "github.com/blackducksoftware/synopsys-operator/meta-builder/go-scheduler"
 
@@ -214,7 +215,7 @@ func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.L
 		log.Error(err, "Unable to create or update", "desiredRuntimeObject", desiredRuntimeObject, "error", err)
 		return ctrl.Result{}, err
 	}
-	log.V(1).Info("Result of create or update for", "desiredRuntimeObject", desiredRuntimeObject, "opResult", opResult)
+	log.V(1).Info("Result of create or update for", "desiredRuntimeObject", desiredRuntimeObject.GetObjectKind(), "opResult", opResult)
 
 	if err := CheckForReadiness(myClient, desiredRuntimeObject); err != nil {
 		// TODO: requeue after here, think about logic here [jeremy / aditya]
@@ -272,7 +273,7 @@ func CheckForReadiness(myClient client.Client, desiredRuntimeObject runtime.Obje
 		return IsStatefulSetReady(liveStatefulSet)
 
 	default:
-		fmt.Printf("Unknown type is marked healthy by default")
+		fmt.Printf("Unknown type: %s is marked healthy by default\n", desiredRuntimeObject.GetObjectKind())
 		return nil
 
 	}
@@ -359,12 +360,12 @@ func CreateOrUpdate(ctx context.Context, c client.Client, desiredRuntimeObject r
 	// CHANGE #2
 	// TODO: need more than this cause server puts some default
 	// TODO: good info in issue here: https://github.com/kubernetes-sigs/controller-runtime/issues/464
-	rawDesiredRuntimeObjectInBytes, _ := apijson.Marshal(desiredRuntimeObject)
-
-	//if equality.Semantic.DeepEqual(existing, desiredRuntimeObject) {
-	//	return controllerutil.OperationResultNone, nil
-	//}
+	if equality.Semantic.DeepEqual(currentRuntimeObject, desiredRuntimeObject) {
+		return controllerutil.OperationResultNone, nil
+	}
+	//TODO: maybe use https://godoc.org/k8s.io/apimachinery/pkg/util/strategicpatch or https://godoc.org/sigs.k8s.io/structured-merge-diff
 	//strategicpatch.CreateTwoWayMergePatch(existing, desiredRuntimeObject, )
+	rawDesiredRuntimeObjectInBytes, _ := apijson.Marshal(desiredRuntimeObject)
 
 	if err := c.Patch(ctx, currentRuntimeObject, client.ConstantPatch(types.MergePatchType, rawDesiredRuntimeObjectInBytes)); err != nil {
 		// CHANGE #3
