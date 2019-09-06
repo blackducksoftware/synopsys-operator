@@ -21,3 +21,4 @@ meta-builder/meta-builder
 
 # ember node modules
 **node_modules/
+operator-ui-ember/dist/*
