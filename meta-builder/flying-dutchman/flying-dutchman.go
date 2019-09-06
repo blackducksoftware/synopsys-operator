@@ -334,7 +334,7 @@ func IsJobCompleted(job *batchv1.Job) error {
 			}
 		}
 	}
-	return fmt.Errorf("job is still running or failed: %s/%s", job.GetNamespace(), job.GetName())
+	return fmt.Errorf("job is not ready: %s/%s", job.GetNamespace(), job.GetName())
 }
 
 // TODO: Borrowed and modified slightly from https://godoc.org/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil#CreateOrUpdate
