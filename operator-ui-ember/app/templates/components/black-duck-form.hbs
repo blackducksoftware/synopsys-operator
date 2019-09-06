@@ -4,13 +4,13 @@
         <div class="form-group">
             <label for="name" class="col-md-2 control-label">Name *</label>
             <div class="col-md-5">
-                {{input value=this.blackDuckConfig.name class="form-control"}}
+                {{input value=this.blackDuckConfig.name class="form-control" placeholder="Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen" }}
             </div>
         </div>
         <div class="form-group">
             <label for="namespace" class="col-md-2 control-label">Namespace *</label>
             <div class="col-md-5">
-                {{input value=this.blackDuckConfig.namespace class="form-control"}}
+                {{input value=this.blackDuckConfig.namespace class="form-control" placeholder="Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen"}}
             </div>
         </div>
         <div class="form-group">
@@ -20,13 +20,13 @@
             </div>
         </div>
         <div class="form-group">
-            <label for="license-key" class="col-md-2 control-label">License Key</label>
+            <label for="licenseKey" class="col-md-2 control-label">License Key</label>
             <div class="col-md-5">
                 {{input value=this.blackDuckConfig.licenseKey class="form-control"}}
             </div>
         </div>
         <div class="form-group">
-            <label for="db-migrate" class="col-md-2 control-label">DbMigrate</label>
+            <label for="dbMigrate" class="col-md-2 control-label">DbMigrate</label>
             <div class="col-md-5">
                 <Input @type="checkbox" @checked={{this.blackDuckConfig.dbMigrate}} />
             </div>
@@ -38,100 +38,182 @@
             </div>
         </div>
         <div class="form-group">
-            <label for="expose-service" class="col-md-2 control-label">Expose Service</label>
+            <label for="exposeService" class="col-md-2 control-label">Expose Service</label>
             <div class="col-md-5">
                 {{input value=this.blackDuckConfig.exposeService class="form-control"}}
             </div>
         </div>
         <div class="form-group">
-            <label for="black-duck-type" class="col-md-2 control-label">Black Duck Type (OpsSight
-                blackDuckConfigific)</label>
+            <label for="blackDuckType" class="col-md-2 control-label">Black Duck Type (OpsSight
+                specific)</label>
             <div class="col-md-5">
                 {{input value=this.blackDuckConfig.blackDuckType class="form-control"}}
             </div>
         </div>
         <div class="form-group">
-            <label for="db-migrate" class="col-md-2 control-label">Use Binary Uploads</label>
+            <label for="useBinaryUploads" class="col-md-2 control-label">Use Binary Uploads</label>
             <div class="col-md-5">
                 <Input @type="checkbox" @checked={{this.blackDuckConfig.useBinaryUploads}} />
             </div>
         </div>
         <div class="form-group">
-            <label for="db-migrate" class="col-md-2 control-label">Enable Source Uploads</label>
+            <label for="enableSourceUploads" class="col-md-2 control-label">Enable Source Uploads</label>
             <div class="col-md-5">
                 <Input @type="checkbox" @checked={{this.blackDuckConfig.enableSourceUploads}} />
             </div>
         </div>
         <div class="form-group">
-            <label for="db-migrate" class="col-md-2 control-label">Liveness Probes</label>
+            <label for="livenessProbes" class="col-md-2 control-label">Liveness Probes</label>
             <div class="col-md-5">
                 <Input @type="checkbox" @checked={{this.blackDuckConfig.livenessProbes}} />
             </div>
         </div>
         <div class="form-group">
-            <label for="db-migrate" class="col-md-2 control-label">Persistent Storage</label>
+            <label for="persistentStorage" class="col-md-2 control-label">Persistent Storage</label>
             <div class="col-md-5">
                 <Input @type="checkbox" @checked={{this.blackDuckConfig.persistentStorage}} />
             </div>
         </div>
+
         <div class="form-group">
-            <label for="black-duck-type" class="col-md-2 control-label">Clone DB</label>
+            <label for="cloneDb" class="col-md-2 control-label">Clone DB</label>
             <div class="col-md-5">
                 {{input value=this.blackDuckConfig.cloneDb class="form-control"}}
             </div>
         </div>
+
+        {{#if this.blackDuckConfig.persistentStorage}}
         <div class="form-group">
-            <label for="black-duck-type" class="col-md-2 control-label">PVC Storage Class</label>
+            <label for="PVCStorageClass" class="col-md-2 control-label">PVC Storage Class</label>
             <div class="col-md-5">
                 {{input value=this.blackDuckConfig.PVCStorageClass class="form-control"}}
             </div>
         </div>
         <div class="form-group">
-            <label for="black-duck-type" class="col-md-2 control-label">Scan Type</label>
+            <label for="scanType" class="col-md-2 control-label">Scan Type</label>
             <div class="col-md-5">
                 {{input value=this.blackDuckConfig.scanType class="form-control"}}
             </div>
         </div>
+        {{/if}}
+
+
+
         <div class="form-group">
-            <label for="db-migrate" class="col-md-2 control-label">External Database</label>
+            <label for="externalDatabase" class="col-md-2 control-label">External Database</label>
             <div class="col-md-5">
                 <Input @type="checkbox" @checked={{this.blackDuckConfig.externalDatabase}} />
             </div>
         </div>
-        <div class="form-group">
-            <label for="black-duck-type" class="col-md-2 control-label">PostgresSQL User Password *</label>
-            <div class="col-md-5">
-                {{input value=this.blackDuckConfig.postgresSQLUserPassword class="form-control"}}
+
+        {{#if this.blackDuckConfig.externalDatabase}}
+        <div class="row">
+            <div class="col-6">
+                <label for="externalPostgresSQLHost" class="col-md-2 control-label">PostgreSQL Host</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.externalPostgresSQLHost class="form-control"}}
+                </div>
+            </div>
+            <div class="col-6">
+                <label for="externalPostgresSQLPort" class="col-md-2 control-label">PostgreSQL Port</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.externalPostgresSQLPort class="form-control"}}
+                </div>
+            </div>
+            <div class="col-6">
+                <label for="externalPostgresSQLAdminUser" class="col-md-2 control-label">PostgreSQL Admin User</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.externalPostgresSQLAdminUser class="form-control"}}
+                </div>
+            </div>
+            <div class="col-6">
+                <label for="externalPostgresSQLAdminPassword" class="col-md-2 control-label">PostgreSQL Admin
+                    Password</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.externalPostgresSQLAdminPassword class="form-control"}}
+                </div>
+            </div>
+            <div class="col-6">
+                <label for="externalPostgresSQLUser" class="col-md-2 control-label">PostgreSQL User</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.externalPostgresSQLUser class="form-control"}}
+                </div>
+            </div>
+
+            <div class="col-6">
+                <label for="externalPostgresSQLUserPassword" class="col-md-2 control-label">PostgreSQL User
+                    Password</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.externalPostgresSQLUserPassword class="form-control"}}
+                </div>
+            </div>
+            <div class="col-6">
+                <label for="enableSSL" class="col-md-2 control-label">Enable SSL</label>
+                <div class="col-md-5">
+                    <Input @type="checkbox" @checked={{this.blackDuckConfig.enableSSL}} />
+                </div>
             </div>
         </div>
-        <div class="form-group">
-            <label for="black-duck-type" class="col-md-2 control-label">PostgresSQL Admin Password *</label>
-            <div class="col-md-5">
-                {{input value=this.blackDuckConfig.postgresSQLAdminPassword class="form-control"}}
+        {{else}}
+        <div class="row">
+            <div class="col-6">
+                <label for="postgresSQLUserPassword" class="col-md-2 control-label">PostgresSQL User Password *</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.postgresSQLUserPassword class="form-control"}}
+                </div>
+            </div>
+            <div class="col-6">
+                <label for="postgresSQLAdminPassword" class="col-md-2 control-label">PostgresSQL Admin Password
+                    *</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.postgresSQLAdminPassword class="form-control"}}
+                </div>
+            </div>
+            <div class="col-6">
+                <label for="postgresSQLPostgresPassword" class="col-md-2 control-label">PostgresSQL Postgres Password
+                    *</label>
+                <div class="col-md-5">
+                    {{input value=this.blackDuckConfig.postgresSQLPostgresPassword class="form-control"}}
+                </div>
             </div>
         </div>
+        {{/if}}
+
         <div class="form-group">
-            <label for="black-duck-type" class="col-md-2 control-label">PostgresSQL Postgres Password *</label>
-            <div class="col-md-5">
-                {{input value=this.blackDuckConfig.postgresSQLPostgresPassword class="form-control"}}
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="black-duck-type" class="col-md-2 control-label">Certificate Name</label>
+            <label for="certificateName" class="col-md-2 control-label">Certificate Name</label>
             <div class="col-md-5">
                 {{input value=this.blackDuckConfig.certificateName class="form-control"}}
             </div>
         </div>
         <div class="form-group">
-            <label for="db-migrate" class="col-md-2 control-label">Custom CA for certificate authentication</label>
+            <label for="customCACertificateAuthentication" class="col-md-2 control-label">Custom CA for certificate
+                authentication</label>
             <div class="col-md-5">
                 <Input @type="checkbox" @checked={{this.blackDuckConfig.customCACertificateAuthentication}} />
             </div>
         </div>
         <div class="form-group">
-            <label for="db-migrate" class="col-md-2 control-label">Proxy Root Certificate</label>
+            <label for="proxyRootCertificate" class="col-md-2 control-label">Proxy Root Certificate</label>
             <div class="col-md-5">
-                <Textarea @value={{this.proxyRootCertificate}} @cols="80" @rows="6" />
+                <Textarea @value={{this.blackDuckConfig.proxyRootCertificate}} @cols="80" @rows="3" />
+                </div>
+        </div>
+        <div class="form-group">
+            <label for="containerImageTags" class="col-md-2 control-label">Container Image Tags</label>
+            <div class="col-md-5">
+                <Textarea @value={{this.blackDuckConfig.containerImageTags}} @cols="80" @rows="7" />
+                </div>
+        </div>
+        <div class="form-group">
+            <label for="environmentVariables" class="col-md-2 control-label">Environment Variables</label>
+            <div class="col-md-5">
+                <Textarea @value={{this.blackDuckConfig.environmentVariables}} @cols="80" @rows="20" />
+                </div>
+        </div>
+        <div class="form-group">
+            <label for="nodeAffinityJSON" class="col-md-2 control-label">Node Affinity JSON</label>
+            <div class="col-md-5">
+                <Textarea @value={{this.blackDuckConfig.nodeAffinityJSON}} @cols="80" @rows="15" />
                 </div>
         </div>
 
