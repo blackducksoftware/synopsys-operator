@@ -12,6 +12,7 @@ pkg/.DS_Store
 pkg/api/.DS_Store
 
 # synopsysctl
+meta-builder/cmd/synopsysctl/synopsysctl
 cmd/synopsysctl/synopsysctl
 cmd/synopsysctl/*.key
 
