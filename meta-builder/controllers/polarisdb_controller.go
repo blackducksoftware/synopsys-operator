@@ -17,7 +17,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -115,7 +117,11 @@ func (r *PolarisDBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// _ = r.Log.WithValues("polarisdb", req.NamespacedName)
 	// your logic here
 
-	return flying_dutchman.MetaReconcile(req, r)
+	res, err := flying_dutchman.MetaReconcile(req, r)
+	if strings.Contains(fmt.Sprint(err), "is not ready") {
+		res = ctrl.Result{RequeueAfter: 10 * time.Second}
+	}
+	return res, err
 }
 
 func (r *PolarisDBReconciler) SetIndexingForChildrenObjects(mgr ctrl.Manager, ro runtime.Object) error {
@@ -141,13 +147,11 @@ func (r *PolarisDBReconciler) SetIndexingForChildrenObjects(mgr ctrl.Manager, ro
 func (r *PolarisDBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.SetIndexingForChildrenObjects(mgr, &corev1.Service{})
 	r.SetIndexingForChildrenObjects(mgr, &appsv1.Deployment{})
-	r.SetIndexingForChildrenObjects(mgr, &corev1.ServiceAccount{})
 	// Add HorizontalPodAutoscaler to the list
 
 	polarisDbBuilder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.PolarisDB{})
 	polarisDbBuilder = polarisDbBuilder.Owns(&corev1.ConfigMap{})
 	polarisDbBuilder = polarisDbBuilder.Owns(&corev1.Service{})
-	polarisDbBuilder = polarisDbBuilder.Owns(&corev1.ReplicationController{})
 	polarisDbBuilder = polarisDbBuilder.Owns(&corev1.Secret{})
 
 	return polarisDbBuilder.Complete(r)

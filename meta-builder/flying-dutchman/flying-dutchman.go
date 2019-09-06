@@ -367,7 +367,7 @@ func CreateOrUpdate(ctx context.Context, c client.Client, desiredRuntimeObject r
 	//strategicpatch.CreateTwoWayMergePatch(existing, desiredRuntimeObject, )
 	rawDesiredRuntimeObjectInBytes, _ := apijson.Marshal(desiredRuntimeObject)
 
-	if err := c.Patch(ctx, currentRuntimeObject, client.ConstantPatch(types.MergePatchType, rawDesiredRuntimeObjectInBytes)); err != nil {
+	if err := c.Patch(ctx, currentRuntimeObject, client.ConstantPatch(types.ApplyPatchType, rawDesiredRuntimeObjectInBytes)); err != nil {
 		// CHANGE #3
 		// TODO:
 		return controllerutil.OperationResultNone, nil
