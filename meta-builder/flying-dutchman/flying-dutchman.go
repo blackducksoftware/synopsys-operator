@@ -311,7 +311,8 @@ func IsReplicationControllerReady(rc *corev1.ReplicationController) error {
 }
 
 func IsDeploymentReady(deployment *appsv1.Deployment) error {
-	if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
+	// TODO: Check for "Avaialbility" of the deployment
+	if deployment.Spec.Replicas == nil || deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
 		return fmt.Errorf("deployment is not ready: %s/%s", deployment.GetNamespace(), deployment.GetName())
 	}
 	return nil
