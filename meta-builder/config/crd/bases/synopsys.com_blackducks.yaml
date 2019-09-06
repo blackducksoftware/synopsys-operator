@@ -123,9 +123,6 @@ spec:
                   type: array
                 registry:
                   type: string
-              required:
-              - pullSecrets
-              - registry
               type: object
             scanType:
               type: string

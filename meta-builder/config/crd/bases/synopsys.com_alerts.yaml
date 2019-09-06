@@ -106,9 +106,6 @@ spec:
                   type: array
                 registry:
                   type: string
-              required:
-              - pullSecrets
-              - registry
               type: object
             secrets:
               description: 'add data to secret as a slice of "key:plaintextvalue".
