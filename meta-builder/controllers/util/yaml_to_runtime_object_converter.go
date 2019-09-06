@@ -14,20 +14,22 @@ import (
 
 // ConvertYamlFileToRuntimeObjects converts the yaml file string to map of runtime object
 func ConvertYamlFileToRuntimeObjects(stringContent string, isOpenShift bool) map[string]runtime.Object {
+	routev1.AddToScheme(scheme.Scheme) 
+	securityv1.AddToScheme(scheme.Scheme)
 	// TODO: use logr.Logr
 	log := ctrl.Log.WithName("ConvertYamlFileToRuntimeObjects")
 
 	listOfSingleK8sResourceYaml := strings.Split(stringContent, "---")
 	mapOfUniqueIDToDesiredRuntimeObject := make(map[string]runtime.Object, 0)
 
+	log.V(1).Info("listOfYamlsToGoThrough", "Len Yamls", len(listOfSingleK8sResourceYaml))
+
 	for _, singleYaml := range listOfSingleK8sResourceYaml {
 		if singleYaml == "\n" || singleYaml == "" {
 			// ignore empty cases
+			log.V(1).Info("Got empty", "here", singleYaml)
 			continue
 		}
-
-		routev1.AddToScheme(scheme.Scheme)
-		securityv1.AddToScheme(scheme.Scheme)
 
 		decode := scheme.Codecs.UniversalDeserializer().Decode
 		runtimeObject, groupVersionKind, err := decode([]byte(singleYaml), nil, nil)
