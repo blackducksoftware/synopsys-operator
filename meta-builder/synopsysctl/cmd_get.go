@@ -22,9 +22,15 @@
 package synopsysctl
 
 import (
+	"encoding/base64"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"io/ioutil"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"path/filepath"
 )
 
 // Get Command flag for -output functionality
@@ -112,71 +118,71 @@ var getBlackDuckCmd = &cobra.Command{
 }
 
 // getBlackDuckRootKeyCmd get Black Duck master key for source code upload in the cluster
-//var getBlackDuckRootKeyCmd = &cobra.Command{
-//	Use:           "masterkey BLACK_DUCK_NAME FILE_PATH_TO_STORE_MASTER_KEY",
-//	Example:       "synopsysctl get blackduck masterkey <name> <file path to store the master key>\nsynopsysctl get blackduck masterkey <name> <file path to store the master key> -n <namespace>",
-//	Short:         "Get the master key of the Black Duck instance that is used for source code upload and store it in the host",
-//	SilenceUsage:  true,
-//	SilenceErrors: true,
-//	Args: func(cmd *cobra.Command, args []string) error {
-//		if len(args) != 2 {
-//			cmd.Help()
-//			return fmt.Errorf("this command takes 2 arguments")
-//		}
-//		return nil
-//	},
-//	RunE: func(cmd *cobra.Command, args []string) error {
-//		blackDuckName, blackDuckNamespace, crdScope, err := getInstanceInfo(false, BlackDuckCRDName, BlackDuckName, namespace, args[0])
-//		if err != nil {
-//			return err
-//		}
-//
-//		// TODO
-//		//operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, BlackDuckCRDName, crdScope, blackDuckNamespace)
-//		//if err != nil {
-//		//	return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
-//		//}
-//
-//		operatorNamespace := "synopsys-operator"
-//
-//		filePath := args[1]
-//		log.Infof("getting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-//
-//		_, err = utils.GetBlackduck(restClient, blackDuckNamespace, blackDuckName, v1.GetOptions{})
-//		if err != nil {
-//			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-//		}
-//
-//		// getting the operator secret to retrieve the seal key
-//		secret, err := kubeClient.CoreV1().Secrets(operatorNamespace).Get("blackduck-secret",  v1.GetOptions{})
-//		if err != nil {
-//			return fmt.Errorf("unable to find Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
-//		}
-//
-//		sealKey := string(secret.Data["SEAL_KEY"])
-//		// Filter the upload cache pod to get the master key using the seal key
-//		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, utils.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache"))
-//		if err != nil {
-//			return fmt.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", namespace, err)
-//		}
-//
-//		// Create the exec into Kubernetes pod request
-//		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
-//		// TODO: changed the upload cache service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
-//		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
-//		if err != nil {
-//			return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", namespace, err)
-//		}
-//
-//		fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
-//		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
-//		if err != nil {
-//			return fmt.Errorf("error writing to file '%s' due to %+v", fileName, err)
-//		}
-//		log.Infof("successfully created the master key in file '%s' for Black Duck '%s' in namespace '%s'", fileName, blackDuckName, blackDuckNamespace)
-//		return nil
-//	},
-//}
+var getBlackDuckRootKeyCmd = &cobra.Command{
+	Use:           "masterkey BLACK_DUCK_NAME FILE_PATH_TO_STORE_MASTER_KEY",
+	Example:       "synopsysctl get blackduck masterkey <name> <file path to store the master key>\nsynopsysctl get blackduck masterkey <name> <file path to store the master key> -n <namespace>",
+	Short:         "Get the master key of the Black Duck instance that is used for source code upload and store it in the host",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 2 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 2 arguments")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, utils.BlackDuckCRDName, utils.BlackDuckName, namespace, args[0])
+		if err != nil {
+			return err
+		}
+
+		// TODO
+		//operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, BlackDuckCRDName, crdScope, blackDuckNamespace)
+		//if err != nil {
+		//	return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
+		//}
+
+		operatorNamespace := "synopsys-operator"
+
+		filePath := args[1]
+		log.Infof("getting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+
+		_, err = utils.GetBlackduck(restClient, blackDuckNamespace, blackDuckName, v1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
+		}
+
+		// getting the operator secret to retrieve the seal key
+		secret, err := kubeClient.CoreV1().Secrets(operatorNamespace).Get("blackduck-secret", v1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("unable to find Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
+		}
+
+		sealKey := string(secret.Data["SEAL_KEY"])
+		// Filter the upload cache pod to get the master key using the seal key
+		uploadCachePod, err := utils.FilterPodByNamePrefixInNamespace(kubeClient, namespace, util.GetResourceName(blackDuckName, utils.BlackDuckName, "uploadcache"))
+		if err != nil {
+			return fmt.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", namespace, err)
+		}
+
+		// Create the exec into Kubernetes pod request
+		req := utils.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
+		// TODO: changed the upload cache service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
+		stdout, err := utils.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
+		if err != nil {
+			return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", namespace, err)
+		}
+
+		fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
+		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
+		if err != nil {
+			return fmt.Errorf("error writing to file '%s' due to %+v", fileName, err)
+		}
+		log.Infof("successfully created the master key in file '%s' for Black Duck '%s' in namespace '%s'", fileName, blackDuckName, blackDuckNamespace)
+		return nil
+	},
+}
 
 // getOpsSightCmd display one or many OpsSight instances
 var getOpsSightCmd = &cobra.Command{
@@ -216,8 +222,8 @@ func init() {
 	getBlackDuckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getBlackDuckCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
 
-	//getBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	//getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
+	getBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
 	getCmd.AddCommand(getBlackDuckCmd)
 
 	getOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
