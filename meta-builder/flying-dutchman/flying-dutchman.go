@@ -3,6 +3,7 @@ package flying_dutchman
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/equality"
 
 	scheduler "github.com/blackducksoftware/synopsys-operator/meta-builder/go-scheduler"
 
@@ -214,7 +215,7 @@ func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.L
 		log.Error(err, "Unable to create or update", "desiredRuntimeObject", desiredRuntimeObject, "error", err)
 		return ctrl.Result{}, err
 	}
-	log.V(1).Info("Result of create or update for", "desiredRuntimeObject", desiredRuntimeObject, "opResult", opResult)
+	log.V(1).Info("Result of create or update for", "desiredRuntimeObject", desiredRuntimeObject.GetObjectKind(), "opResult", opResult)
 
 	if err := CheckForReadiness(myClient, desiredRuntimeObject); err != nil {
 		// TODO: requeue after here, think about logic here [jeremy / aditya]
@@ -272,7 +273,7 @@ func CheckForReadiness(myClient client.Client, desiredRuntimeObject runtime.Obje
 		return IsStatefulSetReady(liveStatefulSet)
 
 	default:
-		fmt.Printf("Unknown type is marked healthy by default")
+		fmt.Printf("Unknown type: %s is marked healthy by default\n", desiredRuntimeObject.GetObjectKind())
 		return nil
 
 	}
@@ -310,7 +311,8 @@ func IsReplicationControllerReady(rc *corev1.ReplicationController) error {
 }
 
 func IsDeploymentReady(deployment *appsv1.Deployment) error {
-	if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
+	// TODO: Check for "Avaialbility" of the deployment
+	if deployment.Spec.Replicas == nil || deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
 		return fmt.Errorf("deployment is not ready: %s/%s", deployment.GetNamespace(), deployment.GetName())
 	}
 	return nil
@@ -333,7 +335,7 @@ func IsJobCompleted(job *batchv1.Job) error {
 			}
 		}
 	}
-	return fmt.Errorf("job is still running or failed: %s/%s", job.GetNamespace(), job.GetName())
+	return fmt.Errorf("job is not ready: %s/%s", job.GetNamespace(), job.GetName())
 }
 
 // TODO: Borrowed and modified slightly from https://godoc.org/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil#CreateOrUpdate
@@ -359,14 +361,14 @@ func CreateOrUpdate(ctx context.Context, c client.Client, desiredRuntimeObject r
 	// CHANGE #2
 	// TODO: need more than this cause server puts some default
 	// TODO: good info in issue here: https://github.com/kubernetes-sigs/controller-runtime/issues/464
+	if equality.Semantic.DeepEqual(currentRuntimeObject, desiredRuntimeObject) {
+		return controllerutil.OperationResultNone, nil
+	}
+	//TODO: maybe use https://godoc.org/k8s.io/apimachinery/pkg/util/strategicpatch or https://godoc.org/sigs.k8s.io/structured-merge-diff
+	//strategicpatch.CreateTwoWayMergePatch(existing, desiredRuntimeObject, )
 	rawDesiredRuntimeObjectInBytes, _ := apijson.Marshal(desiredRuntimeObject)
 
-	//if equality.Semantic.DeepEqual(existing, desiredRuntimeObject) {
-	//	return controllerutil.OperationResultNone, nil
-	//}
-	//strategicpatch.CreateTwoWayMergePatch(existing, desiredRuntimeObject, )
-
-	if err := c.Patch(ctx, currentRuntimeObject, client.ConstantPatch(types.MergePatchType, rawDesiredRuntimeObjectInBytes)); err != nil {
+	if err := c.Patch(ctx, currentRuntimeObject, client.ConstantPatch(types.ApplyPatchType, rawDesiredRuntimeObjectInBytes)); err != nil {
 		// CHANGE #3
 		// TODO:
 		return controllerutil.OperationResultNone, nil

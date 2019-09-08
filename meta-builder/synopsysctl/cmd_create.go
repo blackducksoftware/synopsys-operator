@@ -104,7 +104,6 @@ func updateAlertSpecWithFlags(cmd *cobra.Command, alertName string, alertNamespa
 
 func updatePolarisSpecWithFlags(cmd *cobra.Command, name string, namespace string) (*polarisMultiCR, error) {
 	// Update Spec with user's flags
-	// TODO
 	log.Debugf("updating spec with user's flags")
 	polaris, err := createPolarisCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
 	if err != nil {
@@ -120,16 +119,6 @@ func updatePolarisSpecWithFlags(cmd *cobra.Command, name string, namespace strin
 	multiCRSpec.polarisDBSpec.Namespace = namespace
 	multiCRSpec.authSpec.Namespace = namespace
 
-	// Create Alert CRD
-	//alert := &synopsysv1.Alert{
-	//	ObjectMeta: metav1.ObjectMeta{
-	//		Name:      na,
-	//		Namespace: alertNamespace,
-	//	},
-	//	Spec: alertSpec,
-	//}
-	//alert.Kind = "Alert"
-	//alert.APIVersion = "synopsys.com/v1"
 	polarisMultiCR := &polarisMultiCR{
 		auth: &synopsysv1.AuthServer{
 			ObjectMeta: metav1.ObjectMeta{

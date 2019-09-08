@@ -85,9 +85,9 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAME}", alertCr.Name)
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", alertCr.Spec.Namespace)
 	if len(alertCr.Spec.ExposeService) > 0 {
-		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${SERVICE_TYPE}", alertCr.Spec.ExposeService)
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "ExternalName", alertCr.Spec.ExposeService)
 	} else {
-		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${SERVICE_TYPE}", string(corev1.ServiceTypeClusterIP))
+		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "ExternalName", string(corev1.ServiceTypeClusterIP))
 	}
 
 	if len(alertCr.Spec.AlertMemory) > 0 {
@@ -102,11 +102,11 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${CFSSL_MEM}", "640M")
 	}
 
-	if 0 != *alertCr.Spec.Port {
-		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${ALERT_PORT}", string(*alertCr.Spec.Port))
-	} else {
-		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${ALERT_PORT}", "8443")
-	}
+	//if 0 != *alertCr.Spec.Port {
+	//	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "8443", string(*alertCr.Spec.Port))
+	//} else {
+	//	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "8443", "8443")
+	//}
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString, r.IsOpenShift)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {

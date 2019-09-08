@@ -4,7 +4,7 @@ metadata:
   name: changethisalertname
 spec:
   namespace: default
-  version: ""
+  version: 4.2.0
   exposeService: ClusterIP
   standAlone: false
   port: 8443

@@ -32,8 +32,8 @@ type PVC struct {
 
 // RegistryConfiguration contains the registry configuration
 type RegistryConfiguration struct {
-	Registry    string   `json:"registry"`
-	PullSecrets []string `json:"pullSecrets"`
+	Registry    string   `json:"registry,omitempty"`
+	PullSecrets []string `json:"pullSecrets,omitempty"`
 }
 
 // Environs will hold the list of Environment variables

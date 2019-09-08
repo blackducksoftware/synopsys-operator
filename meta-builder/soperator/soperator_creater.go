@@ -22,8 +22,14 @@
 package soperator
 
 import (
+	"fmt"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	log "github.com/sirupsen/logrus"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"time"
 )
 
 // Creater stores the configuration and clients to create specific versions of Synopsys Operator
@@ -50,122 +56,127 @@ func (sc *Creater) Versions() []string {
 
 //// EnsureSynopsysOperator updates the Synopsys Operator's Kubernetes componenets and changes
 //// all CRDs to versions that the Operator can use
-//func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset,
-//	oldOperatorSpec *SpecConfig, newOperatorSpec *SpecConfig) error {
-//
-//	// Get CRD Version Data
-//	newOperatorImageVersion, err := operatorutil.GetImageTag(newOperatorSpec.Image)
-//	if err != nil {
-//		return fmt.Errorf("failed to get version of the new Synopsys Operator image: %s", err)
-//	}
-//	oldOperatorImageVersion, err := operatorutil.GetImageTag(oldOperatorSpec.Image)
-//	if err != nil {
-//		return fmt.Errorf("failed to get version of the old Synopsys Operator image: %s", err)
-//	}
-//
-//	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorImageVersion)
-//	oldCrdData := SOperatorCRDVersionMap.GetCRDVersions(oldOperatorImageVersion)
-//
-//	// Get CRDs that need to be updated (specs have new version set)
-//	log.Debugf("Getting CRDs that need new versions")
-//	var oldBlackducks = []blackduckapi.Blackduck{}
-//
-//	apiExtensionClient, err := apiextensionsclient.NewForConfig(sc.KubeConfig)
-//	if err != nil {
-//		return fmt.Errorf("error creating the api extension client due to %+v", err)
-//	}
-//
-//	if newCrdData.Blackduck.APIVersion != oldCrdData.Blackduck.APIVersion {
-//		_, err := operatorutil.GetCustomResourceDefinition(apiExtensionClient, operatorutil.BlackDuckCRDName)
-//		if err == nil {
-//			oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion)
-//			if err != nil {
-//				return fmt.Errorf("failed to get Blackduck's to update: %s", err)
-//			}
-//			err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.Blackduck.CRDName)
-//			if err != nil {
-//				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.Blackduck.CRDName, err)
-//			}
-//			log.Debugf("updating %d Black Ducks", len(oldBlackducks))
-//		}
-//	}
-//
-//	var oldOpsSights = []opssightapi.OpsSight{}
-//	if newCrdData.OpsSight.APIVersion != oldCrdData.OpsSight.APIVersion {
-//		_, err := operatorutil.GetCustomResourceDefinition(apiExtensionClient, operatorutil.OpsSightCRDName)
-//		if err == nil {
-//			oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion)
-//			if err != nil {
-//				return fmt.Errorf("failed to get OpsSights to update: %s", err)
-//			}
-//			err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.OpsSight.CRDName)
-//			if err != nil {
-//				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.OpsSight.CRDName, err)
-//			}
-//			log.Debugf("updating %d OpsSights", len(oldOpsSights))
-//		}
-//	}
-//
-//	var oldAlerts = []alertapi.Alert{}
-//	if newCrdData.Alert.APIVersion != oldCrdData.Alert.APIVersion {
-//		_, err := operatorutil.GetCustomResourceDefinition(apiExtensionClient, operatorutil.AlertCRDName)
-//		if err == nil {
-//			oldAlerts, err = GetAlertVersionsToRemove(alertClient, newCrdData.Alert.APIVersion)
-//			if err != nil {
-//				return fmt.Errorf("failed to get Alerts to update%s", err)
-//			}
-//			err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.Alert.CRDName)
-//			if err != nil {
-//				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.Alert.CRDName, err)
-//			}
-//			log.Debugf("updating %d Alerts", len(oldAlerts))
-//		}
-//	}
-//
-//	// Update the Synopsys Operator's Components
-//	log.Debugf("updating Synopsys Operator's Components")
-//	newOperatorSpec.ClusterType = GetClusterType(sc.KubeClient)
-//	err = sc.UpdateSOperatorComponents(newOperatorSpec)
-//	if err != nil {
-//		return fmt.Errorf("failed to update Synopsys Operator components: %s", err)
-//	}
-//
-//	// Update the CRDs in the cluster with the new versions
-//	// loop to wait for kuberentes to register new CRDs
-//	log.Debugf("updating CRDs to new Versions")
-//	for i := 1; i <= 10; i++ {
-//		if err = operatorutil.UpdateBlackducks(blackduckClient, oldBlackducks); err == nil {
-//			break
-//		}
-//		if i >= 10 {
-//			return fmt.Errorf("failed to update Black Ducks: %s", err)
-//		}
-//		log.Debugf("attempt %d to update Black Ducks", i)
-//		time.Sleep(1 * time.Second)
-//	}
-//	for i := 1; i <= 10; i++ {
-//		if err = operatorutil.UpdateOpsSights(opssightClient, oldOpsSights); err == nil {
-//			break
-//		}
-//		if i >= 10 {
-//			return fmt.Errorf("failed to update OpsSights: %s", err)
-//		}
-//		log.Debugf("attempt %d to update OpsSights", i)
-//		time.Sleep(1 * time.Second)
-//	}
-//	for i := 1; i <= 10; i++ {
-//		if err = operatorutil.UpdateAlerts(alertClient, oldAlerts); err == nil {
-//			break
-//		}
-//		if i >= 10 {
-//			return fmt.Errorf("failed to update Alerts: %s", err)
-//		}
-//		log.Debugf("attempt %d to update Alerts", i)
-//		time.Sleep(1 * time.Second)
-//	}
-//
-//	return nil
-//}
+func (sc *Creater) EnsureSynopsysOperator(namespace string, restClient *rest.RESTClient, oldOperatorSpec *SpecConfig, newOperatorSpec *SpecConfig) error {
+
+	// Get CRD Version Data
+	newOperatorImageVersion, err := utils.GetImageTag(newOperatorSpec.Image)
+	if err != nil {
+		return fmt.Errorf("failed to get version of the new Synopsys Operator image: %s", err)
+	}
+	oldOperatorImageVersion, err := utils.GetImageTag(oldOperatorSpec.Image)
+	if err != nil {
+		return fmt.Errorf("failed to get version of the old Synopsys Operator image: %s", err)
+	}
+
+	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorImageVersion)
+	oldCrdData := SOperatorCRDVersionMap.GetCRDVersions(oldOperatorImageVersion)
+
+	// Get CRDs that need to be updated (specs have new version set)
+	log.Debugf("Getting CRDs that need new versions")
+	var oldBlackducks = []synopsysv1.Blackduck{}
+
+	apiExtensionClient, err := apiextensionsclient.NewForConfig(sc.KubeConfig)
+	if err != nil {
+		return fmt.Errorf("error creating the api extension client due to %+v", err)
+	}
+
+	if newCrdData.Blackduck.APIVersion != oldCrdData.Blackduck.APIVersion {
+		_, err := utils.GetCustomResourceDefinition(apiExtensionClient, utils.BlackDuckCRDName)
+		if err == nil {
+			oldBlackducks, err = GetBlackduckVersionsToRemove(restClient, newOperatorSpec.Namespace, newCrdData.Blackduck.APIVersion)
+			if err != nil {
+				return fmt.Errorf("failed to get Blackduck's to update: %s", err)
+			}
+			err = utils.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.Blackduck.CRDName)
+			if err != nil {
+				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.Blackduck.CRDName, err)
+			}
+			log.Debugf("updating %d Black Ducks", len(oldBlackducks))
+		}
+	}
+
+	var oldOpsSights = []synopsysv1.OpsSight{}
+	if newCrdData.OpsSight.APIVersion != oldCrdData.OpsSight.APIVersion {
+		_, err := utils.GetCustomResourceDefinition(apiExtensionClient, utils.OpsSightCRDName)
+		if err == nil {
+			oldOpsSights, err = GetOpsSightVersionsToRemove(restClient, newOperatorSpec.Namespace, newCrdData.OpsSight.APIVersion)
+			if err != nil {
+				return fmt.Errorf("failed to get OpsSights to update: %s", err)
+			}
+			err = utils.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.OpsSight.CRDName)
+			if err != nil {
+				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.OpsSight.CRDName, err)
+			}
+			log.Debugf("updating %d OpsSights", len(oldOpsSights))
+		}
+	}
+
+	var oldAlerts = []synopsysv1.Alert{}
+	if newCrdData.Alert.APIVersion != oldCrdData.Alert.APIVersion {
+		_, err := utils.GetCustomResourceDefinition(apiExtensionClient, utils.AlertCRDName)
+		if err == nil {
+			oldAlerts, err = GetAlertVersionsToRemove(restClient, newOperatorSpec.Namespace, newCrdData.Alert.APIVersion)
+			if err != nil {
+				return fmt.Errorf("failed to get Alerts to update%s", err)
+			}
+			err = utils.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.Alert.CRDName)
+			if err != nil {
+				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.Alert.CRDName, err)
+			}
+			log.Debugf("updating %d Alerts", len(oldAlerts))
+		}
+	}
+
+	// Update the Synopsys Operator's Components
+	log.Debugf("updating Synopsys Operator's Components")
+	newOperatorSpec.ClusterType = GetClusterType(sc.KubeClient)
+	err = sc.UpdateSOperatorComponents(newOperatorSpec)
+	if err != nil {
+		return fmt.Errorf("failed to update Synopsys Operator components: %s", err)
+	}
+
+	// Update the CRDs in the cluster with the new versions
+	// loop to wait for kuberentes to register new CRDs
+	log.Debugf("updating CRDs to new Versions")
+	for i := 1; i <= 10; i++ {
+		for _, bd := range oldBlackducks {
+			if _, err = utils.UpdateBlackduck(restClient, &bd); err == nil {
+				break
+			}
+		}
+		if i >= 10 {
+			return fmt.Errorf("failed to update Black Ducks: %s", err)
+		}
+		log.Debugf("attempt %d to update Black Ducks", i)
+		time.Sleep(1 * time.Second)
+	}
+	for i := 1; i <= 10; i++ {
+		for _, ops := range oldOpsSights {
+			if _, err := utils.UpdateOpsSight(restClient, &ops); err == nil {
+				break
+			}
+		}
+		if i >= 10 {
+			return fmt.Errorf("failed to update OpsSights: %s", err)
+		}
+		log.Debugf("attempt %d to update OpsSights", i)
+		time.Sleep(1 * time.Second)
+	}
+	for i := 1; i <= 10; i++ {
+		for _, alert := range oldAlerts {
+			if _, err := utils.UpdateAlert(restClient, &alert); err == nil {
+				break
+			}
+		}
+		if i >= 10 {
+			return fmt.Errorf("failed to update Alerts: %s", err)
+		}
+		log.Debugf("attempt %d to update Alerts", i)
+		time.Sleep(1 * time.Second)
+	}
+
+	return nil
+}
 
 // UpdateSOperatorComponents updates Kubernetes resources for the Synopsys Operator
 func (sc *Creater) UpdateSOperatorComponents(specConfig *SpecConfig) error {
