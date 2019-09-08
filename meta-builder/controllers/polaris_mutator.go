@@ -6,13 +6,14 @@ import (
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func patchPolaris(polarisCr *synopsysv1.Polaris, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, accessor meta.MetadataAccessor) map[string]runtime.Object {
+func patchPolaris(client client.Client, polarisCr *synopsysv1.Polaris, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object) map[string]runtime.Object {
 	patcher := PolarisPatcher{
+		Client:                           client,
 		polarisCr:                        polarisCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
-		accessor:                         accessor,
 	}
 	return patcher.patch()
 }
@@ -20,7 +21,7 @@ func patchPolaris(polarisCr *synopsysv1.Polaris, mapOfUniqueIdToBaseRuntimeObjec
 type PolarisPatcher struct {
 	polarisCr                        *synopsysv1.Polaris
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
-	accessor                         meta.MetadataAccessor
+	client.Client
 }
 
 func (p *PolarisPatcher) patch() map[string]runtime.Object {
@@ -37,8 +38,9 @@ func (p *PolarisPatcher) patch() map[string]runtime.Object {
 }
 
 func (p *PolarisPatcher) patchNamespace() error {
+	accessor := meta.NewAccessor()
 	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
-		p.accessor.SetNamespace(runtimeObject, p.polarisCr.Spec.Namespace)
+		accessor.SetNamespace(runtimeObject, p.polarisCr.Spec.Namespace)
 	}
 	return nil
 }

@@ -60,8 +60,7 @@ func UpdateImagePullSecretsForJobs(objects map[string]runtime.Object, jobs []str
 	return nil
 }
 
-func UpdatePersistentVolumeClaim(pvc *corev1.PersistentVolumeClaim, size string, storageClass *string) error {
-	pvc.Spec.StorageClassName = storageClass
+func UpdatePersistentVolumeClaim(pvc *corev1.PersistentVolumeClaim, size string) error {
 	if size, err := resource.ParseQuantity(size); err == nil {
 		pvc.Spec.Resources.Requests[v1.ResourceStorage] = size
 	}

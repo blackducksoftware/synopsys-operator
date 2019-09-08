@@ -20,9 +20,9 @@ runtimeobjectsgroupings:
     - Deployment.mongodb
     - Deployment.vault-init
     - Deployment.postgresql
-    - Deployment.swip-db-vault
+    - Deployment.polaris-db-vault
   StatefulSets:
-    - StatefulSet.swip-db-consul
+    - StatefulSet.polaris-db-consul
     - StatefulSet.eventstore
   JobsToRunBefore:
     - Job.tools-minio-secret-init
@@ -35,26 +35,27 @@ runtimeobjectsgroupings:
     - Services.upload-server
     - Services.eventstore
     - Services.mongodb
-    - Services.swip-db-consul
-    - Services.swip-db-consul-ui
+    - Services.polaris-db-consul
+    - Services.polaris-db-consul-ui
     - Services.postgresql
-    - Services.swip-db-vault
+    - Services.polaris-db-vault
     - Services.vault-exporter
   PersistentVolumeClaims:
     - PersistentVolumeClaim.postgresql-pv-claim
     - PersistentVolumeClaim.upload-server-pv-claim
     - PersistentVolumeClaim.mongodb
   Secrets:
-    - Secret.swip-db-consul-gossip-key
+    - Secret.polaris-db-consul-gossip-key
     - Secret.smtp
   ConfigMaps:
-    - ConfigMap.swip-db-consul-tests
+    - ConfigMap.polaris-db-consul-tests
     - ConfigMap.postgresql-config
-    - ConfigMap.swip-db-vault-config
+    - ConfigMap.polaris-db-vault-config
     - ConfigMap.vault-policies
+    - ConfigMap.smtp
   PodDisruptionBudgets:
-    - PodDisruptionBudget.swip-db-consul-pdb
-    - PodDisruptionBudget.swip-db-vault
+    - PodDisruptionBudget.polaris-db-consul-pdb
+    - PodDisruptionBudget.polaris-db-vault
 runtimeobjectdependencies:
   - obj: RoleBindings
     isdependenton:

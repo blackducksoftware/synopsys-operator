@@ -40,8 +40,8 @@ type PolarisDBSpec struct {
 }
 
 type EventstoreDetails struct {
-	Replicas    *int32 `json:"replicas,omitempty"`
-	StorageSize string `json:"storage_size,omitempty"`
+	Replicas *int32  `json:"replicas,omitempty"`
+	Storage  Storage `json:"storage_size,omitempty"`
 }
 
 type UploadServerDetails struct {
@@ -51,21 +51,19 @@ type UploadServerDetails struct {
 }
 
 type Storage struct {
-	Type         string  `json:"type,omitempty"`
-	StorageSize  string  `json:"size,omitempty"`
-	StorageClass *string `json:"storage_class,omitempty"`
+	StorageSize string `json:"size,omitempty"`
 }
 
 type SMTPDetails struct {
 	Host     string `json:"host"`
-	Port     *int32 `json:"port"`
+	Port     int32  `json:"port"`
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`
 }
 
 type PostgresDetails struct {
 	Host     string `json:"host"`
-	Port     *int32 `json:"port"`
+	Port     int32  `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }

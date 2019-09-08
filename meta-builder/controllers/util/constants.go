@@ -50,7 +50,7 @@ const (
 	OPSSIGHT = "opssight"
 	// Releases repo details
 	POLARIS     = "polaris"
-	POLARISDB   = "polaris"
+	POLARISDB   = "polarisdb"
 	REPORTING   = "reporting"
 	AUTHSERVICE = "polaris"
 )

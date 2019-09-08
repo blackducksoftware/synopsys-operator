@@ -18,8 +18,6 @@ package controllers
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"strings"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
@@ -81,14 +79,13 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 	}
 
 	// regex patching
+	content = strings.ReplaceAll(content, "${NAMESPACE}", polarisCr.Spec.Namespace)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polarisCr.Spec.EnvironmentName)
-	content = strings.ReplaceAll(content, "${POLARIS_ENVIRONMENT_NAME}", polarisCr.Spec.EnvironmentName)
-	content = strings.ReplaceAll(content, "${ENVIRONMENT_DNS}", polarisCr.Spec.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polarisCr.Spec.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisCr.Spec.ImagePullSecrets)
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
-	removeAuthServerRuntimeObjects(&mapOfUniqueIdToBaseRuntimeObject)
+	// removeAuthServerRuntimeObjects(&mapOfUniqueIdToBaseRuntimeObject)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
 		if err := ctrl.SetControllerReference(polarisCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
@@ -98,7 +95,7 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 			return mapOfUniqueIdToBaseRuntimeObject, nil
 		}
 	}
-	mapOfUniqueIdToDesiredRuntimeObject := patchPolaris(polarisCr, mapOfUniqueIdToBaseRuntimeObject, meta.NewAccessor())
+	mapOfUniqueIdToDesiredRuntimeObject := patchPolaris(r.Client, polarisCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
 }

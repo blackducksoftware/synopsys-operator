@@ -4,7 +4,7 @@ metadata:
   name: polarisdb-sample
 spec:
   # Add fields here
-  version: test
+  version: "test"
   namespace: default
   environment: onprem
   environment_address: onprem.dev.polaris.synopsys.com

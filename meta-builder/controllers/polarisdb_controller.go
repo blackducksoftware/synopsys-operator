@@ -17,9 +17,8 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"strings"
-
-	"k8s.io/apimachinery/pkg/api/meta"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
@@ -80,8 +79,17 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	}
 
 	// regex patching
+	content = strings.ReplaceAll(content, "${NAMESPACE}", polarisDbCr.Spec.Namespace)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polarisDbCr.Spec.EnvironmentName)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisDbCr.Spec.ImagePullSecrets)
+	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.PostgresDetails.Username))
+	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.PostgresDetails.Password))
+	content = strings.ReplaceAll(content, "${SMTP_HOST}", polarisDbCr.Spec.SMTPDetails.Host)
+	content = strings.ReplaceAll(content, "${SMTP_PORT}", fmt.Sprintf("\"%d\"", polarisDbCr.Spec.SMTPDetails.Port))
+	content = strings.ReplaceAll(content, "${SMTP_USERNAME}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.SMTPDetails.Username))
+	content = strings.ReplaceAll(content, "${SMTP_PASSWORD}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.SMTPDetails.Password))
+	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", polarisDbCr.Spec.PostgresDetails.Host)
+	content = strings.ReplaceAll(content, "${POSTGRES_PORT}", fmt.Sprintf("\"%d\"", polarisDbCr.Spec.PostgresDetails.Port))
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
@@ -93,7 +101,7 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 			return mapOfUniqueIdToBaseRuntimeObject, nil
 		}
 	}
-	mapOfUniqueIdToDesiredRuntimeObject := patchPolarisDB(polarisDbCr, mapOfUniqueIdToBaseRuntimeObject, meta.NewAccessor())
+	mapOfUniqueIdToDesiredRuntimeObject := patchPolarisDB(r.Client, polarisDbCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
 }

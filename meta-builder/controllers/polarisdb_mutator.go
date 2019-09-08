@@ -12,13 +12,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func patchPolarisDB(polarisDbCr *synopsysv1.PolarisDB, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, accessor meta.MetadataAccessor) map[string]runtime.Object {
+func patchPolarisDB(client client.Client, polarisDbCr *synopsysv1.PolarisDB, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object) map[string]runtime.Object {
 	patcher := PolarisDBPatcher{
 		polarisDbCr:                      polarisDbCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
-		accessor:                         accessor,
+		Client:                           client,
 	}
 	return patcher.patch()
 }
@@ -26,7 +27,7 @@ func patchPolarisDB(polarisDbCr *synopsysv1.PolarisDB, mapOfUniqueIdToBaseRuntim
 type PolarisDBPatcher struct {
 	polarisDbCr                      *synopsysv1.PolarisDB
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
-	accessor                         meta.MetadataAccessor
+	client.Client
 }
 
 func (p *PolarisDBPatcher) patch() map[string]runtime.Object {
@@ -47,8 +48,9 @@ func (p *PolarisDBPatcher) patch() map[string]runtime.Object {
 }
 
 func (p *PolarisDBPatcher) patchNamespace() error {
+	accessor := meta.NewAccessor()
 	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
-		p.accessor.SetNamespace(runtimeObject, p.polarisDbCr.Spec.Namespace)
+		accessor.SetNamespace(runtimeObject, p.polarisDbCr.Spec.Namespace)
 	}
 	return nil
 }
@@ -64,7 +66,7 @@ func (p *PolarisDBPatcher) patchSMTPDetails() error {
 		"username": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.SMTPDetails.Username))),
 		"passwd":   []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.SMTPDetails.Password))),
 		"host":     []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.SMTPDetails.Host))),
-		"port":     []byte(b64.StdEncoding.EncodeToString([]byte(string(*p.polarisDbCr.Spec.SMTPDetails.Port)))),
+		"port":     []byte(b64.StdEncoding.EncodeToString([]byte(string(p.polarisDbCr.Spec.SMTPDetails.Port)))),
 	}
 	return nil
 }
@@ -83,7 +85,7 @@ func (p *PolarisDBPatcher) patchPostgresDetails() error {
 		"reporting_db_username": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Username))),
 		"reporting_db_password": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Password))),
 		"host":                  []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Host))),
-		"port":                  []byte(b64.StdEncoding.EncodeToString([]byte(string(*p.polarisDbCr.Spec.PostgresDetails.Port)))),
+		"port":                  []byte(b64.StdEncoding.EncodeToString([]byte(string(p.polarisDbCr.Spec.PostgresDetails.Port)))),
 	}
 	if p.polarisDbCr.Spec.PostgresInstanceType == "internal" {
 		// patch postgresql-config secret
@@ -104,7 +106,7 @@ func (p *PolarisDBPatcher) patchPostgresDetails() error {
 			return nil
 		}
 		PostgresPVCInstance := PostgresPVCRuntimeObject.(*corev1.PersistentVolumeClaim)
-		UpdatePersistentVolumeClaim(PostgresPVCInstance, p.polarisDbCr.Spec.PostgresStorageDetails.StorageSize, p.polarisDbCr.Spec.PostgresStorageDetails.StorageClass)
+		UpdatePersistentVolumeClaim(PostgresPVCInstance, p.polarisDbCr.Spec.PostgresStorageDetails.StorageSize)
 	}
 	return nil
 }
@@ -116,7 +118,7 @@ func (p *PolarisDBPatcher) patchEventstoreDetails() error {
 		return nil
 	}
 	statefulsetInstance := statefulSetRuntimeObject.(*appsv1.StatefulSet)
-	if size, err := resource.ParseQuantity(p.polarisDbCr.Spec.EventstoreDetails.StorageSize); err == nil {
+	if size, err := resource.ParseQuantity(p.polarisDbCr.Spec.EventstoreDetails.Storage.StorageSize); err == nil {
 		statefulsetInstance.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests[v1.ResourceStorage] = size
 	}
 	return nil
@@ -129,6 +131,6 @@ func (p *PolarisDBPatcher) patchUploadServerDetails() error {
 		return nil
 	}
 	UploadServerPVCInstance := UploadServerPVCRuntimeObject.(*corev1.PersistentVolumeClaim)
-	UpdatePersistentVolumeClaim(UploadServerPVCInstance, p.polarisDbCr.Spec.UploadServerDetails.Storage.StorageSize, p.polarisDbCr.Spec.UploadServerDetails.Storage.StorageClass)
+	UpdatePersistentVolumeClaim(UploadServerPVCInstance, p.polarisDbCr.Spec.UploadServerDetails.Storage.StorageSize)
 	return nil
 }

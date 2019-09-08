@@ -81,9 +81,8 @@ func (r *AuthServerReconciler) GetRuntimeObjects(cr interface{}) (map[string]run
 	}
 
 	// regex patching
+	content = strings.ReplaceAll(content, "${NAMESPACE}", authServerCr.Spec.Namespace)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", authServerCr.Spec.EnvironmentName)
-	content = strings.ReplaceAll(content, "${POLARIS_ENVIRONMENT_NAME}", authServerCr.Spec.EnvironmentName)
-	content = strings.ReplaceAll(content, "${ENVIRONMENT_DNS}", authServerCr.Spec.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", authServerCr.Spec.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", authServerCr.Spec.ImagePullSecrets)
 

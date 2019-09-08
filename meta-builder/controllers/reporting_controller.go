@@ -76,11 +76,6 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Password))
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", reportingCr.Spec.ImagePullSecrets)
 
-	fmt.Println("---------------------------------")
-	fmt.Println(controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Username))
-	fmt.Println(controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Password))
-	fmt.Println("---------------------------------")
-
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		if err := ctrl.SetControllerReference(reportingCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {

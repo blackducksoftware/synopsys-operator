@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+
 	synopsysV1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
 	log "github.com/sirupsen/logrus"
@@ -170,13 +171,10 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.authSpec.ImagePullSecrets = ctl.ImagePullSecrets
 			ctl.spec.polarisDBSpec.ImagePullSecrets = ctl.ImagePullSecrets
 			ctl.spec.polarisSpec.ImagePullSecrets = ctl.ImagePullSecrets
-		case "storage-class":
-			ctl.spec.polarisDBSpec.PostgresStorageDetails.StorageClass = &ctl.StorageClass
-			ctl.spec.polarisDBSpec.UploadServerDetails.Storage.StorageClass = &ctl.StorageClass
 		case "postgres-host":
 			ctl.spec.polarisDBSpec.PostgresDetails.Host = ctl.PostgresHost
 		case "postgres-port":
-			ctl.spec.polarisDBSpec.PostgresDetails.Port = &ctl.PostgresPort
+			ctl.spec.polarisDBSpec.PostgresDetails.Port = ctl.PostgresPort
 		case "postgres-username":
 			ctl.spec.polarisDBSpec.PostgresDetails.Username = ctl.PostgresUsername
 		case "postgres-password":
@@ -186,11 +184,11 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 		case "uploadserver-size":
 			ctl.spec.polarisDBSpec.UploadServerDetails.Storage.StorageSize = ctl.UploadServerSize
 		case "eventstore-size":
-			ctl.spec.polarisDBSpec.EventstoreDetails.StorageSize = ctl.EventstoreSize
+			ctl.spec.polarisDBSpec.EventstoreDetails.Storage.StorageSize = ctl.EventstoreSize
 		case "smtp-host":
 			ctl.spec.polarisDBSpec.SMTPDetails.Host = ctl.SMTPHost
 		case "smtp-port":
-			ctl.spec.polarisDBSpec.SMTPDetails.Port = &ctl.SMTPPort
+			ctl.spec.polarisDBSpec.SMTPDetails.Port = ctl.SMTPPort
 		case "smtp-username":
 			ctl.spec.polarisDBSpec.SMTPDetails.Username = ctl.SMTPUsername
 		case "smtp-password":
