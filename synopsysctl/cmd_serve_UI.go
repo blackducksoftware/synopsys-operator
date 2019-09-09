@@ -254,7 +254,7 @@ type BlackDuckUIRequest struct {
 	PVCStorageClass                   string `json:"PVCStorageClass"`
 	ScanType                          string `json:"scanType"`
 	ExternalDatabase                  bool   `json:"externalDatabase"`
-	externalPostgresSQLHost           string `json:"externalPostgresSQLHost"`
+	ExternalPostgresSQLHost           string `json:"externalPostgresSQLHost"`
 	ExternalPostgresSQLPort           string `json:"externalPostgresSQLPort"`
 	ExternalPostgresSQLAdminUser      string `json:"externalPostgresSQLAdminUser"`
 	ExternalPostgresSQLAdminPassword  string `json:"externalPostgresSQLAdminPassword"`
@@ -267,9 +267,9 @@ type BlackDuckUIRequest struct {
 	CertificateName                   string `json:"certificateName"`
 	CustomCACertificateAuthentication bool   `json:"customCACertificateAuthentication"`
 	ProxyRootCertificate              string `json:"proxyRootCertificate"`
-	containerImageTags                string `json:"containerImageTags"`
-	environmentVariables              string `json:"environmentVariables"`
-	nodeAffinityJSON                  string `json:"nodeAffinityJSON"`
+	ContainerImageTags                string `json:"containerImageTags"`
+	EnvironmentVariables              string `json:"environmentVariables"`
+	NodeAffinityJSON                  string `json:"nodeAffinityJSON"`
 }
 
 /* COMMANDS TO DEPLOY/CREATE RESOURCES FROM UI REQUEST STRUCTS */

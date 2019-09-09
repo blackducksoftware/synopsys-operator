@@ -1,6 +1,6 @@
 version: "2"
 domain: com
-repo: github.com/blackducksoftware/synopsys-operator/meta-builder
+repo: github.com/blackducksoftware/synopsys-operator
 resources:
 - group: synopsys
   version: v1

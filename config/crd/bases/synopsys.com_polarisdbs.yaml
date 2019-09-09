@@ -42,7 +42,10 @@ spec:
                   format: int32
                   type: integer
                 storage_size:
-                  type: string
+                  properties:
+                    size:
+                      type: string
+                  type: object
               type: object
             image_pull_secrets:
               type: string
@@ -119,10 +122,6 @@ spec:
                 storage:
                   properties:
                     size:
-                      type: string
-                    storage_class:
-                      type: string
-                    type:
                       type: string
                   type: object
               type: object

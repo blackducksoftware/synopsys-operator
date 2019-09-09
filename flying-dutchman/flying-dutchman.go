@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	jobOwnerKey = ".metadata.controller"
+	JobOwnerKey = ".metadata.controller"
 )
 
 // MetaReconcilerInterface is a generic interface for running a Reconcile process
@@ -96,7 +96,7 @@ func scheduleResources(myClient client.Client, cr metav1.Object, mapOfuniqueIDTo
 	// get current runtime objects "owned" by CR
 	log.V(1).Info("Getting a list of existing runtime objects owned by", "Custom Resource: ", cr.GetName())
 	var listOfCurrentRuntimeObjectsOwnedByCr metav1.List
-	if err := myClient.List(ctx, &listOfCurrentRuntimeObjectsOwnedByCr, client.InNamespace(cr.GetNamespace()), client.MatchingField(jobOwnerKey, cr.GetName())); err != nil {
+	if err := myClient.List(ctx, &listOfCurrentRuntimeObjectsOwnedByCr, client.InNamespace(cr.GetNamespace()), client.MatchingField(JobOwnerKey, cr.GetName())); err != nil {
 		// TODO: this is not working
 		//log.Error(err, "unable to list currentRuntimeObjectsOwnedByAlertCr")
 		// TODO: rethink what to do when we cannot list currentRuntimeObjectsOwnedByAlertCr
