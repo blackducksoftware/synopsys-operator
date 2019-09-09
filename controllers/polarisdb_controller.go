@@ -113,13 +113,16 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	mapOfUniqueIdToBaseRuntimeObject = removeTestManifests(mapOfUniqueIdToBaseRuntimeObject)
-	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-		// set an owner reference
-		if err := ctrl.SetControllerReference(polarisDbCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-			// requeue if we cannot set owner on the object
-			// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-			//return ctrl.Result{}, err
-			return mapOfUniqueIdToBaseRuntimeObject, nil
+
+	if !r.IsDryRun {
+		for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
+			// set an owner reference
+			if err := ctrl.SetControllerReference(polarisDbCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
+				// requeue if we cannot set owner on the object
+				// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
+				//return ctrl.Result{}, err
+				return mapOfUniqueIdToBaseRuntimeObject, nil
+			}
 		}
 	}
 	mapOfUniqueIdToDesiredRuntimeObject := patchPolarisDB(r.Client, polarisDbCr, mapOfUniqueIdToBaseRuntimeObject)
