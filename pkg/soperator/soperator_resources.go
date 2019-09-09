@@ -458,9 +458,15 @@ func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "update", "patch"},
+		APIGroups: []string{""},
+		Resources: []string{"namespaces"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{""},
-		Resources: []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
+		Resources: []string{"configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
