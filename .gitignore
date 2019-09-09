@@ -22,3 +22,13 @@ bin
 *.swp
 *.swo
 *~
+
+.vscode/
+*.DS_Store
+
+# ember node modules
+*node_modules/
+operator-ui-ember/dist/
+
+cmd/synopsysctl/synopsysctl
+bin/manager
