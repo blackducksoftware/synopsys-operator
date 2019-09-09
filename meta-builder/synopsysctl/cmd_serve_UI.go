@@ -42,9 +42,8 @@ import (
 	synopsysV1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/soperator"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/gobuffalo/packr"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Port to serve on
@@ -315,13 +314,17 @@ func deployOperatorRequest(data []byte) error {
 		return err
 	}
 
+	//// Add Size CRD
+	// TODO
+	//crds = append(crds, util.SizeCRDName)
+
 	// Get CRD configs
 	crdConfigs, err := getCrdConfigs(operatorNamespace, isClusterScoped, crds)
 	if err != nil {
 		return err
 	}
-	if len(crdConfigs) <= 0 { // TODO: Make this back to 1 when the Size comes back
-		return fmt.Errorf("no resources are enabled (include flag(s): --enable-alert --enable-blackduck --enable-opssight )")
+	if len(crdConfigs) <= 0 {
+		return fmt.Errorf("no resources are enabled (include flag(s): --enable-alert --enable-blackduck --enable-opssight --enable-polaris )")
 	}
 	// Create Synopsys Operator Spec
 	soperatorSpec, err := getSpecToDeploySOperator(crds)
@@ -331,14 +334,14 @@ func deployOperatorRequest(data []byte) error {
 
 	// check if namespace exist in namespace scope, if not throw an error
 	if !isClusterScoped {
-		_, err = util.GetNamespace(kubeClient, operatorNamespace)
+		_, err = kubeClient.CoreV1().Namespaces().Get(operatorNamespace, v1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("please create the namespace '%s' to deploy the Synopsys Operator in namespace scoped", operatorNamespace)
 		}
 	}
 
 	// check if operator is already installed
-	_, err = util.GetOperatorNamespace(kubeClient, operatorNamespace)
+	_, err = utils.GetOperatorNamespace(kubeClient, operatorNamespace)
 	if err == nil {
 		return fmt.Errorf("the Synopsys Operator instance is already deployed in namespace '%s'", namespace)
 	}
@@ -416,28 +419,26 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 	polarisDBSpec.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
 	polarisDBSpec.EnvironmentName = polarisUIRequestConfig.EnvironmentName
 	polarisDBSpec.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
-	polarisDBSpec.PostgresStorageDetails.StorageClass = &polarisUIRequestConfig.StorageClass
-	polarisDBSpec.UploadServerDetails.Storage.StorageClass = &polarisUIRequestConfig.StorageClass
+	//polarisDBSpec.PostgresStorageDetails.StorageClass = &polarisUIRequestConfig.StorageClass
+	//polarisDBSpec.UploadServerDetails.Storage.StorageClass = &polarisUIRequestConfig.StorageClass
 	polarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost
 	postPort, err := strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 32)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("falied to convert postgres port to an int: %s", polarisUIRequestConfig.PostgresPort)
 	}
-	castedPostPort := int32(postPort)
-	polarisDBSpec.PostgresDetails.Port = &castedPostPort
+	polarisDBSpec.PostgresDetails.Port = int32(postPort)
 	polarisDBSpec.PostgresDetails.Username = polarisUIRequestConfig.PostgresUsername
 	polarisDBSpec.PostgresDetails.Password = polarisUIRequestConfig.PostgresPassword
 	polarisDBSpec.PostgresStorageDetails.StorageSize = polarisUIRequestConfig.PostgresSize
 	polarisDBSpec.UploadServerDetails.Storage.StorageSize = polarisUIRequestConfig.UploadServerSize
-	polarisDBSpec.EventstoreDetails.StorageSize = polarisUIRequestConfig.EventstoreSize
+	polarisDBSpec.EventstoreDetails.Storage.StorageSize = polarisUIRequestConfig.EventstoreSize
 
 	polarisDBSpec.SMTPDetails.Host = polarisUIRequestConfig.SMTPHost
 	sPort, err := strconv.ParseInt(polarisUIRequestConfig.SMTPPort, 0, 32)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("falied to convert smtp port to an int: %s", polarisUIRequestConfig.PostgresPort)
 	}
-	castedSPort := int32(sPort)
-	polarisDBSpec.SMTPDetails.Port = &castedSPort
+	polarisDBSpec.SMTPDetails.Port = int32(sPort)
 	polarisDBSpec.SMTPDetails.Username = polarisUIRequestConfig.SMTPUsername
 	polarisDBSpec.SMTPDetails.Password = polarisUIRequestConfig.SMTPPassword
 	polarisDB.Spec = *polarisDBSpec
@@ -465,7 +466,7 @@ func createBlackDuckCRRequest(data []byte) error {
 		return fmt.Errorf("failed to unmarshal Black Duck request: %s", err)
 	}
 	blackDuckCR := &synopsysV1.Blackduck{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: v1.ObjectMeta{
 			Name:      bdConfig.Name,
 			Namespace: bdConfig.Namespace,
 		},
