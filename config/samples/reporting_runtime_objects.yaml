@@ -1,0 +1,1022 @@
+---
+# Source: reporting/templates/rp-issue-manager.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "rp-issue-manager"
+  labels:    
+    environment: "onprem"
+    service: "rp-issue-manager"
+    component: "None"
+    componentVersion: "None"
+    chart: "reporting"
+    chartVersion: "0.0.1049"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "rp-issue-manager"
+  namespace: "default"
+  labels:
+    name: "rp-issue-manager"
+spec:
+  ports:
+    - name: "6888"
+      port: 6888
+      targetPort: 6888
+    - name: "admin"
+      port: 8081
+      targetPort: 8081
+  selector:
+    name: "rp-issue-manager"
+status:
+  loadBalancer: {}
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "rp-issue-manager"
+  namespace: "default"
+  labels: 
+    name: "rp-issue-manager"
+spec: 
+  replicas: 1
+  selector: 
+    matchLabels: 
+      name: "rp-issue-manager"
+  template: 
+    metadata: 
+      labels: 
+        name: "rp-issue-manager"
+    spec:
+      containers: 
+      - name: rp-issue-manager
+        image: "gcr.io/snps-swip-staging/reporting-rp-issue-manager:0.0.655"
+        imagePullPolicy: Always
+        resources:          
+          limits:
+            cpu: 750m
+            memory: 1000Mi
+          requests:
+            cpu: 500m
+            memory: 768Mi
+        ports:
+        - containerPort: 6888
+        volumeMounts:
+        - name: "vault-cacert"
+          mountPath: "/mnt/vault/ca"
+          readOnly: true
+        - name: "vault-client-key"
+          mountPath: "/mnt/vault/key"
+          readOnly: true
+        - name: "vault-client-cert"
+          mountPath: "/mnt/vault/cert"
+          readOnly: true
+        env:        
+        - name: "SWIP_VAULT_ADDRESS"
+          value: "https://swip-db-vault:8200"
+        - name: "VAULT_CACERT"
+          value: "/mnt/vault/ca/vault_cacrt"
+        - name: "VAULT_CLIENT_KEY"
+          value: "/mnt/vault/key/vault_client_key"
+        - name: "VAULT_CLIENT_CERT"
+          value: "/mnt/vault/cert/vault_client_cert"        
+        - name: "POSTGRES_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: "cloudsql"
+              key: "reporting_db_password"
+        - name: "POSTGRES_USERNAME"
+          valueFrom:
+            secretKeyRef:
+              name: "cloudsql"
+              key: "reporting_db_username"        
+        - name: "POSTGRES_HOST"
+          value: "postgresql"
+        - name: "POSTGRES_PORT"
+          value: "5432"
+        - name: "MINIO_HOST"
+          value: "report-storage"
+        - name: "MINIO_PORT"
+          value: "9000"
+        - name: "CONNECTION_POOL_SIZE"
+          value: "10"
+        - name: "LOG_LEVEL"
+          value: "INFO"
+        - name: "SPRING_PROFILE"
+          value: "production"
+        - name: "SWIP_ENVIRONMENT_NAME"
+          value: "onprem"
+        - name: "SWIP_ROOT_DOMAIN"
+          value: "onprem.dev.polaris.synopsys.com"
+        - name: "REPORTING_STANDALONE"
+          value: "true"        
+        - name: "JAEGER_SERVICE_NAME"
+          value: "default-rp-issue-manager"
+        - name: "JAEGER_HOST"
+          value: jaeger-collector.monitoring.svc
+        - name: "JAEGER_PORT"
+          value: "14268"
+        - name: "JAEGER_REPORTER_LOG_SPANS"
+          value: "false"
+        - name: "JAEGER_SAMPLER_TYPE"
+          value: "const"
+        - name: "JAEGER_SAMPLER_PARAM"
+          value: "1"
+      volumes:
+      - name: "vault-cacert"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.crt"
+            path: "vault_cacrt"
+          secretName: "vault-ca-certificate"
+      - name: "vault-client-key"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.key"
+            path: "vault_client_key"
+          secretName: "auth-client-tls-certificate"
+      - name: "vault-client-cert"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.crt"
+            path: "vault_client_cert"
+          secretName: "auth-client-tls-certificate"      
+      imagePullSecrets:
+      - name: gcr-json-key
+      restartPolicy: "Always"
+---
+apiVersion: "autoscaling/v2beta1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "rp-issue-manager"
+spec:
+  maxReplicas: 3
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: "extensions/v1beta1"
+    kind: "Deployment"
+    name: "rp-issue-manager"
+  metrics:
+  - type: "Resource"
+    resource:
+      name: "memory"
+      targetAverageUtilization: 75 
+  - type: "Resource"
+    resource:
+      name: "cpu"
+      targetAverageUtilization: 75
+---
+# Source: reporting/templates/rp-portfolio-service.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "rp-portfolio-service"
+  labels:    
+    environment: "onprem"
+    service: "rp-portfolio-service"
+    component: "None"
+    componentVersion: "None"
+    chart: "reporting"
+    chartVersion: "0.0.1049"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "rp-portfolio-service"
+  namespace: "default"
+  labels:
+    name: "rp-portfolio-service"
+spec:
+  ports:
+    - name: "60289"
+      port: 60289
+      targetPort: 60289
+    - name: "admin"
+      port: 8081
+      targetPort: 8081
+  selector:
+    name: "rp-portfolio-service"
+status:
+  loadBalancer: {}
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "rp-portfolio-service"
+  namespace: "default"
+  labels: 
+    name: "rp-portfolio-service"
+spec: 
+  replicas: 1
+  selector: 
+    matchLabels: 
+      name: "rp-portfolio-service"
+  template: 
+    metadata: 
+      labels: 
+        name: "rp-portfolio-service"
+    spec:
+      containers: 
+      - name: "rp-portfolio-service"
+        image: "gcr.io/snps-swip-staging/reporting-rp-portfolio-service:0.0.799"
+        imagePullPolicy: "Always"
+        resources:          
+          limits:
+            cpu: 750m
+            memory: 1000Mi
+          requests:
+            cpu: 500m
+            memory: 768Mi
+        ports:
+        - containerPort: 60289
+        volumeMounts:
+        - name: "vault-cacert"
+          mountPath: "/mnt/vault/ca"
+          readOnly: true
+        - name: "vault-client-key"
+          mountPath: "/mnt/vault/key"
+          readOnly: true
+        - name: "vault-client-cert"
+          mountPath: "/mnt/vault/cert"
+          readOnly: true
+        env:        
+        - name: "SWIP_VAULT_ADDRESS"
+          value: "https://swip-db-vault:8200"
+        - name: "VAULT_CACERT"
+          value: "/mnt/vault/ca/vault_cacrt"
+        - name: "VAULT_CLIENT_KEY"
+          value: "/mnt/vault/key/vault_client_key"
+        - name: "VAULT_CLIENT_CERT"
+          value: "/mnt/vault/cert/vault_client_cert"        
+        - name: "POSTGRES_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: "cloudsql"
+              key: "reporting_db_password"
+        - name: "POSTGRES_USERNAME"
+          valueFrom:
+            secretKeyRef:
+              name: "cloudsql"
+              key: "reporting_db_username"        
+        - name: "POSTGRES_HOST"
+          value: "postgresql"
+        - name: "POSTGRES_PORT"
+          value: "5432"
+        - name: "MINIO_HOST"
+          value: "report-storage"
+        - name: "MINIO_PORT"
+          value: "9000"
+        - name: "CONNECTION_POOL_SIZE"
+          value: "10"
+        - name: "LOG_LEVEL"
+          value: "INFO"
+        - name: "SPRING_PROFILE"
+          value: "production"
+        - name: "SWIP_ENVIRONMENT_NAME"
+          value: "onprem"
+        - name: "SWIP_ROOT_DOMAIN"
+          value: "onprem.dev.polaris.synopsys.com"
+        - name: "REPORTING_STANDALONE"
+          value: "true"        
+        - name: "JAEGER_SERVICE_NAME"
+          value: "default-rp-portfolio-service"
+        - name: "JAEGER_HOST"
+          value: jaeger-collector.monitoring.svc
+        - name: "JAEGER_PORT"
+          value: "14268"
+        - name: "JAEGER_REPORTER_LOG_SPANS"
+          value: "false"
+        - name: "JAEGER_SAMPLER_TYPE"
+          value: "const"
+        - name: "JAEGER_SAMPLER_PARAM"
+          value: "1"      
+      imagePullSecrets:
+      - name: gcr-json-key
+      volumes:
+      - name: "vault-cacert"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.crt"
+            path: "vault_cacrt"
+          secretName: "vault-ca-certificate"
+      - name: "vault-client-key"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.key"
+            path: "vault_client_key"
+          secretName: "auth-client-tls-certificate"
+      - name: "vault-client-cert"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.crt"
+            path: "vault_client_cert"
+          secretName: "auth-client-tls-certificate"
+      restartPolicy: "Always"
+---
+apiVersion: "autoscaling/v2beta1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "rp-portfolio-service"
+spec:
+  maxReplicas: 3
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: "extensions/v1beta1"
+    kind: "Deployment"
+    name: "rp-portfolio-service"
+  metrics:
+  - type: "Resource"
+    resource:
+      name: "memory"
+      targetAverageUtilization: 75 
+  - type: "Resource"
+    resource:
+      name: "cpu"
+      targetAverageUtilization: 75
+---
+# Source: reporting/templates/rp-report-service.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "rp-report-service"
+  labels:    
+    environment: "onprem"
+    service: "rp-report-service"
+    component: "None"
+    componentVersion: "None"
+    chart: "reporting"
+    chartVersion: "0.0.1049"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "rp-report-service"
+  namespace: "default"
+  labels:
+    name: "rp-report-service"
+spec:
+  ports:
+    - name: "7979"
+      port: 7979
+      targetPort: 7979
+    - name: "admin"
+      port: 8081
+      targetPort: 8081
+  selector:
+    name: "rp-report-service"
+status:
+  loadBalancer: {}
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata: 
+  name: "rp-report-service"
+  namespace: "default"
+  labels: 
+    name: "rp-report-service"
+spec: 
+  replicas: 1
+  selector: 
+    matchLabels: 
+      name: "rp-report-service"
+  template: 
+    metadata: 
+      labels: 
+        name: "rp-report-service"
+    spec:      
+      imagePullSecrets:
+      - name: gcr-json-key
+      volumes:
+      - name: "vault-cacert"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.crt"
+            path: "vault_cacrt"
+          secretName: "vault-ca-certificate"
+      - name: "vault-client-key"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.key"
+            path: "vault_client_key"
+          secretName: "auth-client-tls-certificate"
+      - name: "vault-client-cert"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.crt"
+            path: "vault_client_cert"
+          secretName: "auth-client-tls-certificate"
+      containers: 
+      - name: "rp-report-service"
+        image: "gcr.io/snps-swip-staging/reporting-report-service:0.0.534"
+        imagePullPolicy: "Always"
+        resources:          
+          limits:
+            cpu: 750m
+            memory: 1500Mi
+          requests:
+            cpu: 500m
+            memory: 768Mi
+        ports: 
+        - containerPort: 7979
+        volumeMounts:
+        - name: "vault-cacert"
+          mountPath: "/mnt/vault/ca"
+          readOnly: true
+        - name: "vault-client-key"
+          mountPath: "/mnt/vault/key"
+          readOnly: true
+        - name: "vault-client-cert"
+          mountPath: "/mnt/vault/cert"
+          readOnly: true
+        env:        
+        - name: "SWIP_VAULT_ADDRESS"
+          value: "https://swip-db-vault:8200"
+        - name: "VAULT_CACERT"
+          value: "/mnt/vault/ca/vault_cacrt"
+        - name: "VAULT_CLIENT_KEY"
+          value: "/mnt/vault/key/vault_client_key"
+        - name: "VAULT_CLIENT_CERT"
+          value: "/mnt/vault/cert/vault_client_cert"        
+        - name: "POSTGRES_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: "cloudsql"
+              key: "reporting_db_password"
+        - name: "POSTGRES_USERNAME"
+          valueFrom:
+            secretKeyRef:
+              name: "cloudsql"
+              key: "reporting_db_username"        
+        - name: "POSTGRES_HOST"
+          value: "postgresql"
+        - name: "POSTGRES_PORT"
+          value: "5432"
+        - name: "MINIO_HOST"
+          value: "report-storage"
+        - name: "MINIO_PORT"
+          value: "9000"
+        - name: "CONNECTION_POOL_SIZE"
+          value: "10"
+        - name: "LOG_LEVEL"
+          value: "INFO"
+        - name: "SPRING_PROFILE"
+          value: "production"
+        - name: "SWIP_ENVIRONMENT_NAME"
+          value: "onprem"
+        - name: "SWIP_ROOT_DOMAIN"
+          value: "onprem.dev.polaris.synopsys.com"
+        - name: "REPORTING_STANDALONE"
+          value: "true"        
+        - name: "MINIO_BUCKET"
+          value: "reports"
+        - name: "MINIO_ACCESS_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: "swip-tools-minio"
+              key: "access_key"
+        - name: "MINIO_SECRET_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: "swip-tools-minio"
+              key: "secret_key"
+        - name: "MINIO_REGION"
+          value: "us-central1"        
+        - name: "JAEGER_SERVICE_NAME"
+          value: "default-rp-report-service"
+        - name: "JAEGER_HOST"
+          value: jaeger-collector.monitoring.svc
+        - name: "JAEGER_PORT"
+          value: "14268"
+        - name: "JAEGER_REPORTER_LOG_SPANS"
+          value: "false"
+        - name: "JAEGER_SAMPLER_TYPE"
+          value: "const"
+        - name: "JAEGER_SAMPLER_PARAM"
+          value: "1"
+      - name: "clamav"
+        image: gcr.io/snps-swip-staging/reporting-clamav
+        ports:
+        - containerPort: 3310
+      restartPolicy: "Always"
+---
+apiVersion: "autoscaling/v2beta1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "rp-report-service"
+spec:
+  maxReplicas: 3
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: "extensions/v1beta1"
+    kind: "Deployment"
+    name: "rp-report-service"
+  metrics:
+  - type: "Resource"
+    resource:
+      name: "memory"
+      targetAverageUtilization: 75 
+  - type: "Resource"
+    resource:
+      name: "cpu"
+      targetAverageUtilization: 75
+---
+# Source: reporting/templates/rp-swagger-doc.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "rp-swagger-doc"
+  labels:    
+    environment: "onprem"
+    service: "rp-swagger-doc"
+    component: "None"
+    componentVersion: "None"
+    chart: "reporting"
+    chartVersion: "0.0.1049"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "rp-swagger-doc"
+  namespace: "default"
+  labels:
+    name: "rp-swagger-doc"
+spec:
+  ports:
+    - name: "8765"
+      port: 8765
+      targetPort: 8765
+    - name: "admin"
+      port: 8081
+      targetPort: 8081
+  selector:
+    name: "rp-swagger-doc"
+status:
+  loadBalancer: {}
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata: 
+  name: "rp-swagger-doc"
+  namespace: "default"
+  labels: 
+    name: "rp-swagger-doc"
+spec: 
+  replicas: 1
+  selector: 
+    matchLabels: 
+      name: "rp-swagger-doc"
+  template: 
+    metadata: 
+      labels: 
+        name: "rp-swagger-doc"
+    spec:      
+      imagePullSecrets:
+      - name: gcr-json-key
+      volumes:
+      - name: "vault-cacert"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.crt"
+            path: "vault_cacrt"
+          secretName: "vault-ca-certificate"
+      - name: "vault-client-key"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.key"
+            path: "vault_client_key"
+          secretName: "auth-client-tls-certificate"
+      - name: "vault-client-cert"
+        secret:
+          defaultMode: 420
+          items:
+          - key: "tls.crt"
+            path: "vault_client_cert"
+          secretName: "auth-client-tls-certificate"
+      containers: 
+      - name: "rp-swagger-doc"
+        image: "gcr.io/snps-swip-staging/reporting-swagger-doc:0.0.70"
+        imagePullPolicy: "Always"
+        resources:          
+          limits:
+            cpu: 550m
+            memory: 1000Mi
+          requests:
+            cpu: 250m
+            memory: 768Mi
+        ports: 
+        - containerPort: 8765
+        volumeMounts:
+        - name: "vault-cacert"
+          mountPath: "/mnt/vault/ca"
+          readOnly: true
+        - name: "vault-client-key"
+          mountPath: "/mnt/vault/key"
+          readOnly: true
+        - name: "vault-client-cert"
+          mountPath: "/mnt/vault/cert"
+          readOnly: true
+        env: # consume the property-like keys in environment variables        
+        - name: "SWIP_VAULT_ADDRESS"
+          value: "https://swip-db-vault:8200"
+        - name: "VAULT_CACERT"
+          value: "/mnt/vault/ca/vault_cacrt"
+        - name: "VAULT_CLIENT_KEY"
+          value: "/mnt/vault/key/vault_client_key"
+        - name: "VAULT_CLIENT_CERT"
+          value: "/mnt/vault/cert/vault_client_cert"        
+        - name: "POSTGRES_HOST"
+          value: "postgresql"
+        - name: "POSTGRES_PORT"
+          value: "5432"
+        - name: "MINIO_HOST"
+          value: "report-storage"
+        - name: "MINIO_PORT"
+          value: "9000"
+        - name: "CONNECTION_POOL_SIZE"
+          value: "10"
+        - name: "LOG_LEVEL"
+          value: "INFO"
+        - name: "SPRING_PROFILE"
+          value: "production"
+        - name: "SWIP_ENVIRONMENT_NAME"
+          value: "onprem"
+        - name: "SWIP_ROOT_DOMAIN"
+          value: "onprem.dev.polaris.synopsys.com"
+        - name: "REPORTING_STANDALONE"
+          value: "true"
+      restartPolicy: "Always"
+
+---
+# Source: reporting/templates/rp-tools-portfolio-service.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "rp-tools-portfolio-service"
+  labels:    
+    environment: "onprem"
+    service: "rp-tools-portfolio-service"
+    component: "None"
+    componentVersion: "None"
+    chart: "reporting"
+    chartVersion: "0.0.1049"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "rp-tools-portfolio-service"
+  namespace: "default"
+spec:
+  ports:
+    - name: "60281"
+      port: 60281
+      targetPort: 60281
+  selector:
+    name: "rp-tools-portfolio-service"
+status:
+  loadBalancer: {}
+
+---
+
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata: 
+  name: rp-tools-portfolio-service
+  namespace: "default"
+  labels: 
+    name: "rp-tools-portfolio-service"
+spec: 
+  replicas: 1
+  selector: 
+    matchLabels: 
+      name: "rp-tools-portfolio-service"
+  template: 
+    metadata: 
+      labels: 
+        name: "rp-tools-portfolio-service"
+    spec:      
+      imagePullSecrets:
+      - name: gcr-json-key
+      volumes:
+      - name: "vault-cacert"
+        secret:
+          secretName: "vault-ca-certificate"
+          items:
+          - key: "tls.crt"
+            path: "vault_cacrt"
+      - name: "vault-server-key"
+        secret:
+          secretName: "auth-server-tls-certificate"
+          items:
+          - key: "tls.key"
+            path: "vault_server_key"
+      - name: "vault-server-cert"
+        secret:
+          secretName: "auth-server-tls-certificate"
+          items:
+          - key: "tls.crt"
+            path: "vault_server_cert"
+      serviceAccount: "auth-server"
+      containers: 
+      - name: "rp-tools-portfolio-service"
+        image: "gcr.io/snps-swip-staging/reporting-tools-portfolio-service:0.0.1194"
+        imagePullPolicy: "Always"
+        resources:          
+          limits:
+            cpu: 750m
+            memory: 1000Mi
+          requests:
+            cpu: 500m
+            memory: 768Mi
+        ports: 
+        - containerPort: 60281
+        volumeMounts:
+        - name: "vault-cacert"
+          mountPath: "/mnt/vault/ca"
+          readOnly: true
+        - name: "vault-server-key"
+          mountPath: "/mnt/vault/key"
+          readOnly: true
+        - name: "vault-server-cert"
+          mountPath: "/mnt/vault/cert"
+          readOnly: true
+        env:
+        # consume the property-like keys in environment variables        
+        - name: "SWIP_VAULT_ADDRESS"
+          value: "https://swip-db-vault:8200"
+        - name: "VAULT_CACERT"
+          value: "/mnt/vault/ca/vault_cacrt"
+        - name: "VAULT_CLIENT_KEY"
+          value: "/mnt/vault/key/vault_server_key"
+        - name: "VAULT_CLIENT_CERT"
+          value: "/mnt/vault/cert/vault_server_cert"        
+        - name: "POSTGRES_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: "cloudsql"
+              key: "reporting_db_password"
+        - name: "POSTGRES_USERNAME"
+          valueFrom:
+            secretKeyRef:
+              name: "cloudsql"
+              key: "reporting_db_username"        
+        - name: "POSTGRES_HOST"
+          value: "postgresql"
+        - name: "POSTGRES_PORT"
+          value: "5432"
+        - name: "MINIO_HOST"
+          value: "report-storage"
+        - name: "MINIO_PORT"
+          value: "9000"
+        - name: "CONNECTION_POOL_SIZE"
+          value: "10"
+        - name: "LOG_LEVEL"
+          value: "INFO"
+        - name: "SPRING_PROFILE"
+          value: "production"
+        - name: "SWIP_ENVIRONMENT_NAME"
+          value: "onprem"
+        - name: "SWIP_ROOT_DOMAIN"
+          value: "onprem.dev.polaris.synopsys.com"
+        - name: "REPORTING_STANDALONE"
+          value: "true"        
+        - name: "JAEGER_SERVICE_NAME"
+          value: "default-rp-tools-portfolio-service"
+        - name: "JAEGER_HOST"
+          value: jaeger-collector.monitoring.svc
+        - name: "JAEGER_PORT"
+          value: "14268"
+        - name: "JAEGER_REPORTER_LOG_SPANS"
+          value: "false"
+        - name: "JAEGER_SAMPLER_TYPE"
+          value: "const"
+        - name: "JAEGER_SAMPLER_PARAM"
+          value: "1"
+      restartPolicy: "Always"
+---
+apiVersion: "autoscaling/v2beta1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "rp-tools-portfolio-service"
+spec:
+  maxReplicas: 3
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: "extensions/v1beta1"
+    kind: "Deployment"
+    name: "rp-tools-portfolio-service"
+  metrics:
+  - type: "Resource"
+    resource:
+      name: "memory"
+      targetAverageUtilization: 75 
+  - type: "Resource"
+    resource:
+      name: "cpu"
+      targetAverageUtilization: 75
+---
+# Source: reporting/templates/report-storage.yaml
+
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "report-storage-pv-claim"
+  namespace: "default"
+  labels:
+    name: "report-storage"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "report-storage"
+  namespace: "default"
+  labels:
+    name: "report-storage"
+spec:
+  selector:
+    matchLabels:
+      name: "report-storage"
+  strategy:
+    type: "Recreate"
+  template:
+    metadata:
+      labels:
+        name: "report-storage"
+        app: "report-storage"
+    spec:
+      volumes:
+      - name: "storage"
+        persistentVolumeClaim:
+          claimName: report-storage-pv-claim      
+      imagePullSecrets:
+      - name: gcr-json-key
+      containers:
+      - name: "report-storage"
+        image: "gcr.io/snps-swip-staging/public/minio/minio:RELEASE.2018-12-27T18-33-08Z"
+        resources:          
+          limits:
+            cpu: 500m
+            memory: 1024Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        args:
+        - "server"
+        - "/storage"
+        env:
+        # Minio access key and secret key
+        - name: "MINIO_ACCESS_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: "swip-tools-minio"
+              key: "access_key"
+        - name: "MINIO_SECRET_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: "swip-tools-minio"
+              key: "secret_key"
+        hostname: "report-storage"
+        restartPolicy: "Always"
+        ports:
+        - containerPort: 9000
+        # Mount the volume into the pod
+        volumeMounts:
+        - name: "storage"  # must match the volume name, above
+          mountPath: "/storage"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "report-storage"
+  namespace: "default"
+  labels:
+    name: "report-storage"
+spec:
+  ports:
+    - port: 9000
+      targetPort: 9000
+      protocol: "TCP"
+  selector:
+    app: "report-storage"
+
+---
+# Source: reporting/templates/rp-frontend.yaml
+
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "rp-frontend"
+  namespace: "default"
+spec:
+  ports:
+    - name: "80"
+      port: 80
+      targetPort: 8080
+  selector:
+    name: "rp-frontend"
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "rp-frontend"
+  namespace: "default"
+  labels:
+    name: "rp-frontend"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: "rp-frontend"
+  template:
+    metadata:
+      labels:
+        name: "rp-frontend"
+    spec:      
+      imagePullSecrets:
+      - name: gcr-json-key
+      containers:
+      - name: "rp-frontend"
+        image: "gcr.io/snps-swip-staging/reporting-frontend-service:0.0.853"
+        imagePullPolicy: "Always"
+        resources:          
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        ports:
+        - containerPort: 8080
+        env:
+        # consume the property-like keys in environment variables        
+        - name: "POSTGRES_HOST"
+          value: "postgresql"
+        - name: "POSTGRES_PORT"
+          value: "5432"
+        - name: "MINIO_HOST"
+          value: "report-storage"
+        - name: "MINIO_PORT"
+          value: "9000"
+        - name: "CONNECTION_POOL_SIZE"
+          value: "10"
+        - name: "LOG_LEVEL"
+          value: "INFO"
+        - name: "SPRING_PROFILE"
+          value: "production"
+        - name: "SWIP_ENVIRONMENT_NAME"
+          value: "onprem"
+        - name: "SWIP_ROOT_DOMAIN"
+          value: "onprem.dev.polaris.synopsys.com"
+        - name: "REPORTING_STANDALONE"
+          value: "true"
+      restartPolicy: "Always"
+
+---
+# Source: reporting/charts/polaris-helmcharts-common/templates/tests/environment_vars.yaml
+
+---
+# Source: reporting/charts/polaris-helmcharts-common/templates/tests/image_name.yaml
+
+---
+# Source: reporting/charts/polaris-helmcharts-common/templates/tests/image_pull_secrets.yaml
+
+---
+# Source: reporting/charts/polaris-helmcharts-common/templates/tests/labels.yaml
+
+---
+# Source: reporting/charts/polaris-helmcharts-common/templates/tests/resources.yaml
+
+---
+# Source: reporting/charts/polaris-helmcharts-common/templates/tests/selector.yaml
+
+---
+# Source: reporting/charts/polaris-helmcharts-common/templates/tests/service-account.yaml
+
+---
+# Source: reporting/templates/rp-polaris-agent-service.yaml
+
+---

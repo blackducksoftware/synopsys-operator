@@ -1,0 +1,17 @@
+<div class="k-header__bottom">
+  <div class="k-container">
+    <div class="k-header-menu-wrapper" id="k_header_menu_wrapper">
+      <div id="k_header_menu" class="k-header-menu k-header-menu-mobile ">
+        <ul class="k-menu__nav ">
+          {{#each this.menu_entries as |entry|}}
+            <li class="k-menu__item " aria-haspopup="true">
+              <a href={{entry.link}} id={{entry.id}} class="k-menu__link ">
+                <i class="k-menu__link-icon flaticon-interface-3"></i><span class="k-menu__link-text">{{entry.name}}</span>
+              </a>
+            </li>
+          {{/each}}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

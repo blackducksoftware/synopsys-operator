@@ -1,0 +1,54 @@
+.index-ul {
+  list-style-type:circle;
+}
+
+.operator-nav {
+  height: 80px;
+  width: 900px;
+}
+
+.operator-install {
+  height:450px;
+  width:900px;
+}
+
+.operator-upgrade {
+  height:450px;
+  width:900px;
+}
+
+.on-prem-nav {
+  height:150px;
+  width:900px;
+}
+
+.on-prem-deploy {
+  width:900px;
+}
+
+.gke-nav {
+  height:150px;
+  width:900px
+}
+
+.gke-deploy {
+  width:900px
+}
+
+.eks-nav {
+  height:150px;
+  width:900px
+}
+
+.eks-deploy {
+  width:900px
+}
+
+.aks-nav {
+  height:100px;
+  width:900px
+}
+
+.aks-deploy {
+  width:900px
+}

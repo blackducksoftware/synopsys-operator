@@ -1,0 +1,93 @@
+<div class="k-portlet">
+  <div class="k-portlet__head">
+    <div class="k-portlet__head-label">
+      <h3 class="k-portlet__head-title">Install / Upgrade Synopsys Operator</h3>
+    </div>
+  </div>
+  <div class="k-portlet__body">
+    <div class="row">
+      <div class="col-12">
+        <h3>Install Operator</h3>
+        <form name="operator-deploy-form" action="" class="form-horizontal">
+
+          <div class="form-group">
+            <label for="namespace" class="col-md-2 control-label">Namespace</label>
+            <div class="col-md-5">
+              {{input value=this.operatorConfig.namespace class="form-control"}}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="cluster-scoped" class="col-md-2 control-label">Cluster Scoped</label>
+            <div class="col-md-5">
+              <Input @type="checkbox" @checked={{this.operatorConfig.clusterScoped}} />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="enable-alert" class="col-md-2 control-label">Enable Alert</label>
+            <div class="col-md-5">
+              <Input @type="checkbox" @checked={{this.operatorConfig.enableAlert}} />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="enable-black-duck" class="col-md-2 control-label">Enable Black Duck</label>
+            <div class="col-md-5">
+              <Input @type="checkbox" @checked={{this.operatorConfig.enableBlackDuck}} />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="enable-opssight" class="col-md-2 control-label">Enable OpsSight</label>
+            <div class="col-md-5">
+              <Input @type="checkbox" @checked={{this.operatorConfig.enableOpsSight}} />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="enable-polaris" class="col-md-2 control-label">Enable Polaris</label>
+            <div class="col-md-5">
+              <Input @type="checkbox" @checked={{this.operatorConfig.enablePolaris}} />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="expose-metrics" class="col-md-2 control-label">Expose Metrics</label>
+            <div class="col-md-5">
+              {{input value=this.operatorConfig.exposeMetrics class="form-control"}}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="expose-ui" class="col-md-2 control-label">Expose User Interface</label>
+            <div class="col-md-5">
+              {{input value=this.operatorConfig.exposeUI class="form-control"}}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="metrics-image" class="col-md-2 control-label">Metrics Image</label>
+            <div class="col-md-5">
+              {{input value=this.operatorConfig.metricsImage class="form-control"}}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="operator-image" class="col-md-2 control-label">Operator Image</label>
+            <div class="col-md-5">
+              {{input value=this.operatorConfig.operatorImage class="form-control"}}
+            </div>
+          </div>
+
+
+          <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+              <button {{action "deployOperator"}} class="btn btn-sm btn-primary">Install</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

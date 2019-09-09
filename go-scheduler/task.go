@@ -2,7 +2,6 @@ package go_scheduler
 
 import (
 	"context"
-
 	"golang.org/x/sync/errgroup"
 )
 
@@ -61,9 +60,12 @@ func (r *taskRunner) Run(ctx context.Context, tasks []*Task) error {
 	for i := range tasks {
 		task := tasks[i]
 
-		g.Go(func() error {
-			return task.Run(ctx)
-		})
+		if task != nil {
+			g.Go(func() error {
+				return task.Run(ctx)
+			})
+		}
+
 	}
 
 	return g.Wait()

@@ -1,0 +1,40 @@
+apiVersion: synopsys.com/v1
+kind: Blackduck
+metadata:
+  name: changethisblackduckname
+spec:
+  namespace: default
+  adminPassword: YWRtaW4=
+  authCustomCa: ""
+  certificateName: default
+  desiredState: ""
+  exposeService: NONE
+  livenessProbes: false
+  persistentStorage: true
+  postgresPassword: cGc=
+  pvc:
+    - name: bd-blackduck-logstash
+      size: 20Gi
+    - name: bd-blackduck-postgres
+      size: 150Gi
+    - name: bd-blackduck-authentication
+      size: 2Gi
+    - name: bd-blackduck-solr
+      size: 2Gi
+    - name: bd-blackduck-zookeeper
+      size: 4Gi
+    - name: bd-blackduck-uploadcache-data
+      size: 100Gi
+    - name: bd-blackduck-registration
+      size: 2Gi
+    - name: bd-blackduck-webapp
+      size: 2Gi
+    - name: bd-blackduck-cfssl
+      size: 2Gi
+  registryConfiguration:
+    namespace: ""
+    pullSecrets: [""]
+    registry: ""
+  size: Small
+  userPassword: dXNlcg==
+  version: 2019.6.1

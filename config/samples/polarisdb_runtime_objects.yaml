@@ -1,0 +1,1581 @@
+---
+# Source: swip-db/charts/consul/templates/pod-dist-budget.yaml
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: "swip-db-consul-pdb"
+  labels:
+    heritage: "Tiller"
+    release: "release-name"
+    chart: consul-3.4.2
+    component: "release-name-consul"
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      component: "release-name-consul"
+
+---
+# Source: swip-db/charts/vault/templates/pdb.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: swip-db-vault
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: swip-db-vault
+      release: release-name
+
+---
+# Source: swip-db/charts/consul/templates/gossip-secret.yaml
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: swip-db-consul-gossip-key
+  labels:
+    heritage: "Tiller"
+    release: "release-name"
+    chart: consul-3.4.2
+    component: "release-name-consul"
+type: Opaque
+data:
+  
+  gossip-key: SXErN2o1QVo0cm1ocXFNbG1OLzFCdz09
+  
+
+
+---
+# Source: swip-db/charts/consul/templates/test-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: swip-db-consul-tests
+data:
+  run.sh: |-
+    @test "Testing Consul cluster has quorum" {
+      for i in {0..2}; do
+        for n in {1..30}; do
+          if [ `kubectl exec swip-db-consul-$i consul members --namespace=default | grep server | wc -l` -ge "3" ]; then
+            echo "swip-db-consul-$i OK. consul members returning at least 3 records."
+            break
+          else
+            echo "swip-db-consul-$i ERROR. consul members returning less than 3 records."
+          fi
+
+          if [ "$n" -ge "30" ]; then
+            echo "Failed $n times to get members from swip-db-consul-$i"
+            exit 1
+          fi
+          sleep 10
+        done
+      done
+    }
+
+---
+# Source: swip-db/charts/postgresql/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  labels:
+    app: postgresql
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: root
+
+---
+# Source: swip-db/charts/vault/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "swip-db-vault-config"
+  labels:
+    app: "swip-db-vault"
+    release: "release-name"
+    heritage: "Tiller"
+    chart: "vault-0.14.2"
+data:
+  config.json: |
+    {"listener":{"tcp":{"address":"[::]:8200","cluster_address":"[::]:8201","tls_cert_file":"/vault/tls/tls.crt","tls_cipher_suites":"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA","tls_disable":false,"tls_key_file":"/vault/tls/tls.key","tls_prefer_server_cipher_suites":true}},"storage":{"consul":{"address":"swip-db-consul:8500","path":"vault"}},"ui":true}
+
+---
+# Source: swip-db/charts/postgresql/templates/persistentvolumeclaim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-pv-claim
+  namespace: 
+  labels:
+    app: postgresql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# Source: swip-db/charts/consul/templates/consul-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "swip-db-consul"
+  labels:
+    heritage: "Tiller"
+    release: "release-name"
+    chart: consul-3.4.2
+    component: "release-name-consul"
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  ports:
+  - name: http
+    port: 8500
+  - name: rpc
+    port: 8400
+  - name: serflan-tcp
+    protocol: "TCP"
+    port: 8301
+  - name: serflan-udp
+    protocol: "UDP"
+    port: 8301
+  - name: serfwan-tcp
+    protocol: "TCP"
+    port: 8302
+  - name: serfwan-udp
+    protocol: "UDP"
+    port: 8302
+  - name: server
+    port: 8300
+  - name: consuldns-tcp
+    port: 8600
+  - name: consuldns-udp
+    protocol: "UDP"
+    port: 8600
+  clusterIP: None
+  selector:
+    component: "release-name-consul"
+
+---
+# Source: swip-db/charts/consul/templates/ui-service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: "swip-db-consul-ui"
+  labels:
+    heritage: "Tiller"
+    release: "release-name"
+    chart: consul-3.4.2
+    component: "release-name-consul"
+spec:
+  ports:
+  - name: http
+    port: 8500
+  selector:
+    component: "release-name-consul"
+  type: "NodePort"
+
+---
+# Source: swip-db/charts/postgresql/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+  labels:
+    app: postgresql
+spec:
+  selector:
+    app: postgresql
+  ports:
+  - name: postgresql
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+
+---
+# Source: swip-db/charts/vault/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: swip-db-vault
+  labels:
+    app: swip-db-vault
+    chart: vault-0.14.2
+    release: release-name
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8200
+    protocol: TCP
+    targetPort: 8200
+    name: api
+  selector:
+    app: swip-db-vault
+    release: release-name
+---
+# Source: swip-db/charts/postgresql/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      name: postgresql
+      labels:
+        app: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: postgres:10.7-alpine
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgresql-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresdb
+              subPath: postgres
+      volumes:
+        - name: postgresdb
+          persistentVolumeClaim:
+            claimName: postgresql-pv-claim
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    name: "polaris-postgres-init-config"
+  name: polaris-postgres-init-config
+data:
+  # TODO: Add POSTGRES_HOST to configmap in the polaris mutator
+  init.sh: |-
+    #!/bin/bash
+
+    set -e
+
+    if [[ -z "$POSTGRES_HOST" ]]; then
+      echo "POSTGRES_HOST must be set"
+      exit 1
+    fi
+
+    if [[ `PGPASSWORD=${POSTGRES_PASSWORD} psql -h $POSTGRES_HOST -U $POSTGRES_USER -c "SELECT datname FROM pg_catalog.pg_database WHERE datname='cos';" --tuples-only | wc -l` -eq 1 ]]; then
+      echo "cos is missing. Initializing the database..."
+
+      PGPASSWORD=${POSTGRES_PASSWORD} psql -h $POSTGRES_HOST -U postgres << EOF
+
+      CREATE DATABASE cos;
+      CREATE DATABASE "jobs-service";
+      CREATE DATABASE issues;
+      CREATE DATABASE code_analysis;
+      CREATE DATABASE tds_fuzz;
+      CREATE DATABASE configs;
+      CREATE DATABASE triage_query;
+      CREATE DATABASE triage_command;
+      CREATE DATABASE desktop_metrics;
+      CREATE DATABASE tds_csv;
+      CREATE DATABASE tds_seeker;
+
+    EOF
+    fi
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    name: "polaris-init-postgres"
+  name: polaris-init-postgres
+spec:
+  template:
+    spec:
+      volumes:
+        - name: postgres-init
+          configMap:
+            defaultMode: 0777
+            name: polaris-postgres-init-config
+      containers:
+        - name: postgres-init
+          image: registry.access.redhat.com/rhscl/postgresql-96-rhel7:1
+          command: ["/bin/bash"]
+          args: ["-c", "sleep 60; /tmp/postgres-init/init.sh"]
+          volumeMounts:
+            - mountPath: /tmp/postgres-init
+              name: postgres-init
+          env:
+            - name: POSTGRES_HOST
+              value: "postgresql"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: postgresql-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: postgresql-config
+                  key: POSTGRES_PASSWORD
+      restartPolicy: Never
+  backoffLimit: 4
+
+
+---
+# Source: swip-db/charts/vault/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: swip-db-vault
+  labels:
+    app: swip-db-vault
+    chart: vault-0.14.2
+    release: release-name
+    heritage: Tiller
+  annotations:
+    {}
+    
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: swip-db-vault
+        release: release-name
+      annotations:
+        {}
+        
+    spec:
+      containers:
+      - name: vault
+        image: "vault:0.11.2"
+        imagePullPolicy: IfNotPresent
+        command: ["vault", "server", "-config", "/vault/config/config.json"]
+        ports:
+        - containerPort: 8200
+          name: api
+        - containerPort: 8201
+          name: cluster-address
+        livenessProbe:
+          # Alive if it is listening for clustering traffic
+          tcpSocket:
+            port: 8200
+        readinessProbe:
+          # Ready depends on preference
+          httpGet:
+            path: /v1/sys/health?standbycode=204&uninitcode=204&
+            port: 8200
+            scheme: HTTPS
+        securityContext:
+          readOnlyRootFilesystem: true
+          capabilities:
+            add:
+            - IPC_LOCK
+        env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: VAULT_CLUSTER_ADDR
+            value: "https://$(POD_IP):8201"
+          - name: VAULT_LOG_LEVEL
+            value: "info"
+          - name: VAULT_CACERT
+            value: /vault/tls/ca.crt
+          
+        volumeMounts:
+        - name: vault-config
+          mountPath: /vault/config/
+        - name: vault-root
+          mountPath: /root/
+        - name: vault-tls-certificate
+          mountPath: /vault/tls
+      - command:
+        - vault-sidecar
+        - /vault/init
+        env:
+        - name: VAULT_ADDR
+          value: https://localhost:8200
+        - name: VAULT_CACERT
+          value: /vault/tls/ca.crt
+        image: gcr.io/snps-swip-staging/vault-util:0.1.8
+        name: vault-sidecar
+        volumeMounts:
+        - mountPath: /vault/tls
+          name: vault-tls-certificate
+        - mountPath: /vault/init
+          name: vault-init-secret
+      - env:
+        - name: VAULT_ADDR
+          value: https://127.0.0.1:8200
+        - name: VAULT_CACERT
+          value: /vault/tls/ca.crt
+        image: gcr.io/snps-swip-staging/public/grapeshot/vault_exporter:v0.1.2
+        imagePullPolicy: IfNotPresent
+        name: vault-exporter
+        ports:
+        - containerPort: 9410
+          name: cluster-address
+          protocol: TCP
+        resources: {}
+        securityContext:
+          procMount: Default
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: /vault/tls
+          name: vault-tls-certificate
+      
+        resources:
+          limits:
+            cpu: 200m
+            memory: 384Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: swip-db-vault
+                  release: release-name
+        
+      volumes:
+        - name: vault-config
+          configMap:
+            name: "swip-db-vault-config"
+        - name: vault-root
+          emptyDir: {}
+        - name: vault-tls-certificate
+          secret:
+            secretName: vault-tls-certificate
+        - name: vault-init-secret
+          secret:
+            secretName: vault-init-secret
+        
+      imagePullSecrets:
+        - name: ${IMAGE_PULL_SECRETS}
+
+---
+# Source: swip-db/charts/consul/templates/consul-statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: "swip-db-consul"
+  labels:
+    heritage: "Tiller"
+    release: "release-name"
+    chart: consul-3.4.2
+    component: "release-name-consul"
+spec:
+  serviceName: "swip-db-consul"
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      release: "release-name"
+      component: "release-name-consul"
+  template:
+    metadata:
+      name: "swip-db-consul"
+      labels:
+        heritage: "Tiller"
+        release: "release-name"
+        chart: consul-3.4.2
+        component: "release-name-consul"
+    spec:
+      securityContext:
+        fsGroup: 1000
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchExpressions:
+                - key: component
+                  operator: In
+                  values:
+                  - "release-name-consul"
+        
+      containers:
+      - name: "swip-db-consul"
+        image: "consul:1.0.0"
+        imagePullPolicy: "Always"
+        ports:
+        - name: http
+          containerPort: 8500
+        - name: rpc
+          containerPort: 8400
+        - name: serflan-tcp
+          protocol: "TCP"
+          containerPort: 8301
+        - name: serflan-udp
+          protocol: "UDP"
+          containerPort: 8301
+        - name: serfwan-tcp
+          protocol: "TCP"
+          containerPort: 8302
+        - name: serfwan-udp
+          protocol: "UDP"
+          containerPort: 8302
+        - name: server
+          containerPort: 8300
+        - name: consuldns-tcp
+          containerPort: 8600
+        - name: consuldns-udp
+          protocol: "UDP"
+          containerPort: 8600
+        resources:
+          {}
+          
+        env:
+        - name: INITIAL_CLUSTER_SIZE
+          value: "1"
+        - name: STATEFULSET_NAME
+          value: "swip-db-consul"
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: STATEFULSET_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: DNSPORT
+          value: "8600"
+        volumeMounts:
+        - name: datadir
+          mountPath: /var/lib/consul
+        - name: gossip-key
+          mountPath: /etc/consul/secrets
+          readOnly: true
+        
+        livenessProbe:
+          exec:
+            command:
+            - consul
+            - members
+          initialDelaySeconds: 300
+          timeoutSeconds: 5
+        command:
+          - "/bin/sh"
+          - "-ec"
+          - |
+            IP=$(hostname -i)
+            if [ -e /etc/consul/secrets/gossip-key ]; then
+              echo "{\"encrypt\": \"$(base64 /etc/consul/secrets/gossip-key)\"}" > /etc/consul/encrypt.json
+              GOSSIP_KEY="-config-file /etc/consul/encrypt.json"
+            fi
+
+            for i in $(seq 0 $((${INITIAL_CLUSTER_SIZE} - 1))); do
+                while true; do
+                    echo "Waiting for ${STATEFULSET_NAME}-${i}.${STATEFULSET_NAME} to come up"
+                    ping -W 1 -c 1 ${STATEFULSET_NAME}-${i}.${STATEFULSET_NAME}.${STATEFULSET_NAMESPACE}.svc > /dev/null && break
+                    sleep 1s
+                done
+            done
+
+            PEERS=""
+            for i in $(seq 0 $((${INITIAL_CLUSTER_SIZE} - 1))); do
+              NEXT_PEER="$(ping -c 1 ${STATEFULSET_NAME}-${i}.${STATEFULSET_NAME}.${STATEFULSET_NAMESPACE}.svc | awk -F'[()]' '/PING/{print $2}')"
+              if [ "${NEXT_PEER}" != "${POD_IP}" ]; then
+                PEERS="${PEERS}${PEERS:+ } -retry-join ${STATEFULSET_NAME}-${i}.${STATEFULSET_NAME}.${STATEFULSET_NAMESPACE}.svc"
+              fi
+            done
+
+            exec /bin/consul agent \
+              -ui \
+              -domain=consul \
+              -data-dir=/var/lib/consul \
+              -server \
+              -bootstrap-expect=${INITIAL_CLUSTER_SIZE} \
+              -disable-keyring-file \
+              -bind=0.0.0.0 \
+              -advertise=${IP} \
+              ${PEERS} \
+              ${GOSSIP_KEY} \
+              -client=0.0.0.0 \
+              -dns-port=${DNSPORT} \
+              -http-port=8500
+      volumes:
+      - name: gossip-key
+        secret:
+          secretName: swip-db-consul-gossip-key
+      
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          # upstream recommended max is 700M
+          storage: "1Gi"
+
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  # This name uniquely identifies the Deployment
+  name: "upload-server"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "upload-server"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+spec:
+  selector:
+    matchLabels:      
+      service: "upload-server"
+  
+  replicas: 1
+  strategy:
+    type: "Recreate"
+  
+  template:
+    metadata:
+      labels:        
+        environment: "${ENVIRONMENT_NAME}"
+        service: "upload-server"
+        component: "swip-db"
+        componentVersion: "0.0.740"
+        chart: "swip-db"
+        chartVersion: "0.0.740"
+    spec:
+      
+      
+      initContainers:
+      - name: "bootstrap-upload-server"
+        image: "gcr.io/snps-swip-staging/public/busybox:latest"
+        command: ['sh', '-c', 'mkdir -p /opt/data/${ENVIRONMENT_NAME}-uploads-bucket']
+        volumeMounts:
+        - name: "upload-server"
+          mountPath: "/opt/data"
+          readOnly: false
+      
+      containers:
+      - name: "upload-server"
+        # Pulls the default Minio image from Docker Hub
+        image: "gcr.io/snps-swip-staging/public/minio/minio:RELEASE.2018-09-25T21-34-43Z"
+        args:
+        
+        - "server"
+        - "/opt/data"
+        
+        env:
+        - name: "MINIO_BROWSER"
+          value: "off"
+        - name: "MINIO_ACCESS_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: "swip-upload-server"
+              key: "access_key"
+        - name: "MINIO_SECRET_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: "swip-upload-server"
+              key: "secret_key"
+        
+        ports:
+        - containerPort: 9000
+        resources:          
+          service: "upload-server"
+        # Mount the volume into the pod
+        volumeMounts:
+        
+        - name: "upload-server"
+          mountPath: "/opt/data"
+        
+      volumes:
+      
+      - name: "upload-server"
+        persistentVolumeClaim:
+          claimName: "upload-server-pv-claim"
+      
+            
+      imagePullSecrets:
+      - name: ${IMAGE_PULL_SECRETS}
+
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "upload-server-pv-claim"
+  namespace: "default"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "upload-server"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: "example-nfs"
+
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "upload-server"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "upload-server"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+spec:
+  type: "ClusterIP"
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: "TCP"
+    name: "upload-server"
+  selector:    
+    service: "upload-server"
+
+---
+# Source: swip-db/templates/on-prem-utils.yaml
+
+apiVersion: "v1"
+kind: "Secret"
+metadata:
+  name: "smtp"
+type: "Opaque"
+data:
+  username: 
+  passwd: 
+  host: bWFpbGhvc3QuaW50ZXJuYWwuc3lub3BzeXMuY29t
+  port: IjI1Ig==
+
+
+---
+# Source: swip-db/templates/eventstore.yaml
+
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "eventstore"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "eventstore"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+spec:
+  ports:
+  - port: 1112
+    name: "int-tcp"
+  - port: 1113
+    name: "int-http"
+  - port: 2112
+    name: "ext-tcp"
+  - port: 2113
+    name: "ext-http"
+  - port: 9448
+    name: "metrics"
+  selector:
+    app: "swip"
+    component: "eventstore"
+  type: "ClusterIP"
+  clusterIP: "None" # eventstore requires DNS round-robin for gossip to work
+---
+apiVersion: "apps/v1"
+kind: "StatefulSet"
+metadata:
+  name: "eventstore"
+spec:
+  selector:
+    matchLabels:
+      component: "eventstore"
+  serviceName: "eventstore"
+  replicas: 3
+  template:
+    metadata:
+      name: "eventstore"
+      labels:
+        app: "swip"
+        component: "eventstore"
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: "eventstore"
+        env:
+        - name: "EVENTSTORE_CLUSTER_SIZE"
+          value: "3"
+        - name: "EVENTSTORE_CLUSTER_DNS"
+          value: "eventstore"
+        - name: "EVENTSTORE_GOSSIP_ON_SINGLE_NODE"
+          value: "True"
+        image: "gcr.io/snps-swip-staging/swip_eventstore:0.0.8"
+        imagePullPolicy: "Always"
+        ports:
+        - containerPort: 1112
+          name: "int-tcp"
+        - containerPort: 1113
+          name: "int-http"
+        - containerPort: 2112
+          name: "ext-tcp"
+        - containerPort: 2113
+          name: "ext-http"
+        volumeMounts:
+        - name: "data"
+          mountPath: "/var/lib/eventstore"
+        resources:          
+          service: "eventstore"
+      - image: "gcr.io/snps-swip-staging/public/marcinbudny/eventstore_exporter:0.5.0"
+        env:
+        - name: "EVENTSTORE_URL"
+          value: "http://127.0.0.1:2113"
+        - name: "CLUSTER_MODE"
+          value: "cluster"
+        imagePullPolicy: "IfNotPresent"
+        name: "eventstore-exporter"
+        resources: {}
+        ports:
+        - containerPort: 9448
+          name: "metrics"
+          protocol: "TCP"      
+      imagePullSecrets:
+      - name: ${IMAGE_PULL_SECRETS}
+  volumeClaimTemplates:
+    - metadata:
+        name: "data"
+        labels:
+          app: "swip"
+          component: "eventstore"
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi
+
+---
+# Source: swip-db/templates/mongodb.yaml
+
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "mongodb"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "mongodb"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+spec:
+  selector:    
+    service: "mongodb"
+  ports:
+  - name: "mongodb"
+    port: 27017
+    protocol: "TCP"
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "mongodb"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "mongodb"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+spec:
+  accessModes:
+  - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "mongodb"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "mongodb"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:      
+      service: "mongodb"
+  strategy:
+    type: "Recreate"
+  template:
+    metadata:
+      name: "mongodb"
+      labels:        
+        environment: "${ENVIRONMENT_NAME}"
+        service: "mongodb"
+        component: "swip-db"
+        componentVersion: "0.0.740"
+        chart: "swip-db"
+        chartVersion: "0.0.740"
+    spec:
+      containers:
+      - name: "mongodb"
+        image: "gcr.io/snps-swip-staging/swip_mongodb:0.0.6"
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: "mongodb-data"
+          mountPath: "/data/db/"
+        ports:
+        - name: "mongodb"
+          protocol: "TCP"
+          containerPort: 27017
+        resources:
+          limits:
+            cpu: 500m
+            memory: 2500Mi
+          requests:
+            cpu: 250m
+            memory: 1Gi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File      
+      imagePullSecrets:
+      - name: ${IMAGE_PULL_SECRETS}
+      dnsPolicy: "ClusterFirst"
+      restartPolicy: "Always"
+      schedulerName: "default-scheduler"
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: "mongodb-data"
+        persistentVolumeClaim:
+          claimName: "mongodb"
+
+---
+# Source: swip-db/templates/eventstore-init.yaml
+
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  name: "eventstore-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "eventstore-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "Role"
+metadata:
+  name: "eventstore-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "eventstore-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "secrets"
+  verbs:
+  - "get"
+  - "create"
+  - "update"
+  - "patch"
+  - "delete"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  name: "eventstore-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "eventstore-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "post-upgrade,post-install"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+roleRef:
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "Role"
+  name: "eventstore-init"
+subjects:
+- kind: "ServiceAccount"
+  name: "eventstore-init"
+---
+apiVersion: "batch/v1"
+kind: "Job"
+metadata:
+  name: "eventstore-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "eventstore-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "post-upgrade,post-install"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+spec:
+  template:
+    metadata:
+      name: "eventstore-init"
+      labels:        
+        environment: "${ENVIRONMENT_NAME}"
+        service: "eventstore-init"
+        component: "swip-db"
+        componentVersion: "0.0.740"
+        chart: "swip-db"
+        chartVersion: "0.0.740"
+    spec:
+      restartPolicy: "OnFailure"
+      serviceAccount: "eventstore-init"
+      containers:
+      - name: "eventstore-init"
+        image: "gcr.io/snps-swip-staging/eventstore-util:0.0.22"
+        imagePullPolicy: IfNotPresent
+        command: ["eventstore-init"]
+        env:
+        - name: "EVENTSTORE_KUBERNETES_NAMESPACE"
+          value: "default"
+        - name: "EVENTSTORE_SECRET_NAME"
+          value: "swip-eventstore-creds"
+        - name: "EVENTSTORE_ADDR"
+          value: "http://eventstore:2113"        
+        - name: KUBERNETES_LABELS
+          value: "environment: \"${ENVIRONMENT_NAME}\"\nservice: \"eventstore-init\"\ncomponent: \"swip-db\"\ncomponentVersion: \"0.0.740\"\nchart: \"swip-db\"\nchartVersion: \"0.0.740\""      
+      imagePullSecrets:
+      - name: ${IMAGE_PULL_SECRETS}
+
+---
+# Source: swip-db/templates/minio-swip-cli-init.yaml
+
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  name: "tools-minio-secret-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "tools-minio-secret-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "Role"
+metadata:
+  name: "tools-minio-secret-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "tools-minio-secret-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "secrets"
+  verbs:
+  - "get"
+  - "create"
+  - "update"
+  - "patch"
+  - "delete"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  name: "tools-minio-secret-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "tools-minio-secret-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+roleRef:
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "Role"
+  name: "tools-minio-secret-init"
+subjects:
+- kind: "ServiceAccount"
+  name: "tools-minio-secret-init"
+---
+apiVersion: "batch/v1"
+kind: "Job"
+metadata:
+  name: "tools-minio-secret-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "tools-minio-secret-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": "hook-succeeded,before-hook-creation"
+spec:
+  template:
+    metadata:
+      name: "tools-minio-secret-init"
+      labels:        
+        environment: "${ENVIRONMENT_NAME}"
+        service: "tools-minio-secret-init"
+        component: "swip-db"
+        componentVersion: "0.0.740"
+        chart: "swip-db"
+        chartVersion: "0.0.740"
+    spec:
+      restartPolicy: OnFailure
+      serviceAccount: "tools-minio-secret-init"
+      containers:
+      - name: "tools-minio-secret-init"
+        image: "gcr.io/snps-swip-staging/minio-util:0.0.9"
+        imagePullPolicy: IfNotPresent
+        command: ["minio-init"]
+        env:
+        - name: "MINIO_KUBERNETES_NAMESPACE"
+          value: "default"
+        - name: "MINIO_SECRET_NAME"
+          value: "swip-tools-minio"        
+        - name: KUBERNETES_LABELS
+          value: "environment: \"${ENVIRONMENT_NAME}\"\nservice: \"tools-minio-secret-init\"\ncomponent: \"swip-db\"\ncomponentVersion: \"0.0.740\"\nchart: \"swip-db\"\nchartVersion: \"0.0.740\""      
+      imagePullSecrets:
+      - name: ${IMAGE_PULL_SECRETS}
+
+---
+# Source: swip-db/templates/upload-server-init.yaml
+
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  name: "upload-server-secret-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "upload-server-secret-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "Role"
+metadata:
+  name: "upload-server-secret-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "upload-server-secret-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "secrets"
+  verbs:
+  - "get"
+  - "create"
+  - "update"
+  - "patch"
+  - "delete"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  name: "upload-server-secret-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "upload-server-secret-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+roleRef:
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "Role"
+  name: "upload-server-secret-init"
+subjects:
+- kind: "ServiceAccount"
+  name: "upload-server-secret-init"
+---
+apiVersion: "batch/v1"
+kind: "Job"
+metadata:
+  name: "upload-server-secret-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "upload-server-secret-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": "hook-succeeded,before-hook-creation"
+spec:
+  template:
+    metadata:
+      name: "upload-server-secret-init"
+      labels:        
+        environment: "${ENVIRONMENT_NAME}"
+        service: "upload-server-secret-init"
+        component: "swip-db"
+        componentVersion: "0.0.740"
+        chart: "swip-db"
+        chartVersion: "0.0.740"
+    spec:
+      restartPolicy: "OnFailure"
+      serviceAccount: "upload-server-secret-init"
+      containers:
+      - name: "upload-server-secret-init"
+        image: "gcr.io/snps-swip-staging/minio-util:0.0.9"
+        imagePullPolicy: "IfNotPresent"
+        command: ["minio-init"]
+        env:
+        - name: "MINIO_KUBERNETES_NAMESPACE"
+          value: "default"
+        - name: "MINIO_SECRET_NAME"
+          value: "swip-upload-server"        
+        - name: KUBERNETES_LABELS
+          value: "environment: \"${ENVIRONMENT_NAME}\"\nservice: \"upload-server-secret-init\"\ncomponent: \"swip-db\"\ncomponentVersion: \"0.0.740\"\nchart: \"swip-db\"\nchartVersion: \"0.0.740\""      
+      imagePullSecrets:
+      - name: ${IMAGE_PULL_SECRETS}
+
+---
+# Source: swip-db/templates/vault-init.yaml
+
+
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  name: "vault-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "vault-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "Role"
+metadata:
+  name: "vault-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "vault-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "secrets"
+  verbs:
+  - "get"
+  - "create"
+  - "update"
+  - "patch"
+  - "delete"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  name: "vault-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "vault-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: "Role"
+  name: "vault-init"
+subjects:
+- kind: "ServiceAccount"
+  name: "vault-init"
+---
+apiVersion: "batch/v1"
+kind: "Job"
+metadata:
+  name: "vault-tls-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "vault-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": "hook-succeeded,before-hook-creation"
+spec:
+  template:
+    metadata:
+      name: "vault-tls-init"
+      labels:        
+        environment: "${ENVIRONMENT_NAME}"
+        service: "vault-init"
+        component: "swip-db"
+        componentVersion: "0.0.740"
+        chart: "swip-db"
+        chartVersion: "0.0.740"
+    spec:
+      serviceAccount: "vault-init"
+      restartPolicy: "OnFailure"
+      containers:
+      - name: "vault-tls-init"
+        image: "gcr.io/snps-swip-staging/vault-util:0.1.8"
+        imagePullPolicy: "IfNotPresent"
+        command: ["vault-tls-init"]
+        env:
+        - name: "VAULT_SERVICE_NAME"
+          value: "swip-db-vault"
+        - name: "VAULT_KUBERNETES_NAMESPACE"
+          value: "default"
+        - name: "VAULT_CLIENT_CERTIFICATES"
+          value: "auth-server,auth-client,tds-code-analysis"        
+        - name: KUBERNETES_LABELS
+          value: "environment: \"${ENVIRONMENT_NAME}\"\nservice: \"vault-init\"\ncomponent: \"swip-db\"\ncomponentVersion: \"0.0.740\"\nchart: \"swip-db\"\nchartVersion: \"0.0.740\""      
+      imagePullSecrets:
+      - name: ${IMAGE_PULL_SECRETS}
+---
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: "vault-policies"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "vault-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+data:
+  "auth-server.hcl": |-
+    path "secret/metadata/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+    path "secret/destroy/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+    path "secret/data/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+    path "secret/delete/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+    path "secret/undelete/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+  "auth-client.hcl": |-
+    path "secret/data/auth/public/*" {
+      capabilities = ["list", "read"]
+    }
+    path "secret/metadata/auth/*" {
+      capabilities = ["list", "read"]
+    }
+  "tds-code-analysis.hcl": |-
+    path "secret/data/auth/public/*" {
+      capabilities = ["list", "read"]
+    }
+    path "secret/data/codeanalysis/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+    path "secret/metadata/auth/*" {
+      capabilities = ["list", "read"]
+    }
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "vault-init"
+  labels:    
+    environment: "${ENVIRONMENT_NAME}"
+    service: "vault-init"
+    component: "swip-db"
+    componentVersion: "0.0.740"
+    chart: "swip-db"
+    chartVersion: "0.0.740"
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+spec:
+  selector:
+    matchLabels:      
+      service: "vault-init"
+  template:
+    metadata:
+      name: "vault-init"
+      labels:        
+        environment: "${ENVIRONMENT_NAME}"
+        service: "vault-init"
+        component: "swip-db"
+        componentVersion: "0.0.740"
+        chart: "swip-db"
+        chartVersion: "0.0.740"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5000
+      serviceAccount: "vault-init"
+      restartPolicy: "Always"
+      containers:
+      - name: "vault-init"
+        image: "gcr.io/snps-swip-staging/vault-util:0.1.8"
+        imagePullPolicy: "IfNotPresent"
+        command: ["vault-init"]
+        env:
+        - name: "VAULT_ADDR"
+          value: "https://swip-db-vault:8200"
+        - name: "VAULT_CACERT"
+          value: "/vault/tls/ca.crt"
+        - name: "VAULT_INIT_SECRET"
+          value: vault-init-secret
+        - name: "VAULT_SECRET_ENGINE_VERSION"
+          value: "v2"
+        - name: "VAULT_KUBERNETES_NAMESPACE"
+          value: "default"
+        - name: "VAULT_POLICY_CONFIGS"
+          value: "/vault/policies"
+        - name: "AUTH_SERVER_VAULT_CLIENT_CERTIFICATE"
+          value: "/auth-server-tls-certificate/tls.crt"
+        - name: "AUTH_CLIENT_VAULT_CLIENT_CERTIFICATE"
+          value: "/auth-client-tls-certificate/tls.crt"
+        - name: "TDS_CODE_ANALYSIS_VAULT_CLIENT_CERTIFICATE"
+          value: "/tds-code-analysis-tls-certificate/tls.crt"        
+        - name: KUBERNETES_LABELS
+          value: "environment: \"${ENVIRONMENT_NAME}\"\nservice: \"vault-init\"\ncomponent: \"swip-db\"\ncomponentVersion: \"0.0.740\"\nchart: \"swip-db\"\nchartVersion: \"0.0.740\""
+        volumeMounts:
+        - name: "vault-tls-certificate"
+          mountPath: "/vault/tls"
+        - name: "auth-server-tls-certificate"
+          mountPath: "/auth-server-tls-certificate"
+        - name: "auth-client-tls-certificate"
+          mountPath: "/auth-client-tls-certificate"
+        - name: "tds-code-analysis-tls-certificate"
+          mountPath: "/tds-code-analysis-tls-certificate"
+        - name: "vault-policy-configs"
+          mountPath: "/vault/policies"
+      volumes:
+      - name: "vault-tls-certificate"
+        secret:
+          secretName: "vault-tls-certificate"
+      - name: "vault-policy-configs"
+        configMap:
+          name: "vault-policies"
+      - name: "auth-server-tls-certificate"
+        secret:
+          secretName: "auth-server-tls-certificate"
+      - name: "auth-client-tls-certificate"
+        secret:
+          secretName: "auth-client-tls-certificate"
+      - name: "tds-code-analysis-tls-certificate"
+        secret:
+          secretName: "tds-code-analysis-tls-certificate"      
+      imagePullSecrets:
+      - name: ${IMAGE_PULL_SECRETS}
+
+
+---

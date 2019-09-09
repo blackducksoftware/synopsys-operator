@@ -1,0 +1,43 @@
+---
+runtimeobjectsgroupings:
+  ServiceAccounts:
+    - ServiceAccount.rp-issue-manager
+    - ServiceAccount.rp-portfolio-service
+    - ServiceAccount.rp-report-service
+    - ServiceAccount.rp-swagger-doc
+    - ServiceAccount.rp-tools-portfolio-service
+  Deployments:
+    - Deployment.rp-issue-manager
+    - Deployment.rp-portfolio-service
+    - Deployment.rp-report-service
+    - Deployment.rp-swagger-doc
+    - Deployment.rp-tools-portfolio-service
+    - Deployment.report-storage
+    - Deployment.rp-frontend
+  HorizontalPodAutoscalers:
+    - HorizontalPodAutoscaler.rp-issue-manager
+    - HorizontalPodAutoscaler.rp-portfolio-service
+    - HorizontalPodAutoscaler.rp-report-service
+    - HorizontalPodAutoscaler.rp-tools-portfolio-service
+  Services:
+    - Services.rp-issue-manager
+    - Services.rp-portfolio-service
+    - Services.rp-report-service
+    - Services.rp-swagger-doc
+    - Services.rp-tools-portfolio-service
+    - Services.report-storage
+    - Services.rp-frontend
+  PersistentVolumeClaims:
+    - PersistentVolumeClaim.report-storage-pv-claim
+  Secrets:
+    - Secret.cloudsql
+runtimeobjectdependencies:
+  - obj: Deployments
+    isdependenton: 
+    - ServiceAccounts
+    - PersistentVolumeClaims
+    - Secrets
+  - obj: HorizontalPodAutoscalers
+    isdependenton: 
+    - Deployments
+---

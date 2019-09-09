@@ -1,0 +1,7 @@
+CREATE DATABASE configs;
+CREATE DATABASE cos;
+CREATE DATABASE desktop_metrics;
+CREATE DATABASE issues;
+CREATE DATABASE code_analysis;
+CREATE DATABASE triage_command;
+CREATE DATABASE triage_query;

@@ -1,0 +1,11 @@
+apiVersion: synopsys.com/v1
+kind: AuthServer
+metadata:
+  name: authserver-sample
+spec:
+  # Add fields here
+  version: test
+  namespace: default
+  environment: onprem
+  environment_address: onprem.dev.polaris.synopsys.com
+  image_pull_secrets: gcr-json-key
