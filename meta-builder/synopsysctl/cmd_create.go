@@ -691,6 +691,7 @@ var createPolarisNativeCmd = &cobra.Command{
 		// Get runtime objects
 		polarisReconciler := controllers.PolarisReconciler{
 			IsOpenShift: nativeClusterType == clusterTypeOpenshift,
+			IsDryRun:    true,
 		}
 		polarisObjectsMap, err := polarisReconciler.GetRuntimeObjects(polaris.polaris)
 		if err != nil {
@@ -699,6 +700,7 @@ var createPolarisNativeCmd = &cobra.Command{
 
 		polarisDBReconciler := controllers.PolarisDBReconciler{
 			IsOpenShift: nativeClusterType == clusterTypeOpenshift,
+			IsDryRun:    true,
 		}
 		polarisDBObjectsMap, err := polarisDBReconciler.GetRuntimeObjects(polaris.polarisDB)
 		if err != nil {
@@ -707,6 +709,7 @@ var createPolarisNativeCmd = &cobra.Command{
 
 		authReconciler := controllers.AuthServerReconciler{
 			IsOpenShift: nativeClusterType == clusterTypeOpenshift,
+			IsDryRun:    true,
 		}
 		authObjectsMap, err := authReconciler.GetRuntimeObjects(polaris.auth)
 		if err != nil {
