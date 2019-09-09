@@ -147,6 +147,11 @@ var createAlertCmd = &cobra.Command{
 		}
 
 		log.Infof("creating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+		if len(alert.Spec.Version) == 0 {
+			versions := apps.NewApp(&protoform.Config{}, restconfig).Alert().Versions()
+			sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+			alert.Spec.Version = versions[0]
+		}
 
 		// Deploy the Alert instance
 		_, err = util.CreateAlert(alertClient, crdNamespace, alert)
@@ -311,14 +316,13 @@ var createBlackDuckCmd = &cobra.Command{
 		}
 
 		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		version := blackDuck.Spec.Version
-		if len(version) == 0 {
+		if len(blackDuck.Spec.Version) == 0 {
 			versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
 			sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-			version = versions[0]
+			blackDuck.Spec.Version = versions[0]
 		}
 
-		if isBlackDuckVersionSupportMultipleInstance, _ := util.IsBlackDuckVersionSupportMultipleInstance(version); !isBlackDuckVersionSupportMultipleInstance {
+		if isBlackDuckVersionSupportMultipleInstance, _ := util.IsBlackDuckVersionSupportMultipleInstance(blackDuck.Spec.Version); !isBlackDuckVersionSupportMultipleInstance {
 			// Verifying only one Black Duck instance per namespace
 			blackducks, err := util.ListBlackduck(blackDuckClient, crdNamespace, metav1.ListOptions{})
 			if err != nil {

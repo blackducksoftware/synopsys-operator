@@ -71,13 +71,15 @@ var migrateCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Check if a namespace was provided, else determine the namespace from the cluster
-		namespaceToMigrate := ""
+		namespaceToMigrate := metav1.NamespaceAll
+		crdNamespace := metav1.NamespaceAll
 		if len(namespace) > 0 {
 			namespaceToMigrate = namespace
+			crdNamespace = namespace
 		} else {
 			isClusterScoped := util.GetClusterScope(apiExtensionClient)
 			if isClusterScoped {
-				namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+				namespaces, err := util.GetOperatorNamespace(kubeClient, namespaceToMigrate)
 				if err != nil {
 					return err
 				}
@@ -90,7 +92,7 @@ var migrateCmd = &cobra.Command{
 			}
 		}
 		// Migrate the CRDs
-		err := migrate(namespaceToMigrate)
+		err := migrate(namespaceToMigrate, crdNamespace)
 		if err != nil {
 			return err
 		}
@@ -111,12 +113,12 @@ var migrateCmd = &cobra.Command{
 	},
 }
 
-func migrate(namespace string) error {
+func migrate(namespace string, crdNamespace string) error {
 	err := scaleDownDeployment(namespace, util.OperatorName)
 	if err != nil {
 		return err
 	}
-	err = migrateCRD(namespace)
+	err = migrateCRD(namespace, crdNamespace)
 	if err != nil {
 		return err
 	}
@@ -161,7 +163,6 @@ func scaleDownRC(namespace string, name string) error {
 func migrateOperator(namespace string) error {
 	log.Infof("migrating Synopsys Operator resources in namespace '%s'", namespace)
 
-	isClusterScoped = util.GetClusterScope(apiExtensionClient)
 	// list the existing CRD's and convert them to map with both key and value as name
 	var crdList *apiextensions.CustomResourceDefinitionList
 	crdList, err := util.ListCustomResourceDefinitions(apiExtensionClient, "app=synopsys-operator")
@@ -199,6 +200,8 @@ func migrateOperator(namespace string) error {
 			crds = append(crds, crd.Name)
 		}
 		cmData["CrdNames"] = strings.Join(crds, ",")
+
+		isClusterScoped = util.GetClusterScope(apiExtensionClient)
 		cmData["IsClusterScoped"] = isClusterScoped
 	}
 
@@ -241,12 +244,12 @@ func migrateOperator(namespace string) error {
 }
 
 // migrateCRD adds the labels to the custom resource definitions for the existing operator
-func migrateCRD(namespace string) error {
+func migrateCRD(namespace string, crdNamespace string) error {
 	crdNames := []string{util.AlertCRDName, util.BlackDuckCRDName, util.OpsSightCRDName}
 	for _, crdName := range crdNames {
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdName)
 		if err != nil {
-			log.Errorf("error getting %s custom resource defintion due to %+v", crdName, err)
+			log.Warnf("error getting %s custom resource defintion due to %+v", crdName, err)
 			continue
 		}
 
@@ -262,7 +265,7 @@ func migrateCRD(namespace string) error {
 			}
 		}
 		log.Infof("successfully migrated '%s' custom resource definition", crd.GetName())
-		err = migrateCR(namespace, crdName)
+		err = migrateCR(namespace, crdNamespace, crdName)
 		if err != nil {
 			return err
 		}
@@ -271,20 +274,20 @@ func migrateCRD(namespace string) error {
 }
 
 // migrateCR add the labels to the existing custom resource instances
-func migrateCR(namespace string, crdName string) error {
+func migrateCR(namespace string, crdNamespace string, crdName string) error {
 	switch crdName {
 	case util.AlertCRDName:
-		err := migrateAlert(namespace)
+		err := migrateAlert(namespace, crdNamespace)
 		if err != nil {
 			return err
 		}
 	case util.BlackDuckCRDName:
-		err := migrateBlackDuck(namespace)
+		err := migrateBlackDuck(namespace, crdNamespace)
 		if err != nil {
 			return err
 		}
 	case util.OpsSightCRDName:
-		err := migrateOpsSight(namespace)
+		err := migrateOpsSight(namespace, crdNamespace)
 		if err != nil {
 			return err
 		}
@@ -306,8 +309,8 @@ func getDefaultAlertImages() map[string][]string {
 }
 
 // migrateAlert migrates the existing Alert instances
-func migrateAlert(namespace string) error {
-	alerts, err := util.ListAlerts(alertClient, namespace, metav1.ListOptions{})
+func migrateAlert(namespace string, crdNamespace string) error {
+	alerts, err := util.ListAlerts(alertClient, crdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list Alert instances in namespace '%s' due to %+v", namespace, err)
 	}
@@ -334,10 +337,6 @@ func migrateAlert(namespace string) error {
 		log.Infof("migrating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 
 		// get the current value of the images using dynamic client
-		crdNamespace := metav1.NamespaceDefault
-		if len(alert.Namespace) > 0 {
-			crdNamespace = alertNamespace
-		}
 		req := client.Resource(alertGVR).Namespace(crdNamespace)
 		alertOldObj, err := req.Get(alertName, metav1.GetOptions{})
 		if err != nil {
@@ -368,6 +367,19 @@ func migrateAlert(namespace string) error {
 				alert.Spec.ImageRegistries = append(alert.Spec.ImageRegistries, alertImage)
 				isUpdate = true
 			}
+		}
+
+		// update Alert Spec version
+		if len(alert.Spec.Version) == 0 {
+			rc, err := util.GetReplicationController(kubeClient, alertNamespace, util.GetResourceName(alertName, util.AlertName, "alert"))
+			if err != nil {
+				return fmt.Errorf("unable to get the Alert replication controller for Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
+			}
+			alert.Spec.Version, err = util.GetImageTag(rc.Spec.Template.Spec.Containers[0].Image)
+			if err != nil {
+				return fmt.Errorf("unable to parse Alert replication controller image for Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
+			}
+			isUpdate = true
 		}
 
 		// update annotations
@@ -404,14 +416,15 @@ func migrateAlert(namespace string) error {
 }
 
 // migrateBlackDuck migrates the existing Black Duck instances
-func migrateBlackDuck(namespace string) error {
-	blackDucks, err := util.ListBlackduck(blackDuckClient, namespace, metav1.ListOptions{})
+func migrateBlackDuck(namespace string, crdNamespace string) error {
+	blackDucks, err := util.ListBlackduck(blackDuckClient, crdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list Black Duck instances in namespace '%s' due to %+v", namespace, err)
 	}
 	for _, blackDuck := range blackDucks.Items {
 		blackDuckName := blackDuck.Name
 		blackDuckNamespace := blackDuck.Spec.Namespace
+		isUpdate := false
 		log.Infof("migrating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// ASSUMING ALL PASSWORDS HAVE REMAINED THE SAME, no need to pull from secret
@@ -421,6 +434,19 @@ func migrateBlackDuck(namespace string) error {
 		blackDuck.Spec.UserPassword = defaultPassword
 		blackDuck.Spec.PostgresPassword = defaultPassword
 
+		// update Alert Spec version
+		if len(blackDuck.Spec.Version) == 0 && strings.EqualFold(blackDuck.Status.State, "running") {
+			rc, err := util.GetReplicationController(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "scan"))
+			if err != nil {
+				return fmt.Errorf("unable to get the Scan replication controller for Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
+			}
+			blackDuck.Spec.Version, err = util.GetImageTag(rc.Spec.Template.Spec.Containers[0].Image)
+			if err != nil {
+				return fmt.Errorf("unable to parse Scan replication controller image for Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
+			}
+			isUpdate = true
+		}
+
 		// update annotations
 		if _, ok := blackDuck.Annotations["synopsys.com/created.by"]; !ok {
 			blackDuck.Annotations = util.InitAnnotations(blackDuck.Annotations)
@@ -428,6 +454,10 @@ func migrateBlackDuck(namespace string) error {
 			if len(blackDuck.Spec.ExposeService) == 0 {
 				blackDuck.Spec.ExposeService = util.NONE
 			}
+			isUpdate = true
+		}
+
+		if isUpdate {
 			_, err := util.UpdateBlackduck(blackDuckClient, &blackDuck)
 			if err != nil {
 				return fmt.Errorf("error migrating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
@@ -446,7 +476,12 @@ func migrateBlackDuck(namespace string) error {
 			return err
 		}
 
-		if blackDuck.Spec.PersistentStorage {
+		isVersionGreaterThanorEqual, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.June, 1)
+		if err != nil {
+			return err
+		}
+
+		if !isVersionGreaterThanorEqual && blackDuck.Spec.PersistentStorage {
 			var rabbitmqRCName, zookeeperRCName, uploadCacheRCName, uploadCacheKeyPVCName, uploadCacheDataPVCName string
 			if value, ok := blackDuck.Annotations["synopsys.com/created.by"]; ok && "pre-2019.6.0" == value {
 				rabbitmqRCName = "rabbitmq"
@@ -461,15 +496,18 @@ func migrateBlackDuck(namespace string) error {
 				uploadCacheKeyPVCName = fmt.Sprintf("%s-blackduck-uploadcache-key", blackDuckName)
 				uploadCacheDataPVCName = fmt.Sprintf("%s-blackduck-uploadcache-data", blackDuckName)
 			}
-			// scale down zookeeper
-			err = scaleDownRC(blackDuckNamespace, zookeeperRCName)
-			if err != nil {
-				return err
-			}
-			// scale down upload cache
-			err = scaleDownRC(blackDuckNamespace, uploadCacheRCName)
-			if err != nil {
-				return err
+
+			if strings.EqualFold(blackDuck.Status.State, "running") {
+				// scale down zookeeper
+				err = scaleDownRC(blackDuckNamespace, zookeeperRCName)
+				if err != nil {
+					return err
+				}
+				// scale down upload cache
+				err = scaleDownRC(blackDuckNamespace, uploadCacheRCName)
+				if err != nil {
+					return err
+				}
 			}
 
 			if isSourceCodeEnabled(blackDuck.Spec.Environs) {
@@ -489,7 +527,7 @@ func migrateBlackDuck(namespace string) error {
 				// check for an existance of PVC
 				_, err := util.GetPVC(kubeClient, blackDuckNamespace, pvc)
 				if err == nil {
-					if "blackduck-rabbitmq" == pvc {
+					if strings.EqualFold(blackDuck.Status.State, "running") && "blackduck-rabbitmq" == pvc {
 						// scale down rabbitmq
 						err = scaleDownRC(blackDuckNamespace, rabbitmqRCName)
 						if err != nil {
@@ -597,8 +635,8 @@ func migrateUploadCachePVCJob(namespace string, name string, uploadCacheKeyVolum
 }
 
 // migrateOpsSight migrates the existing OpsSight instances
-func migrateOpsSight(namespace string) error {
-	opsSights, err := util.ListOpsSights(opsSightClient, namespace, metav1.ListOptions{})
+func migrateOpsSight(namespace string, crdNamespace string) error {
+	opsSights, err := util.ListOpsSights(opsSightClient, crdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list OpsSight instances in namespace '%s' due to %+v", namespace, err)
 	}
