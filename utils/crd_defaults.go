@@ -52,6 +52,7 @@ const (
 	PolarisCRDName    = "polaris.synopsys.com"
 	PolarisDBCRDName  = "polarisdbs.synopsys.com"
 	AuthServerCRDName = "authservers.synopsys.com"
+	ReportingCRDName  = "reportings.synopsys.com"
 
 	// OperatorName is the name of an Operator
 	OperatorName = "synopsys-operator"
