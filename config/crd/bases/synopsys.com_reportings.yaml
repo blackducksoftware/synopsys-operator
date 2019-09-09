@@ -44,23 +44,6 @@ spec:
               description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                 Important: Run "make" to regenerate code after modifying this file'
               type: string
-            postgres:
-              properties:
-                hostname:
-                  type: string
-                password:
-                  type: string
-                port:
-                  format: int32
-                  type: integer
-                username:
-                  type: string
-              required:
-              - hostname
-              - password
-              - port
-              - username
-              type: object
             report_storage:
               properties:
                 image_details:
@@ -187,7 +170,6 @@ spec:
           - environment_address
           - image_pull_secrets
           - isReportingStandalone
-          - postgres
           - version
           type: object
         status:

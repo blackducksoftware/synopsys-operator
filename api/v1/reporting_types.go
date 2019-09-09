@@ -31,7 +31,6 @@ type ReportingSpec struct {
 	EnvironmentDNS                     string                             `json:"environment_address"`
 	ImagePullSecrets                   string                             `json:"image_pull_secrets"`
 	Version                            string                             `json:"version"`
-	PostgresDetails                    ReportingPostgresDetails           `json:"postgres"`
 	IsReportingStandalone              bool                               `json:"isReportingStandalone"`
 	ReportingFrontendSpec              ReportingFrontendSpec              `json:"rp_frontend,omitempty"`
 	ReportingIssueManagerSpec          ReportingIssueManagerSpec          `json:"rp_issue_manager,omitempty"`
@@ -64,13 +63,6 @@ type ReportingToolsPortfolioServiceSpec struct {
 
 type ReportingSwaggerDoc struct {
 	ImageDetails *ImageDetails `json:"image_details,omitempty"`
-}
-
-type ReportingPostgresDetails struct {
-	Hostname string `json:"hostname"`
-	Port     int32  `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
 }
 
 type ReportStorageSpec struct {

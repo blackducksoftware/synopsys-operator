@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"strconv"
 
 	b64 "encoding/base64"
 
@@ -33,7 +34,8 @@ type PolarisDBPatcher struct {
 func (p *PolarisDBPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
-		p.patchSMTPDetails,
+		p.patchSMTPSecretDetails,
+		p.patchSMTPConfigMapDetails,
 		p.patchPostgresDetails,
 		p.patchEventstoreDetails,
 		p.patchUploadServerDetails,
@@ -55,6 +57,34 @@ func (p *PolarisDBPatcher) patchNamespace() error {
 	return nil
 }
 
+func (p *PolarisDBPatcher) patchSMTPSecretDetails() error {
+	SecretUniqueID := "Secret." + "smtp"
+	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
+	if !ok {
+		return nil
+	}
+	secretInstance := secretRuntimeObject.(*corev1.Secret)
+	secretInstance.Data = map[string][]byte{
+		"username": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.SMTPDetails.Username))),
+		"passwd":   []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.SMTPDetails.Password))),
+	}
+	return nil
+}
+
+func (p *PolarisDBPatcher) patchSMTPConfigMapDetails() error {
+	ConfigMapUniqueID := "ConfigMap." + "smtp"
+	configmapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
+	if !ok {
+		return nil
+	}
+	configMapInstance := configmapRuntimeObject.(*corev1.ConfigMap)
+	configMapInstance.Data = map[string]string{
+		"host": p.polarisDbCr.Spec.SMTPDetails.Host,
+		"port": strconv.Itoa(p.polarisDbCr.Spec.SMTPDetails.Port),
+	}
+	return nil
+}
+
 func (p *PolarisDBPatcher) patchSMTPDetails() error {
 	SecretUniqueID := "Secret." + "smtp"
 	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
@@ -72,33 +102,22 @@ func (p *PolarisDBPatcher) patchSMTPDetails() error {
 }
 
 func (p *PolarisDBPatcher) patchPostgresDetails() error {
-	// patch cloudsql secret
-	SecretUniqueID := "Secret." + "cloudsql"
-	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
+	// patch postgresql-config secret
+	ConfigMapUniqueID := "ConfigMap." + "postgresql-config"
+	configmapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
 	if !ok {
 		return nil
 	}
-	secretInstance := secretRuntimeObject.(*corev1.Secret)
-	secretInstance.Data = map[string][]byte{
-		"username":              []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Username))),
-		"password":              []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Password))),
-		"reporting_db_username": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Username))),
-		"reporting_db_password": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Password))),
-		"host":                  []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Host))),
-		"port":                  []byte(b64.StdEncoding.EncodeToString([]byte(string(p.polarisDbCr.Spec.PostgresDetails.Port)))),
+	configMapInstance := configmapRuntimeObject.(*corev1.ConfigMap)
+	configMapInstance.Data = map[string]string{
+		"POSTGRESQL_ADMIN_PASSWORD": p.polarisDbCr.Spec.PostgresDetails.Password,
+		"POSTGRESQL_DATABASE":       p.polarisDbCr.Spec.PostgresDetails.Username,
+		"POSTGRESQL_PASSWORD":       p.polarisDbCr.Spec.PostgresDetails.Password,
+		"POSTGRESQL_USER":           p.polarisDbCr.Spec.PostgresDetails.Username,
+		"POSTGRESQL_HOST":           p.polarisDbCr.Spec.PostgresDetails.Host,
+		"POSTGRESQL_PORT":           strconv.Itoa(p.polarisDbCr.Spec.PostgresDetails.Port),
 	}
 	if p.polarisDbCr.Spec.PostgresInstanceType == "internal" {
-		// patch postgresql-config secret
-		SecretUniqueID = "Secret." + "postgresql-config"
-		secretRuntimeObject, ok = p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
-		if !ok {
-			return nil
-		}
-		secretInstance = secretRuntimeObject.(*corev1.Secret)
-		secretInstance.Data = map[string][]byte{
-			"POSTGRES_USER":     []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Username))),
-			"POSTGRES_PASSWORD": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Password))),
-		}
 		// patch storage
 		PostgresPVCUniqueID := "PersistentVolumeClaim." + "postgresql-pv-claim"
 		PostgresPVCRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[PostgresPVCUniqueID]

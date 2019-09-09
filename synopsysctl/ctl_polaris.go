@@ -48,13 +48,13 @@ type PolarisCRSpecBuilderFromCobraFlags struct {
 	StorageClass     string
 
 	PostgresHost     string
-	PostgresPort     int32
+	PostgresPort     int
 	PostgresUsername string
 	PostgresPassword string
 	PostgresSize     string
 
 	SMTPHost     string
-	SMTPPort     int32
+	SMTPPort     int
 	SMTPUsername string
 	SMTPPassword string
 
@@ -118,7 +118,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
 
 	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
-	//cmd.Flags().Int32Var(&ctl.PostgresPort, "postgres-port",  ctl.PostgresPort, "")
+	//cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
 
@@ -127,7 +127,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 	cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", ctl.EventstoreSize, "PVC size to use for eventstore. e.g. 100Gi")
 
 	cmd.Flags().StringVar(&ctl.SMTPHost, "smtp-host", ctl.SMTPHost, "SMTP host")
-	cmd.Flags().Int32Var(&ctl.SMTPPort, "smtp-port", ctl.SMTPPort, "SMTP port")
+	cmd.Flags().IntVar(&ctl.SMTPPort, "smtp-port", ctl.SMTPPort, "SMTP port")
 	cmd.Flags().StringVar(&ctl.SMTPUsername, "smtp-username", ctl.SMTPUsername, "SMTP username")
 	cmd.Flags().StringVar(&ctl.SMTPPassword, "smtp-password", ctl.SMTPPassword, "SMTP password")
 }
