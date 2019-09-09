@@ -29,4 +29,4 @@ before_script:
 - hack/verify-golint.sh
 - hack/verify-govet.sh
 
-script: env GO111MODULE=on go build ./cmd/... ./pkg/... && env GO111MODULE=on go test ./cmd/... ./pkg/...
+script: env GO111MODULE=on make
