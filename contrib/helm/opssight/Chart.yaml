@@ -1,5 +1,0 @@
-apiVersion: v1
-appVersion: "2.1.0"
-description: Black Duck in Kubernetes
-name: opssight
-version: 2.1.0
