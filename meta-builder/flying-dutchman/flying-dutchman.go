@@ -304,14 +304,14 @@ func IsServiceReady(svc *corev1.Service) error {
 }
 
 func IsReplicationControllerReady(rc *corev1.ReplicationController) error {
-	if rc.Status.ReadyReplicas < rc.Status.Replicas {
+	if rc.Spec.Replicas == nil || rc.Status.ReadyReplicas != *rc.Spec.Replicas {
 		return fmt.Errorf("replication controller is not ready: %s/%s", rc.GetNamespace(), rc.GetName())
 	}
 	return nil
 }
 
 func IsDeploymentReady(deployment *appsv1.Deployment) error {
-	// TODO: Check for "Avaialbility" of the deployment
+	// TODO: Check for "Availability" of the deployment
 	if deployment.Spec.Replicas == nil || deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
 		return fmt.Errorf("deployment is not ready: %s/%s", deployment.GetNamespace(), deployment.GetName())
 	}
@@ -319,7 +319,7 @@ func IsDeploymentReady(deployment *appsv1.Deployment) error {
 }
 
 func IsStatefulSetReady(statefulSet *appsv1.StatefulSet) error {
-	if statefulSet.Status.ReadyReplicas != *statefulSet.Spec.Replicas {
+	if statefulSet.Spec.Replicas == nil || statefulSet.Status.ReadyReplicas != *statefulSet.Spec.Replicas {
 		return fmt.Errorf("statefulSet is not ready: %s/%s", statefulSet.GetNamespace(), statefulSet.GetName())
 	}
 	return nil
@@ -327,7 +327,6 @@ func IsStatefulSetReady(statefulSet *appsv1.StatefulSet) error {
 
 func IsJobCompleted(job *batchv1.Job) error {
 	// TODO: https://github.com/kubernetes/kubernetes/issues/68712
-
 	if &job.Status != nil && len(job.Status.Conditions) > 0 {
 		for _, condition := range job.Status.Conditions {
 			if condition.Type == batchv1.JobComplete && condition.Status == corev1.ConditionTrue {

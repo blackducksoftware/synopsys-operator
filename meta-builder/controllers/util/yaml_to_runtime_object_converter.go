@@ -14,7 +14,7 @@ import (
 
 // ConvertYamlFileToRuntimeObjects converts the yaml file string to map of runtime object
 func ConvertYamlFileToRuntimeObjects(stringContent string, isOpenShift bool) map[string]runtime.Object {
-	routev1.AddToScheme(scheme.Scheme) 
+	routev1.AddToScheme(scheme.Scheme)
 	securityv1.AddToScheme(scheme.Scheme)
 	// TODO: use logr.Logr
 	log := ctrl.Log.WithName("ConvertYamlFileToRuntimeObjects")

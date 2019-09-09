@@ -69,19 +69,11 @@ func (r *AlertReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, er
 
 func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
 	alertCr := cr.(*synopsysv1.Alert)
-	//TODO: either read contents of yaml from locally mounted file
-
 	// get the base yaml for the app
 	latestBaseYamlAsString, err := controllers_utils.GetBaseYaml(controllers_utils.ALERT, alertCr.Spec.Version, "")
 	if err != nil {
 		return nil, err
 	}
-
-	//FinalYamlPath := "config/samples/alert_runtime_objects.yaml"
-	//byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
-	//if err != nil {
-	//	return nil, err
-	//}
 
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAME}", alertCr.Name)
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", alertCr.Spec.Namespace)
@@ -128,7 +120,6 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 }
 
 func (r *AlertReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
-	//instructionManualFile := "https://raw.githubusercontent.com/yashbhutwala/kb-synopsys-operator/master/config/samples/dependency_sample_alert.yaml"
 	instructionManual, err := controllers_utils.CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject)
 	if err != nil {
 		return nil, err
@@ -137,11 +128,6 @@ func (r *AlertReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObje
 }
 
 func (r *AlertReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	//ctx := context.Background()
-	//log := r.Log.WithValues("name and namespace of the alertCr to reconcile", req.NamespacedName)
-
-	// TODO: By adding sha, we no longer need to requeue after (awesome!!), but it's here just in case you need to re-enable it
-	//return ctrl.Result{RequeueAfter: 10 * time.Minute}, nil
 	return flying_dutchman.MetaReconcile(req, r)
 }
 
