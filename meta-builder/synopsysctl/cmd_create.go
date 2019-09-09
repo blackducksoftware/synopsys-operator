@@ -663,6 +663,73 @@ var createPolarisCmd = &cobra.Command{
 	},
 }
 
+//createPolarisNativeCmd prints the Kubernetes resources for creating a Polaris instance
+var createPolarisNativeCmd = &cobra.Command{
+	Use:           "native NAME",
+	Example:       "synopsysctl create polaris native <name>",
+	Short:         "Print the Kubernetes resources for creating a Polaris instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 1 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 1 arguments")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		polarisName, polarisNamespace, _, err := getInstanceInfo(true, utils.PolarisName, "", namespace, args[0])
+		if err != nil {
+			return err
+		}
+		polaris, err := updatePolarisSpecWithFlags(cmd, polarisName, polarisNamespace)
+		if err != nil {
+			return err
+		}
+
+		// Get runtime objects
+		polarisReconciler := controllers.PolarisReconciler{
+			IsOpenShift: nativeClusterType == clusterTypeOpenshift,
+		}
+		polarisObjectsMap, err := polarisReconciler.GetRuntimeObjects(polaris.polaris)
+		if err != nil {
+			return err
+		}
+
+		polarisDBReconciler := controllers.PolarisDBReconciler{
+			IsOpenShift: nativeClusterType == clusterTypeOpenshift,
+		}
+		polarisDBObjectsMap, err := polarisDBReconciler.GetRuntimeObjects(polaris.polarisDB)
+		if err != nil {
+			return err
+		}
+
+		authReconciler := controllers.AuthServerReconciler{
+			IsOpenShift: nativeClusterType == clusterTypeOpenshift,
+		}
+		authObjectsMap, err := authReconciler.GetRuntimeObjects(polaris.auth)
+		if err != nil {
+			return err
+		}
+
+		var objectArr []runtime.Object
+		for _, v := range polarisObjectsMap {
+			objectArr = append(objectArr, v)
+		}
+		for _, v := range polarisDBObjectsMap {
+			objectArr = append(objectArr, v)
+		}
+		for _, v := range authObjectsMap {
+			objectArr = append(objectArr, v)
+		}
+
+		PrintComponents(objectArr, nativeFormat)
+
+		return nil
+	},
+}
+
 func init() {
 	// initialize global resource ctl structs for commands to use
 	createAlertCobraHelper = NewAlertCRSpecBuilderFromCobraFlags()
@@ -712,4 +779,8 @@ func init() {
 	createPolarisCobraHelper.AddCRSpecFlagsToCommand(createPolarisCmd, true)
 	addMockFlag(createPolarisCmd)
 	createCmd.AddCommand(createPolarisCmd)
+
+	createPolarisCobraHelper.AddCRSpecFlagsToCommand(createPolarisNativeCmd, true)
+	addNativeFormatFlag(createPolarisNativeCmd)
+	createPolarisCmd.AddCommand(createPolarisNativeCmd)
 }
