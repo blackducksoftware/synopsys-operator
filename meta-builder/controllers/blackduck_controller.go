@@ -41,6 +41,7 @@ type BlackduckReconciler struct {
 	Scheme      *runtime.Scheme
 	Log         logr.Logger
 	IsOpenShift bool
+	IsDryRun    bool
 }
 
 func (r *BlackduckReconciler) GetClient() client.Client {
@@ -92,10 +93,7 @@ func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	//		return mapOfUniqueIdToDesiredRuntimeObject, nil
 	//	}
 	//}
-	fmt.Printf("Before - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(mapOfUniqueIdToDesiredRuntimeObject))
-	objs := patchBlackduck(r.Client, blackduck, mapOfUniqueIdToDesiredRuntimeObject)
-	fmt.Printf("After - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(objs))
-
+	objs := patchBlackduck(r.Client, blackduck, mapOfUniqueIdToDesiredRuntimeObject, r.IsDryRun)
 	return objs, nil
 }
 

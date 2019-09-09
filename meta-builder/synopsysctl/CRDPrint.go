@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
 
 	"sigs.k8s.io/yaml"
@@ -38,82 +39,8 @@ const (
 	YAML PrintFormat = "YAML"
 )
 
-//func getDefaultApp(cType string) (*apps.App, error) {
-//	pc := &protoform.Config{}
-//	pc.SelfSetDefaults()
-//	pc.DryRun = true
-//	err := verifyClusterType(cType)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if strings.EqualFold(strings.ToUpper(cType), clusterTypeOpenshift) {
-//		pc.IsOpenshift = true
-//	}
-//	rc := &rest.Config{}
-//
-//	protoformDeployer, _ := protoform.NewDeployer(pc, rc, nil)
-//	return apps.NewApp(protoformDeployer), nil
-//}
-
-// PrintResource prints a Resource as yaml or json. printKubeComponents allows printing the kuberentes
-// resources instead
-//func PrintResource(crd interface{}, format string, printKubeComponents bool) error {
-//	// print the CRD
-//	if !printKubeComponents {
-//		return PrintComponents([]interface{}{crd}, format)
-//	}
-//
-//	app, err := getDefaultApp(nativeClusterType)
-//	if err != nil {
-//		return err
-//	}
-//
-//	var cList *api.ComponentList
-//
-//	switch reflect.TypeOf(crd) {
-//	case reflect.TypeOf(soperator.SpecConfig{}):
-//		operator := crd.(soperator.SpecConfig)
-//		cList, err = operator.GetComponents()
-//		if err != nil {
-//			return fmt.Errorf("failed to get components: %s", err)
-//		}
-//	case reflect.TypeOf(alertapi.Alert{}):
-//		alert := crd.(alertapi.Alert)
-//		cList, err = app.Alert().GetComponents(&alert, alertapp.CRDResources)
-//		if err != nil {
-//			return fmt.Errorf("failed to get components: %s", err)
-//		}
-//	case reflect.TypeOf(blackduckapi.Blackduck{}):
-//		blackDuck := crd.(blackduckapi.Blackduck)
-//		cList, err = app.Blackduck().GetComponents(&blackDuck, blackduckapp.CRDResources)
-//		if err != nil {
-//			return fmt.Errorf("failed to get components: %s", err)
-//		}
-//	case reflect.TypeOf(opssightapi.OpsSight{}):
-//		opsSight := crd.(opssightapi.OpsSight)
-//		cList, err = app.OpsSight().GetComponents(&opsSight)
-//		if err != nil {
-//			return fmt.Errorf("failed to get components: %s", err)
-//		}
-//	default:
-//		return fmt.Errorf("cannot print a resource with the format: %+v", crd)
-//	}
-//
-//	if cList == nil {
-//		return fmt.Errorf("failed to generate a componentLists for %+v", crd)
-//	}
-//	cList.PersistentVolumeClaims = []*components.PersistentVolumeClaim{} // Don't print resources for PVCs
-//	return PrintComponentListKube(cList, format)
-//}
-
-// PrintComponentListKube does
-//func PrintComponentListKube(cList *api.ComponentList, format string) error {
-//	kubeInterfaces := cList.GetKubeInterfaces()
-//	return PrintComponents(kubeInterfaces, format)
-//}
-
 // PrintComponents outputs components for a CRD in the correct format for 'kubectl create -f <file>'
-func PrintComponents(objs []interface{}, format string) error {
+func PrintComponents(objs []runtime.Object, format string) error {
 	for i, obj := range objs {
 		_, err := PrintComponent(obj, format)
 		if err != nil {

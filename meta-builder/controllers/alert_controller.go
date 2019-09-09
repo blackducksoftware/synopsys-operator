@@ -37,6 +37,7 @@ type AlertReconciler struct {
 	Scheme      *runtime.Scheme
 	Log         logr.Logger
 	IsOpenShift bool
+	IsDryRun    bool
 }
 
 var (
@@ -109,15 +110,18 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	//}
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString, r.IsOpenShift)
-	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-		// set an owner reference
-		if err := ctrl.SetControllerReference(alertCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-			// requeue if we cannot set owner on the object
-			// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-			//return ctrl.Result{}, err
-			return mapOfUniqueIdToBaseRuntimeObject, nil
+	if !r.IsDryRun {
+		for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
+			// set an owner reference
+			if err := ctrl.SetControllerReference(alertCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
+				// requeue if we cannot set owner on the object
+				// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
+				//return ctrl.Result{}, err
+				return mapOfUniqueIdToBaseRuntimeObject, nil
+			}
 		}
 	}
+
 	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil

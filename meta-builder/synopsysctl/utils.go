@@ -26,7 +26,9 @@ import (
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
 	"os"
@@ -35,6 +37,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -258,4 +261,30 @@ func getInstanceInfo(mock bool, crdName string, appName string, namespace string
 	}
 
 	return name, namespace, crdScope, nil
+}
+
+func filterByLabel(filter string, objects []runtime.Object) ([]runtime.Object, error) {
+	var result []runtime.Object
+
+	labelSelector, err := metav1.ParseToLabelSelector(filter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	accessor := meta.NewAccessor()
+
+	for _, obj := range objects {
+		objLabels, err := accessor.Labels(obj)
+		if err != nil {
+			return nil, err
+		}
+		if selector.Matches(labels.Set(objLabels)) {
+			result = append(result, obj)
+		}
+	}
+	return result, nil
 }

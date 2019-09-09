@@ -39,11 +39,12 @@ import (
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
 )
 
-func patchBlackduck(client client.Client, blackDuckCr *synopsysv1.Blackduck, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object) map[string]runtime.Object {
+func patchBlackduck(client client.Client, blackDuckCr *synopsysv1.Blackduck, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, isDryRun bool) map[string]runtime.Object {
 	patcher := BlackduckPatcher{
 		Client:                           client,
 		blackDuckCr:                      blackDuckCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
+		isDryRun:                         isDryRun,
 	}
 	return patcher.patch()
 }
@@ -52,6 +53,7 @@ type BlackduckPatcher struct {
 	client.Client
 	blackDuckCr                      *synopsysv1.Blackduck
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
+	isDryRun                         bool
 }
 
 func (p *BlackduckPatcher) patch() map[string]runtime.Object {
@@ -119,6 +121,10 @@ func (p *BlackduckPatcher) patchBDBA() error {
 }
 
 func (p *BlackduckPatcher) patchSealKey() error {
+	if p.isDryRun {
+		return nil
+	}
+
 	var secret corev1.Secret
 	if err := p.Client.Get(context.TODO(), types.NamespacedName{
 		Namespace: "synopsys-operator", // <<< TODO Get this from protoform
@@ -212,6 +218,9 @@ func (p *BlackduckPatcher) patchProxyCert() error {
 
 // TODO: common with Alert
 func (p *BlackduckPatcher) patchWithSize() error {
+	if p.isDryRun {
+		return nil
+	}
 	var size synopsysv1.Size
 	if len(p.blackDuckCr.Spec.Size) > 0 {
 		if err := p.Client.Get(context.TODO(), types.NamespacedName{

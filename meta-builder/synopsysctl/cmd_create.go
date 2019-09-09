@@ -24,7 +24,9 @@ package synopsysctl
 import (
 	"fmt"
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -204,53 +206,70 @@ var createAlertCmd = &cobra.Command{
 }
 
 // createAlertNativeCmd prints the Kubernetes resources for creating an Alert instance
-//var createAlertNativeCmd = &cobra.Command{
-//	Use:           "native NAME",
-//	Example:       "synopsysctl create alert native <name>\nsynopsysctl create alert native <name> -n <namespace>\nsynopsysctl create alert native <name> -o yaml",
-//	Short:         "Print the Kubernetes resources for creating an Alert instance",
-//	SilenceUsage:  true,
-//	SilenceErrors: true,
-//	Args: func(cmd *cobra.Command, args []string) error {
-//		// Check the Number of Arguments
-//		if len(args) != 1 {
-//			cmd.Help()
-//			return fmt.Errorf("this command takes 1 argument")
-//		}
-//		checkRegistryConfiguration(cmd.Flags())
-//		return nil
-//	},
-//	PreRunE: createAlertPreRun,
-//	RunE: func(cmd *cobra.Command, args []string) error {
-//		alertName, alertNamespace, _, err := getInstanceInfo(true, AlertCRDName, "", namespace, args[0])
-//		if err != nil {
-//			return err
-//		}
-//		alert, err := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
-//		if err != nil {
-//			return err
-//		}
-//
-//		log.Debugf("generating Kubernetes resources for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-//		app, err := getDefaultApp(nativeClusterType)
-//		if err != nil {
-//			return err
-//		}
-//		var cList *api.ComponentList
-//		switch {
-//		case alertNativePVC:
-//			cList, err = app.Alert().GetComponents(alert, alertapp.PVCResources)
-//		case !alertNativePVC:
-//			return PrintResource(*alert, nativeFormat, true)
-//		}
-//		if err != nil {
-//			return fmt.Errorf("failed to generate Black Duck components due to %+v", err)
-//		}
-//		if cList == nil {
-//			return fmt.Errorf("unable to genreate Black Duck components")
-//		}
-//		return PrintComponentListKube(cList, nativeFormat)
-//	},
-//}
+var createAlertNativeCmd = &cobra.Command{
+	Use:           "native NAME",
+	Example:       "synopsysctl create alert native <name>\nsynopsysctl create alert native <name> -n <namespace>\nsynopsysctl create alert native <name> -o yaml",
+	Short:         "Print the Kubernetes resources for creating an Alert instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 1 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	PreRunE: createAlertPreRun,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alertName, alertNamespace, _, err := getInstanceInfo(true, utils.AlertCRDName, "", namespace, args[0])
+		if err != nil {
+			return err
+		}
+		alert, err := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
+		if err != nil {
+			return err
+		}
+
+		reconciler := controllers.AlertReconciler{
+			IsOpenShift: nativeClusterType == clusterTypeOpenshift,
+			IsDryRun:    true,
+		}
+
+		objectsMap, err := reconciler.GetRuntimeObjects(alert)
+		if err != nil {
+			return err
+		}
+
+		var objectArr []runtime.Object
+
+		// TODO PVC / DB filtering
+		for _, v := range objectsMap {
+			objectArr = append(objectArr, v)
+		}
+
+		switch {
+		case !blackDuckNativeDatabase && !blackDuckNativePVC:
+			if objectArr, err = filterByLabel("component notin (postgres, pvc)", objectArr); err != nil {
+				return err
+			}
+		case blackDuckNativeDatabase:
+			if objectArr, err = filterByLabel("component in (postgres)", objectArr); err != nil {
+				return err
+			}
+		case blackDuckNativePVC:
+			if objectArr, err = filterByLabel("component in (pvc)", objectArr); err != nil {
+				return err
+			}
+		}
+
+		for _, obj := range objectArr {
+			PrintComponent(obj, nativeFormat)
+		}
+
+		return nil
+	},
+}
 
 /*
 Create Black Duck Commands
@@ -379,63 +398,77 @@ var createBlackDuckCmd = &cobra.Command{
 	},
 }
 
-// createBlackDuckNativeCmd prints the Kubernetes resources for creating a Black Duck instance
-//var createBlackDuckNativeCmd = &cobra.Command{
-//	Use:           "native NAME",
-//	Example:       "synopsysctl create blackduck native <name>\nsynopsysctl create blackduck native <name> -n <namespace>\nsynopsysctl create blackduck native <name> -o yaml",
-//	Short:         "Print the Kubernetes resources for creating a Black Duck instance",
-//	SilenceUsage:  true,
-//	SilenceErrors: true,
-//	Args: func(cmd *cobra.Command, args []string) error {
-//		// Check the Number of Arguments
-//		if len(args) != 1 {
-//			cmd.Help()
-//			return fmt.Errorf("this command takes 1 arguments")
-//		}
-//		if blackDuckNativeDatabase && blackDuckNativePVC {
-//			return fmt.Errorf("cannot enable --output-database and --output-pvc, please only specify one")
-//		}
-//		if blackDuckNativeDatabase {
-//			checkPasswords(cmd.Flags())
-//		}
-//		checkRegistryConfiguration(cmd.Flags())
-//		return nil
-//	},
-//	PreRunE: createBlackDuckPreRun,
-//	RunE: func(cmd *cobra.Command, args []string) error {
-//		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(true, util.BlackDuckCRDName, "", namespace, args[0])
-//		if err != nil {
-//			return err
-//		}
-//		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
-//		if err != nil {
-//			return err
-//		}
-//
-//		log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-//		app, err := getDefaultApp(nativeClusterType)
-//		if err != nil {
-//			return err
-//		}
-//		var cList *api.ComponentList
-//		blackDuck.Spec.LivenessProbes = true // enable LivenessProbes when generating Kubernetes resources for customers
-//		switch {
-//		case !blackDuckNativeDatabase && !blackDuckNativePVC:
-//			return PrintResource(*blackDuck, nativeFormat, true)
-//		case blackDuckNativeDatabase:
-//			cList, err = app.Blackduck().GetComponents(blackDuck, blackduckapp.DatabaseResources)
-//		case blackDuckNativePVC:
-//			cList, err = app.Blackduck().GetComponents(blackDuck, blackduckapp.PVCResources)
-//		}
-//		if err != nil {
-//			return fmt.Errorf("failed to generate Black Duck components due to %+v", err)
-//		}
-//		if cList == nil {
-//			return fmt.Errorf("unable to genreate Black Duck components")
-//		}
-//		return PrintComponentListKube(cList, nativeFormat)
-//	},
-//}
+//createBlackDuckNativeCmd prints the Kubernetes resources for creating a Black Duck instance
+var createBlackDuckNativeCmd = &cobra.Command{
+	Use:           "native NAME",
+	Example:       "synopsysctl create blackduck native <name>\nsynopsysctl create blackduck native <name> -n <namespace>\nsynopsysctl create blackduck native <name> -o yaml",
+	Short:         "Print the Kubernetes resources for creating a Black Duck instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 1 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 1 arguments")
+		}
+		if blackDuckNativeDatabase && blackDuckNativePVC {
+			return fmt.Errorf("cannot enable --output-database and --output-pvc, please only specify one")
+		}
+		if blackDuckNativeDatabase {
+			checkPasswords(cmd.Flags())
+		}
+		return nil
+	},
+	PreRunE: createBlackDuckPreRun,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(true, utils.BlackDuckCRDName, "", namespace, args[0])
+		if err != nil {
+			return err
+		}
+		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+		if err != nil {
+			return err
+		}
+
+		blackDuck.Spec.LivenessProbes = true // enable LivenessProbes when generating Kubernetes resources for customers
+		log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+
+		reconciler := controllers.BlackduckReconciler{
+			IsDryRun:    true,
+			IsOpenShift: nativeClusterType == clusterTypeOpenshift,
+		}
+
+		objectsMap, err := reconciler.GetRuntimeObjects(blackDuck)
+		if err != nil {
+			return err
+		}
+
+		var objectArr []runtime.Object
+
+		for _, v := range objectsMap {
+			objectArr = append(objectArr, v)
+		}
+
+		switch {
+		case !blackDuckNativeDatabase && !blackDuckNativePVC:
+			if objectArr, err = filterByLabel("component notin (postgres, pvc)", objectArr); err != nil {
+				return err
+			}
+		case blackDuckNativeDatabase:
+			if objectArr, err = filterByLabel("component in (postgres)", objectArr); err != nil {
+				return err
+			}
+		case blackDuckNativePVC:
+			if objectArr, err = filterByLabel("component in (pvc)", objectArr); err != nil {
+				return err
+			}
+		}
+
+		PrintComponents(objectArr, nativeFormat)
+
+		return nil
+	},
+}
 
 /*
 Create OpsSight Commands
@@ -646,11 +679,11 @@ func init() {
 	addMockFlag(createAlertCmd)
 	createCmd.AddCommand(createAlertCmd)
 
-	//createAlertCobraHelper.AddCRSpecFlagsToCommand(createAlertNativeCmd, true)
-	//addNativeFormatFlag(createAlertNativeCmd)
-	//createAlertNativeCmd.Flags().BoolVar(&alertNativePVC, "output-pvc", alertNativePVC, "If true, output resources for only Alert's persistent volume claims")
-	//createAlertCmd.AddCommand(createAlertNativeCmd)
-	//
+	createAlertCobraHelper.AddCRSpecFlagsToCommand(createAlertNativeCmd, true)
+	addNativeFormatFlag(createAlertNativeCmd)
+	createAlertNativeCmd.Flags().BoolVar(&alertNativePVC, "output-pvc", alertNativePVC, "If true, output resources for only Alert's persistent volume claims")
+	createAlertCmd.AddCommand(createAlertNativeCmd)
+
 	// Add Black Duck Command
 	createBlackDuckCmd.PersistentFlags().StringVar(&baseBlackDuckSpec, "template", baseBlackDuckSpec, "Base resource configuration to modify with flags (empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled)")
 	createBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
@@ -658,11 +691,11 @@ func init() {
 	addMockFlag(createBlackDuckCmd)
 	createCmd.AddCommand(createBlackDuckCmd)
 
-	//createBlackDuckCobraHelper.AddCRSpecFlagsToCommand(createBlackDuckNativeCmd, true)
-	//addNativeFormatFlag(createBlackDuckNativeCmd)
-	//createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativeDatabase, "output-database", blackDuckNativeDatabase, "If true, output resources for only Black Duck's database")
-	//createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativePVC, "output-pvc", blackDuckNativePVC, "If true, output resources for only Black Duck's persistent volume claims")
-	//createBlackDuckCmd.AddCommand(createBlackDuckNativeCmd)
+	createBlackDuckCobraHelper.AddCRSpecFlagsToCommand(createBlackDuckNativeCmd, true)
+	addNativeFormatFlag(createBlackDuckNativeCmd)
+	createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativeDatabase, "output-database", blackDuckNativeDatabase, "If true, output resources for only Black Duck's database")
+	createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativePVC, "output-pvc", blackDuckNativePVC, "If true, output resources for only Black Duck's persistent volume claims")
+	createBlackDuckCmd.AddCommand(createBlackDuckNativeCmd)
 	//
 	//// Add OpsSight Command
 	//createOpsSightCmd.PersistentFlags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags (empty|upstream|default|disabledBlackDuck)")
