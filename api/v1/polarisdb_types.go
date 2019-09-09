@@ -56,21 +56,21 @@ type Storage struct {
 
 type SMTPDetails struct {
 	Host     string `json:"host"`
-	Port     int32  `json:"port"`
+	Port     int    `json:"port"`
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`
 }
 
 type PostgresDetails struct {
 	Host     string `json:"host"`
-	Port     int32  `json:"port"`
+	Port     int    `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
 type PostgresStorageDetails struct {
-	StorageSize  string  `json:"size"`
-	StorageClass *string `json:"storage_class"`
+	StorageSize  string  `json:"size,omitempty"`
+	StorageClass *string `json:"storage_class,omitempty"`
 }
 
 // PolarisDBStatus defines the observed state of PolarisDB

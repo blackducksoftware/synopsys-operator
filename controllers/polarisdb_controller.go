@@ -18,6 +18,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -84,30 +85,58 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	content = strings.ReplaceAll(content, "${NAMESPACE}", polarisDbCr.Spec.Namespace)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polarisDbCr.Spec.EnvironmentName)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisDbCr.Spec.ImagePullSecrets)
-	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.PostgresDetails.Username))
-	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.PostgresDetails.Password))
+	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", polarisDbCr.Spec.PostgresDetails.Username)
+	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", polarisDbCr.Spec.PostgresDetails.Password)
 	content = strings.ReplaceAll(content, "${SMTP_HOST}", polarisDbCr.Spec.SMTPDetails.Host)
-	content = strings.ReplaceAll(content, "${SMTP_PORT}", fmt.Sprintf("\"%d\"", polarisDbCr.Spec.SMTPDetails.Port))
-	content = strings.ReplaceAll(content, "${SMTP_USERNAME}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.SMTPDetails.Username))
-	content = strings.ReplaceAll(content, "${SMTP_PASSWORD}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.SMTPDetails.Password))
+	if polarisDbCr.Spec.SMTPDetails.Port != 2525 {
+		content = strings.ReplaceAll(content, "2525", strconv.Itoa(polarisDbCr.Spec.SMTPDetails.Port))
+	}
+	if len(polarisDbCr.Spec.SMTPDetails.Username) != 0 {
+		content = strings.ReplaceAll(content, "${SMTP_USERNAME}", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.SMTPDetails.Username))
+	} else {
+		content = strings.ReplaceAll(content, "${SMTP_USERNAME}", "Cg==")
+	}
+	if len(polarisDbCr.Spec.SMTPDetails.Password) != 0 {
+		content = strings.ReplaceAll(content, "${SMTP_PASSWORD}", fmt.Sprintf("\"%s\"", controllers_utils.EncodeStringToBase64(polarisDbCr.Spec.SMTPDetails.Password)))
+	} else {
+		content = strings.ReplaceAll(content, "${SMTP_PASSWORD}", "Cg==")
+	}
 	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", polarisDbCr.Spec.PostgresDetails.Host)
-	content = strings.ReplaceAll(content, "${POSTGRES_PORT}", fmt.Sprintf("\"%d\"", polarisDbCr.Spec.PostgresDetails.Port))
+	if polarisDbCr.Spec.PostgresDetails.Port != 5432 {
+		content = strings.ReplaceAll(content, "5432", strconv.Itoa(polarisDbCr.Spec.PostgresDetails.Port))
+	}
+	if polarisDbCr.Spec.PostgresInstanceType == "internal" {
+		content = strings.ReplaceAll(content, "${POSTGRES_TYPE}", "internal")
+	} else {
+		content = strings.ReplaceAll(content, "${POSTGRES_TYPE}", "external")
+	}
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
-	if !r.IsDryRun {
-		for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-			// set an owner reference
-			if err := ctrl.SetControllerReference(polarisDbCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-				// requeue if we cannot set owner on the object
-				// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-				//return ctrl.Result{}, err
-				return mapOfUniqueIdToBaseRuntimeObject, nil
-			}
+	mapOfUniqueIdToBaseRuntimeObject = removeTestManifests(mapOfUniqueIdToBaseRuntimeObject)
+	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
+		// set an owner reference
+		if err := ctrl.SetControllerReference(polarisDbCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
+			// requeue if we cannot set owner on the object
+			// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
+			//return ctrl.Result{}, err
+			return mapOfUniqueIdToBaseRuntimeObject, nil
 		}
 	}
 	mapOfUniqueIdToDesiredRuntimeObject := patchPolarisDB(r.Client, polarisDbCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
+}
+
+func removeTestManifests(objects map[string]runtime.Object) map[string]runtime.Object {
+	objectsToBeRemoved := []string{
+		"Pod.swip-db-ui-test-3gfbs",
+		"Pod.swip-db-vault-status-test",
+		"ConfigMap.polaris-db-consul-tests",
+	}
+	for _, object := range objectsToBeRemoved {
+		delete(objects, object)
+	}
+	return objects
 }
 
 func (r *PolarisDBReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {

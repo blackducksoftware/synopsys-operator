@@ -426,7 +426,7 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("falied to convert postgres port to an int: %s", polarisUIRequestConfig.PostgresPort)
 	}
-	polarisDBSpec.PostgresDetails.Port = int32(postPort)
+	polarisDBSpec.PostgresDetails.Port = int(postPort)
 	polarisDBSpec.PostgresDetails.Username = polarisUIRequestConfig.PostgresUsername
 	polarisDBSpec.PostgresDetails.Password = polarisUIRequestConfig.PostgresPassword
 	polarisDBSpec.PostgresStorageDetails.StorageSize = polarisUIRequestConfig.PostgresSize
@@ -438,7 +438,7 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("falied to convert smtp port to an int: %s", polarisUIRequestConfig.PostgresPort)
 	}
-	polarisDBSpec.SMTPDetails.Port = int32(sPort)
+	polarisDBSpec.SMTPDetails.Port = int(sPort)
 	polarisDBSpec.SMTPDetails.Username = polarisUIRequestConfig.SMTPUsername
 	polarisDBSpec.SMTPDetails.Password = polarisUIRequestConfig.SMTPPassword
 	polarisDB.Spec = *polarisDBSpec

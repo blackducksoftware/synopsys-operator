@@ -60,7 +60,6 @@ spec:
                 password:
                   type: string
                 port:
-                  format: int32
                   type: integer
                 username:
                   type: string
@@ -78,9 +77,6 @@ spec:
                   type: string
                 storage_class:
                   type: string
-              required:
-              - size
-              - storage_class
               type: object
             smtp_details:
               properties:
@@ -89,7 +85,6 @@ spec:
                 password:
                   type: string
                 port:
-                  format: int32
                   type: integer
                 username:
                   type: string

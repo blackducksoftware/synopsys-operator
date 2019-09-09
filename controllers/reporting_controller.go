@@ -17,9 +17,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-
-	"k8s.io/apimachinery/pkg/api/meta"
 
 	"strings"
 
@@ -67,13 +64,9 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	if err != nil {
 		return nil, err
 	}
-
+	content = strings.ReplaceAll(content, "${NAMESPACE}", reportingCr.Spec.Namespace)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", reportingCr.Spec.EnvironmentName)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", reportingCr.Spec.EnvironmentDNS)
-	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", reportingCr.Spec.PostgresDetails.Hostname)
-	content = strings.ReplaceAll(content, "${POSTGRES_PORT}", fmt.Sprint(reportingCr.Spec.PostgresDetails.Port))
-	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Username))
-	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", controllers_utils.EncodeStringToBase64(reportingCr.Spec.PostgresDetails.Password))
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", reportingCr.Spec.ImagePullSecrets)
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
@@ -82,7 +75,7 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 			return mapOfUniqueIdToBaseRuntimeObject, nil
 		}
 	}
-	mapOfUniqueIdToDesiredRuntimeObject := patchReporting(reportingCr, mapOfUniqueIdToBaseRuntimeObject, meta.NewAccessor())
+	mapOfUniqueIdToDesiredRuntimeObject := patchReporting(r.Client, reportingCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
 }

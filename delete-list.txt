@@ -14,3 +14,4 @@ persistentvolumeclaim/data-eventstore-0
 persistentvolumeclaim/data-eventstore-1
 persistentvolumeclaim/data-eventstore-2
 persistentvolumeclaim/datadir-polaris-db-consul-0
+persistentvolumeclaim/download-server-pv-claim
