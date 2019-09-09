@@ -1,0 +1,23 @@
+---
+runtimeobjectsgroupings:
+  ConfigMap:
+    - ConfigMap.demo-alert-blackduck-config
+  AlertSecret:
+    - Secret.demo-alert-secret
+  CfsslRC:
+    - ReplicationController.demo-alert-cfssl
+    - Service.demo-alert-cfssl
+  AlertRC:
+    - ReplicationController.demo-alert-alert
+    - Service.demo-alert-alert
+runtimeobjectdependencies:
+  - obj: ConfigMap
+    isdependenton: []
+  - obj: AlertSecret
+    isdependenton: ["ConfigMap"]
+  - obj: CfsslRC
+    isdependenton: ["ConfigMap"]
+  - obj: AlertRC
+    isdependenton: ["ConfigMap", "AlertSecret"]
+---
+

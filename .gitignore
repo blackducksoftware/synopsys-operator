@@ -1,24 +1,24 @@
-build
-.idea/
-.vscode/*
-_output/*
-cmd/operator-build
-cmd/operator/operator
-install/secured-registry/dockercfg.json
 
-# .DS_Store
-.DS_Store
-pkg/.DS_Store
-pkg/api/.DS_Store
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin
 
-# synopsysctl
-meta-builder/cmd/synopsysctl/synopsysctl
-cmd/synopsysctl/synopsysctl
-cmd/synopsysctl/*.key
+# Test binary, build with `go test -c`
+*.test
 
-# meta-builder
-meta-builder/meta-builder
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
 
-# ember node modules
-**node_modules/
-operator-ui-ember/dist/*
+# Kubernetes Generated files - skip generated files, except for vendored files
+
+!vendor/**/zz_generated.*
+
+# editor and IDE paraphernalia
+.idea
+*.swp
+*.swo
+*~

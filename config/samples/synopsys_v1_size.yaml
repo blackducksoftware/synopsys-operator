@@ -1,0 +1,7 @@
+apiVersion: synopsys.com/v1
+kind: Size
+metadata:
+  name: size-sample
+spec:
+  # Add fields here
+  foo: bar

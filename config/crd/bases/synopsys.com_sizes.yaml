@@ -1,0 +1,88 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: sizes.synopsys.com
+spec:
+  group: synopsys.com
+  names:
+    kind: Size
+    listKind: SizeList
+    plural: sizes
+    singular: size
+  scope: ""
+  validation:
+    openAPIV3Schema:
+      description: Size is the Schema for the sizes API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: SizeSpec defines the desired state of Size
+          properties:
+            podResources:
+              additionalProperties:
+                description: PodResource defines the pod resource configuration
+                properties:
+                  containerLimit:
+                    additionalProperties:
+                      description: ContainerSize refers to container size configuration
+                      properties:
+                        maxCpu:
+                          format: int32
+                          type: integer
+                        maxMem:
+                          format: int32
+                          type: integer
+                        minCpu:
+                          format: int32
+                          type: integer
+                        minMem:
+                          format: int32
+                          type: integer
+                      required:
+                      - maxCpu
+                      - maxMem
+                      - minCpu
+                      - minMem
+                      type: object
+                    type: object
+                  replica:
+                    type: integer
+                required:
+                - containerLimit
+                - replica
+                type: object
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "make" to regenerate code after modifying this file'
+              type: object
+          required:
+          - podResources
+          type: object
+        status:
+          description: SizeStatus defines the observed state of Size
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

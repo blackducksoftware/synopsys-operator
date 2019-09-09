@@ -1,0 +1,28 @@
+version: "2"
+domain: com
+repo: github.com/blackducksoftware/synopsys-operator/meta-builder
+resources:
+- group: synopsys
+  version: v1
+  kind: Alert
+- group: synopsys
+  version: v1
+  kind: Blackduck
+- group: synopsys
+  version: v1
+  kind: OpsSight
+- group: synopsys
+  version: v1
+  kind: Polaris
+- group: synopsys
+  version: v1
+  kind: Reporting
+- group: synopsys
+  version: v1
+  kind: PolarisDB
+- group: synopsys
+  version: v1
+  kind: Size
+- group: synopsys
+  version: v1
+  kind: AuthServer
