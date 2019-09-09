@@ -1,0 +1,8 @@
+<div class="bg-light border-right" id="sidebar-wrapper">
+  <div class="sidebar-heading mt-4">Synopsys Operator Documentation</div>
+  <div class="list-group list-group-flush">
+    {{#each this.menu_entries as |entry|}}
+      <a class="list-group-item list-group-item-action bg-light" href={{entry.link}} id={{entry.id}}>{{entry.name}}</a>
+    {{/each}}
+  </div>
+</div>

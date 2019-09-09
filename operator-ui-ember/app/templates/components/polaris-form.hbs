@@ -1,0 +1,141 @@
+<div class="k-content k-grid__item k-grid__item--fluid k-grid k-grid--hor" id="k_content">
+    <form class="k-form k-form--label-right" id="polaris-options-form">
+        <div id="deployOptions"></div>
+
+        <div class="form-group">
+            <label for="version">VERSION</label>
+            <div class="input-group">
+                <Input @value={{this.polarisConfig.version}} type="text" class="form-control" name="version"
+                    id="version" required placeholder="Please the version of Polaris" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="polarisEnvironmentName">ENVIRONMENT NAME</label>
+            <div class="input-group">
+                <Input @value={{this.polarisConfig.environmentName}} type="text" class="form-control"
+                    name="polarisEnvironmentName" id="polarisEnvironmentName" required
+                    placeholder="Please enter a name for your Environment" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="polarisenvironmentDNS">ENVIRONMENT ADDRESS (DNS)</label>
+            <div class="input-group">
+                <Input @value={{this.polarisConfig.environmentDNS}} type="text" class="form-control"
+                    name="polarisenvironmentDNS" id="polarisenvironmentDNS" required
+                    placeholder="Please enter a desired url for polaris" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="storageClass">STORAGE CLASS</label>
+            <div class="input-group">
+                <Input @value={{this.polarisConfig.storageClass}} type="text" class="form-control" name="storageClass"
+                    id="storageClass" required placeholder="Storage class to be used for Persistent Volumes" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="namespace">NAMESPACE</label>
+            <div class="input-group">
+                <Input @value={{this.polarisConfig.namespace}} type="text" class="form-control" name="namespace"
+                    id="namespace" required placeholder="Namespace where polaris need to be deployed" value="default" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="imagePullSecrets">IMAGE PULL SECRETS</label>
+            <div class="input-group">
+                <Input @value={{this.polarisConfig.imagePullSecrets}} type="text" class="form-control"
+                    name="imagePullSecrets" id="imagePullSecrets" required placeholder="Image Pull Secrets for Polaris"
+                    value="default" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="postgresDetails"><b>POSTGRES DETAILS</b></label>
+            <div class="row">
+                <div class="col-6">
+                    <label for="postgresHost">POSTGRES HOST</label>
+                    <Input @value={{this.polarisConfig.postgresHost}} type="text" class="form-control"
+                        name="postgresHost" id="postgresHost" required placeholder="Please enter postgres host" />
+                </div>
+                <div class="col-6">
+                    <label for="postgresPort">POSTGRES PORT</label>
+                    <Input @value={{this.polarisConfig.postgresPort}} type="text" class="form-control"
+                        name="postgresPort" id="postgresPort" required placeholder="Please enter postgres port" />
+                </div>
+                <div class="col-6">
+                    <label for="postgresUsername">POSTGRES USERNAME</label>
+                    <Input @value={{this.polarisConfig.postgresUsername}} type="text" class="form-control"
+                        name="postgresUsername" id="postgresUsername" placeholder="Please enter postgres username" />
+                </div>
+                <div class="col-6">
+                    <label for="postgresPassword">POSTGRES PASSWORD</label>
+                    <Input @value={{this.polarisConfig.postgresPassword}} type="password" class="form-control"
+                        name="postgresPassword" id="postgresPassword" placeholder="Please enter postgres password" />
+                </div>
+                <div class="col-6">
+                    <label for="postgresSize">POSTGRES SIZE</label>
+                    <Input @value={{this.polarisConfig.postgresSize}} type="text" class="form-control"
+                        name="postgresSize" id="postgresSize" placeholder="Please enter postgres size" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="smtpDetails"><b>SMTP DETAILS</b></label>
+            <div class="row">
+                <div class="col-6">
+                    <label for="smtpHost">SMTP HOST</label>
+                    <Input @value={{this.polarisConfig.smtpHost}} type="text" class="form-control" name="smtpHost"
+                        id="smtpHost" required placeholder="Please enter smtp host" />
+                </div>
+                <div class="col-6">
+                    <label for="smtpPort">SMTP PORT</label>
+                    <Input @value={{this.polarisConfig.smtpPort}} type="text" class="form-control" name="smtpPort"
+                        id="smtpPort" required placeholder="Please enter smtp port" />
+                </div>
+                <div class="col-6">
+                    <label for="smtpUsername">SMTP USERNAME</label>
+                    <Input @value={{this.polarisConfig.smtpUsername}} type="text" class="form-control"
+                        name="smtpUsername" id="smtpUsername" placeholder="Please enter smtp username" />
+                </div>
+                <div class="col-6">
+                    <label for="postgresPassword">SMTP PASSWORD</label>
+                    <Input @value={{this.polarisConfig.smtpPassword}} type="password" class="form-control"
+                        name="smtpPassword" id="smtpPassword" placeholder="Please enter smtp password" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="uploadServerSize">UPLOAD SERVER SIZE</label>
+            <div class="input-group">
+                <Input @value={{this.polarisConfig.uploadServerSize}} type="text" class="form-control"
+                    name="uploadServerSize" id="uploadServerSize" required placeholder="Upload server size"
+                    value="default" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="eventstoreSize">EVENTSTORE SIZE</label>
+            <div class="input-group">
+                <Input @value={{this.polarisConfig.eventstoreSize}} type="text" class="form-control"
+                    name="eventstoreSize" id="eventstoreSize" required placeholder="Event store size" value="default" />
+            </div>
+        </div>
+
+
+
+
+
+
+        <div id="ssl"></div>
+
+        <div class="form-group">
+            <button {{action "deployPolaris"}} class="btn btn-sm btn-primary">Submit</button>
+        </div>
+    </form>
+</div>

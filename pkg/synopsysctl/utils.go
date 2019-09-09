@@ -29,7 +29,10 @@ import (
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"k8s.io/client-go/kubernetes/scheme"
 	sizeclientset "github.com/blackducksoftware/synopsys-operator/pkg/size/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -48,6 +51,7 @@ var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
 var opsSightClient *opssightclientset.Clientset
 var sizeClient *sizeclientset.Clientset
+var restClient *rest.RESTClient
 
 func parseLogLevelAndKubeConfig(cmd *cobra.Command) error {
 	// Set the Log Level
@@ -76,8 +80,8 @@ func callSetResourceClients() {
 // setResourceClients sets the global variables for the Kuberentes rest config
 // and the resource clients
 func setResourceClients() error {
-	var err error
-	restconfig, err = protoform.GetKubeConfig(kubeconfig, insecureSkipTLSVerify)
+	var err error 
+	restconfig, err = utils.GetKubeConfig(kubeconfig, insecureSkipTLSVerify)
 	log.Debugf("rest config: %+v", restconfig)
 	if err != nil {
 		return err
@@ -106,6 +110,18 @@ func setResourceClients() error {
 	if err != nil {
 		log.Errorf("error creating Size Clientset: %s", err)
 	}
+
+	kubeconfig := *restconfig
+	kubeconfig.ContentConfig.GroupVersion = &synopsysv1.GroupVersion
+	kubeconfig.APIPath = "/apis"
+	kubeconfig.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
+	kubeconfig.UserAgent = rest.DefaultKubernetesUserAgent()
+
+	restClient, err = rest.UnversionedRESTClientFor(&kubeconfig)
+	if err != nil {
+		panic(err)
+	}
+
 	return nil
 }
 
