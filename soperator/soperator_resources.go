@@ -159,17 +159,9 @@ func (specConfig *SpecConfig) getOperatorDeployment() (*appv1.Deployment, error)
 				MountPath: "/tmp",
 			},
 		},
-		VolumeDevices:            nil,
-		LivenessProbe:            nil,
-		ReadinessProbe:           nil,
-		Lifecycle:                nil,
 		TerminationMessagePath:   "",
 		TerminationMessagePolicy: "",
-		ImagePullPolicy:          "",
-		SecurityContext:          nil,
-		Stdin:                    false,
-		StdinOnce:                false,
-		TTY:                      false,
+		ImagePullPolicy:          v1.PullAlways,
 	}
 
 	synopsysOperatorUIContainer := v1.Container{
@@ -209,17 +201,7 @@ func (specConfig *SpecConfig) getOperatorDeployment() (*appv1.Deployment, error)
 				MountPath: "/etc/synopsys-operator",
 			},
 		},
-		VolumeDevices:            nil,
-		LivenessProbe:            nil,
-		ReadinessProbe:           nil,
-		Lifecycle:                nil,
-		TerminationMessagePath:   "",
-		TerminationMessagePolicy: "",
-		ImagePullPolicy:          "",
-		SecurityContext:          nil,
-		Stdin:                    false,
-		StdinOnce:                false,
-		TTY:                      false,
+		ImagePullPolicy: v1.PullAlways,
 	}
 
 	synopsysOperator.Spec.Template.Spec.Containers = append(synopsysOperator.Spec.Template.Spec.Containers, synopsysOperatorContainer)
@@ -454,7 +436,7 @@ func (specConfig *SpecConfig) getOperatorRoleBinding() *rbacv1.RoleBinding {
 				Kind:      "ServiceAccount",
 				APIGroup:  "",
 				Name:      "synopsys-operator",
-				Namespace: "specConfig.Namespace",
+				Namespace: specConfig.Namespace,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -497,7 +479,12 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *rbacv1.ClusterRole {
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 				APIGroups: []string{"batch", "extensions"},
-				Resources: []string{"jobs", "cronjobs"},
+				Resources: []string{"jobs", "cronjobs", "ingresses"},
+			},
+			{
+				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+				APIGroups: []string{"autoscaling"},
+				Resources: []string{"horizontalpodautoscalers"},
 			},
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
@@ -578,7 +565,12 @@ func (specConfig *SpecConfig) getOperatorRole() *rbacv1.Role {
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 				APIGroups: []string{"batch", "extensions"},
-				Resources: []string{"jobs", "cronjobs"},
+				Resources: []string{"jobs", "cronjobs", "ingresses"},
+			},
+			{
+				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+				APIGroups: []string{"autoscaling"},
+				Resources: []string{"horizontalpodautoscalers"},
 			},
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
