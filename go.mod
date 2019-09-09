@@ -1,14 +1,18 @@
-module github.com/blackducksoftware/synopsys-operator/meta-builder
+module github.com/blackducksoftware/synopsys-operator
 
 go 1.12
 
 require (
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20190816135216-04692cc6cddf
+	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/go-logr/logr v0.1.0
+	github.com/gobuffalo/packr v1.30.1
+	github.com/gorilla/handlers v1.4.2
+	github.com/gorilla/mux v1.7.3
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
+	github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
