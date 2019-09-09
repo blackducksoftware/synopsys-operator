@@ -23,10 +23,10 @@ package synopsysctl
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	"strings"
 
-	synopsysV1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	synopsysV1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

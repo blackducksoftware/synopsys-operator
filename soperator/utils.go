@@ -25,10 +25,10 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

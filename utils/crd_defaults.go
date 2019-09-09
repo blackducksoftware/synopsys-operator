@@ -22,7 +22,7 @@
 package utils
 
 import (
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 	//samplev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
 )
 

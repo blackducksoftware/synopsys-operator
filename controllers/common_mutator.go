@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	appsv1 "k8s.io/api/extensions/v1beta1"
 )

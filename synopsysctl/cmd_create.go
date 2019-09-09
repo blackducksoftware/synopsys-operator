@@ -23,9 +23,9 @@ package synopsysctl
 
 import (
 	"fmt"
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/controllers"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
 

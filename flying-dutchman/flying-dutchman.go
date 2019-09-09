@@ -6,7 +6,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 
-	scheduler "github.com/blackducksoftware/synopsys-operator/meta-builder/go-scheduler"
+	scheduler "github.com/blackducksoftware/synopsys-operator/go-scheduler"
 
 	"github.com/go-logr/logr"
 

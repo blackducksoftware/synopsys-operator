@@ -24,7 +24,7 @@ package util
 import (
 	"fmt"
 
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )

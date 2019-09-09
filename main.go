@@ -25,9 +25,9 @@ import (
 	"flag"
 	"os"
 
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers"
-	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/controllers"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/controllers/util"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	"k8s.io/apimachinery/pkg/runtime"

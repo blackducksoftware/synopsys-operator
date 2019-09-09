@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
-	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/controllers/util"
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -32,7 +32,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 )
 
 // BlackduckReconciler reconciles a Black Duck object

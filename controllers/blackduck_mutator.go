@@ -35,8 +35,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/controllers/util"
 )
 
 func patchBlackduck(client client.Client, blackDuckCr *synopsysv1.Blackduck, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, isDryRun bool) map[string]runtime.Object {

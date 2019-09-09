@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"

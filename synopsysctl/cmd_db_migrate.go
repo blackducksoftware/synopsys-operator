@@ -23,7 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/sirupsen/logrus"

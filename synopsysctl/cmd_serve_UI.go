@@ -39,9 +39,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	synopsysV1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/soperator"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	synopsysV1 "github.com/blackducksoftware/synopsys-operator/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/soperator"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	"github.com/gobuffalo/packr"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

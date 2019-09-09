@@ -24,8 +24,8 @@ package synopsysctl
 import (
 	"crypto/x509/pkix"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/soperator"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"github.com/blackducksoftware/synopsys-operator/soperator"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"strings"

@@ -23,8 +23,8 @@ package soperator
 
 import (
 	"fmt"
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	log "github.com/sirupsen/logrus"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"

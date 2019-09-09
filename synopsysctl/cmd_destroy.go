@@ -24,7 +24,7 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	"strings"
 
 	log "github.com/sirupsen/logrus"

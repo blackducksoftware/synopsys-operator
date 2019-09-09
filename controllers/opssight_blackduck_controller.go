@@ -18,7 +18,7 @@ package controllers
 import (
 	"context"
 
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 
 	"github.com/go-logr/logr"
 

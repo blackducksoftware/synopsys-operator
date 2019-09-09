@@ -21,7 +21,7 @@ under the License.
 
 package soperator
 
-import "github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+import "github.com/blackducksoftware/synopsys-operator/utils"
 
 var defaultCrdVersionData = operatorVersions{
 	Blackduck: &crdVersionData{CRDName: utils.BlackDuckCRDName, APIVersion: "v1"},

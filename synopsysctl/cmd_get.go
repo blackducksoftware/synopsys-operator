@@ -24,8 +24,8 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"github.com/blackducksoftware/synopsys-operator/controllers/util"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"io/ioutil"

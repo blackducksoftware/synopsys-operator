@@ -25,9 +25,9 @@ import (
 	"context"
 	"strings"
 
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	controllers_utils "github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
-	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
+	controllers_utils "github.com/blackducksoftware/synopsys-operator/controllers/util"
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
 
 	"github.com/go-logr/logr"
 

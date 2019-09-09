@@ -23,7 +23,7 @@ package soperator
 
 import (
 	"encoding/json"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 	"github.com/juju/errors"
 	appv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"

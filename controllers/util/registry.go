@@ -26,7 +26,7 @@ import (
 	"regexp"
 	"strings"
 
-	metabuilderapi "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	metabuilderapi "github.com/blackducksoftware/synopsys-operator/api/v1"
 )
 
 var imageTagRegexp = regexp.MustCompile(`([0-9a-zA-Z-_:\\.]*)/([0-9a-zA-Z-_:\\.]*):([a-zA-Z0-9-\\._]+)$`)

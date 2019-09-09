@@ -24,9 +24,9 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/util"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/soperator"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/utils"
+	"github.com/blackducksoftware/synopsys-operator/controllers/util"
+	"github.com/blackducksoftware/synopsys-operator/soperator"
+	"github.com/blackducksoftware/synopsys-operator/utils"
 
 	"strings"
 	"time"
