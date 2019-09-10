@@ -403,6 +403,8 @@ func createPolarisCRsRequest(data []byte) error {
 func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*synopsysV1.AuthServer, *synopsysV1.PolarisDB, *synopsysV1.Polaris, error) {
 	// Populate Auth Service
 	auth := &synopsysV1.AuthServer{}
+	auth.Name = "test-auth"
+	auth.Namespace = polarisUIRequestConfig.Namespace
 	authSpec := &synopsysV1.AuthServerSpec{}
 	authSpec.Namespace = polarisUIRequestConfig.Namespace
 	authSpec.Version = polarisUIRequestConfig.Version
@@ -413,18 +415,25 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 
 	// Populate Polaris Database
 	polarisDB := &synopsysV1.PolarisDB{}
+	polarisDB.Name = "test-db"
+	polarisDB.Namespace = polarisUIRequestConfig.Namespace
+	polarisDB.Spec = *utils.GetPolarisDBDefault()
 	polarisDBSpec := &synopsysV1.PolarisDBSpec{}
 	polarisDBSpec.Namespace = polarisUIRequestConfig.Namespace
 	polarisDBSpec.Version = polarisUIRequestConfig.Version
 	polarisDBSpec.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
 	polarisDBSpec.EnvironmentName = polarisUIRequestConfig.EnvironmentName
 	polarisDBSpec.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
-	//polarisDBSpec.PostgresStorageDetails.StorageClass = &polarisUIRequestConfig.StorageClass
+	polarisDBSpec.PostgresStorageDetails.StorageClass = &polarisUIRequestConfig.StorageClass
 	//polarisDBSpec.UploadServerDetails.Storage.StorageClass = &polarisUIRequestConfig.StorageClass
 	polarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost
-	postPort, err := strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 32)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("falied to convert postgres port to an int: %s", polarisUIRequestConfig.PostgresPort)
+	var err error
+	var postPort int64
+	if polarisUIRequestConfig.PostgresPort != "" {
+		postPort, err = strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 32)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("falied to convert postgres port to an int: %s", polarisUIRequestConfig.PostgresPort)
+		}
 	}
 	polarisDBSpec.PostgresDetails.Port = int(postPort)
 	polarisDBSpec.PostgresDetails.Username = polarisUIRequestConfig.PostgresUsername
@@ -434,9 +443,12 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 	polarisDBSpec.EventstoreDetails.Storage.StorageSize = polarisUIRequestConfig.EventstoreSize
 
 	polarisDBSpec.SMTPDetails.Host = polarisUIRequestConfig.SMTPHost
-	sPort, err := strconv.ParseInt(polarisUIRequestConfig.SMTPPort, 0, 32)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("falied to convert smtp port to an int: %s", polarisUIRequestConfig.PostgresPort)
+	var sPort int64
+	if polarisUIRequestConfig.PostgresPort != "" {
+		sPort, err = strconv.ParseInt(polarisUIRequestConfig.SMTPPort, 0, 32)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("falied to convert smtp port to an int: %s", polarisUIRequestConfig.PostgresPort)
+		}
 	}
 	polarisDBSpec.SMTPDetails.Port = int(sPort)
 	polarisDBSpec.SMTPDetails.Username = polarisUIRequestConfig.SMTPUsername
@@ -445,6 +457,8 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 
 	// Populate Polaris
 	polaris := &synopsysV1.Polaris{}
+	polaris.Name = "test-polaris"
+	polaris.Namespace = polarisUIRequestConfig.Namespace
 	polarisSpec := &synopsysV1.PolarisSpec{}
 	polarisSpec.Namespace = polarisUIRequestConfig.Namespace
 	polarisSpec.Version = polarisUIRequestConfig.Version
