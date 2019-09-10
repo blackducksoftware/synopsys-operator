@@ -529,7 +529,7 @@ func GetPolarisDBDefault() *synopsysv1.PolarisDBSpec {
 		PostgresInstanceType:   "internal",
 		PostgresStorageDetails: synopsysv1.PostgresStorageDetails{},
 		PostgresDetails: synopsysv1.PostgresDetails{
-			Host: "postgres",
+			Host: "postgresql",
 			Port: 5432,
 		},
 		EventstoreDetails: synopsysv1.EventstoreDetails{

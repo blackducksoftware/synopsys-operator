@@ -638,8 +638,6 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Println(polaris)
-
 		// If mock mode, return and don't create resources
 		if mockMode {
 			log.Debugf("generating CRD for Polaris '%s' in namespace '%s'...", polarisName, polarisNamespace)
