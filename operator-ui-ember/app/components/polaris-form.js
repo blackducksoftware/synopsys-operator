@@ -7,6 +7,7 @@ export default Component.extend({
         environmentDNS: "",
         storageClass: "",
         namespace: "",
+        name: "",
         imagePullSecrets: "",
         postgresHost: "",
         postgresPort: "",

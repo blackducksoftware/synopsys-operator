@@ -73,7 +73,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 
 	// Pack the front-end html/css/etc. files into a "box" that can be
 	// provided with the syopsysctl binary using the packr cli
-	box := packr.NewBox("../../operator-ui-ember/dist")
+	box := packr.NewBox("../operator-ui-ember/dist")
 
 	// Create a Router to listen and serve User Interface requests
 	router := mux.NewRouter()
@@ -218,6 +218,7 @@ type PolarisUIRequest struct {
 	ImagePullSecrets string `json:"imagePullSecrets"`
 	StorageClass     string `json:"storageClass"`
 	Namespace        string `json:"namespace"`
+	Name             string `json:"name"`
 
 	PostgresHost     string `json:"postgresHost"`
 	PostgresPort     string `json:"postgresPort"`
@@ -401,10 +402,17 @@ func createPolarisCRsRequest(data []byte) error {
 // convertPolarisUIResponseToCRs takes the fields in polarisUIRequestConfig and maps
 // them into the three CRs needed to create Polaris: AuthServer, PolarisDB, and Polaris
 func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*synopsysV1.AuthServer, *synopsysV1.PolarisDB, *synopsysV1.Polaris, error) {
+	if polarisUIRequestConfig.Namespace == "" {
+		polarisUIRequestConfig.Namespace = "default"
+	}
+	if polarisUIRequestConfig.Name == "" {
+		polarisUIRequestConfig.Name = "polaris"
+	}
+
 	// Populate Auth Service
 	auth := &synopsysV1.AuthServer{}
-	auth.Name = "test-auth"
 	auth.Namespace = polarisUIRequestConfig.Namespace
+	auth.Name = polarisUIRequestConfig.Name
 	authSpec := &synopsysV1.AuthServerSpec{}
 	authSpec.Namespace = polarisUIRequestConfig.Namespace
 	authSpec.Version = polarisUIRequestConfig.Version
@@ -415,8 +423,8 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 
 	// Populate Polaris Database
 	polarisDB := &synopsysV1.PolarisDB{}
-	polarisDB.Name = "test-db"
 	polarisDB.Namespace = polarisUIRequestConfig.Namespace
+	polarisDB.Name = polarisUIRequestConfig.Name
 	polarisDB.Spec = *utils.GetPolarisDBDefault()
 	polarisDBSpec := &synopsysV1.PolarisDBSpec{}
 	polarisDBSpec.Namespace = polarisUIRequestConfig.Namespace
@@ -457,8 +465,8 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 
 	// Populate Polaris
 	polaris := &synopsysV1.Polaris{}
-	polaris.Name = "test-polaris"
 	polaris.Namespace = polarisUIRequestConfig.Namespace
+	polaris.Name = polarisUIRequestConfig.Name
 	polarisSpec := &synopsysV1.PolarisSpec{}
 	polarisSpec.Namespace = polarisUIRequestConfig.Namespace
 	polarisSpec.Version = polarisUIRequestConfig.Version
