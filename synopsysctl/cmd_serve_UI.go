@@ -85,7 +85,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Debugf("request data: %s\n\n", reqBody)
+		log.Debugf("request data: %s", reqBody)
 		err = deployOperatorRequest(reqBody)
 		if err != nil {
 			log.Errorf("error deploying Synopsys Operator: %s\n", err)
@@ -101,7 +101,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Debugf("request data: %s\n\n", reqBody)
+		log.Debugf("request data: %s", reqBody)
 
 		err = createPolarisCRsRequest(reqBody)
 		if err != nil {
@@ -118,7 +118,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Debugf("request data: %s\n\n", reqBody)
+		log.Debugf("request data: %s", reqBody)
 		err = createBlackDuckCRRequest(reqBody)
 		if err != nil {
 			log.Errorf("error creating Black Duck: %s", err)
