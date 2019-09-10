@@ -1,6 +1,6 @@
 language: go
 
-script: cd 
+script: cd
 
 # Only the last two Go releases are supported by the Go team with security
 # updates. Any versions older than that should be considered deprecated.
@@ -10,7 +10,10 @@ script: cd
 # are allowed to fail on Go tip.
 go:
   - 1.13
-  - master 
+  - master
+
+services:
+  - docker
 
 # Skip the install step. Don't `go get` dependencies. Only build with the
 # code in vendor/
@@ -23,10 +26,28 @@ matrix:
   # Don't wait for tip tests to finish. Mark the test run green if the
   # tests pass on the stable versions of Go.
   fast_finish: true
-  
+
 before_script:
 - hack/verify-gofmt.sh
 - hack/verify-golint.sh
 - hack/verify-govet.sh
 
-script: env GO111MODULE=on make
+# Download and install kubectl
+- curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+# Download and install KinD
+# - GO111MODULE=on go get sigs.k8s.io/kind@v0.5.1
+# It's possible to download and install KinD using curl, similar as for kubectl
+# This is useful in cases when Go toolchain isn't available or you prefer running stable version
+# Binaries for KinD are available on GitHub Releases: https://github.com/kubernetes-sigs/kind/releases
+- curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/v0.5.1/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
+
+# Create a new Kubernetes cluster using KinD
+# TODO: [ybhutwala] create clusters going back to Kubernetes 1.11
+- kind create cluster
+
+# Set KUBECONFIG environment variable
+- export KUBECONFIG="$(kind get kubeconfig-path)"
+
+# Currently, only test that manager compiles and crd install on a given cluster
+script: env GO111MODULE=on make manager && make install
