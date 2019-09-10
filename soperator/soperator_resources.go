@@ -479,7 +479,7 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *rbacv1.ClusterRole {
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 				APIGroups: []string{"batch", "extensions"},
-				Resources: []string{"jobs", "cronjobs", "ingresses"},
+				Resources: []string{"jobs", "cronjobs", "ingresses", "endpoints", "namespaces"},
 			},
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
@@ -515,6 +515,16 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *rbacv1.ClusterRole {
 				Verbs:     []string{"get", "list", "watch"},
 				APIGroups: []string{"storage.k8s.io"},
 				Resources: []string{"storageclasses", "volumeattachments"},
+			},
+			{
+				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+				APIGroups: []string{"policy"},
+				Resources: []string{"poddisruptionbudgets"},
+			},
+			{
+				Verbs:     []string{"create", "delete", "patch"},
+				APIGroups: []string{""},
+				Resources: []string{"endpoints"},
 			},
 		},
 		AggregationRule: nil,
@@ -565,7 +575,7 @@ func (specConfig *SpecConfig) getOperatorRole() *rbacv1.Role {
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 				APIGroups: []string{"batch", "extensions"},
-				Resources: []string{"jobs", "cronjobs", "ingresses"},
+				Resources: []string{"jobs", "cronjobs", "ingresses", "endpoints", "namespaces"},
 			},
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
@@ -601,6 +611,16 @@ func (specConfig *SpecConfig) getOperatorRole() *rbacv1.Role {
 				Verbs:     []string{"get", "list", "watch"},
 				APIGroups: []string{"storage.k8s.io"},
 				Resources: []string{"storageclasses", "volumeattachments"},
+			},
+			{
+				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+				APIGroups: []string{"policy"},
+				Resources: []string{"poddisruptionbudgets"},
+			},
+			{
+				Verbs:     []string{"create", "delete", "patch"},
+				APIGroups: []string{""},
+				Resources: []string{"endpoints"},
 			},
 		},
 	}
