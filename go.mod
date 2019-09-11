@@ -40,6 +40,7 @@ require (
 )
 
 replace (
+	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.8.0
 	github.com/blackducksoftware/horizon => github.com/blackducksoftware/horizon v0.0.0-20190625151958-16cafa9109a3
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect

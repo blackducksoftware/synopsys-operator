@@ -237,7 +237,7 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 
 func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
 	// Need to add the perceptor-scanner service account to the privileged scc
-	if ac.osSecurityClient != nil {
+	if ac.config.IsOpenshift {
 		scannerServiceAccount := spec.ScannerServiceAccount()
 		perceiverServiceAccount := spec.PodPerceiverServiceAccount()
 		serviceAccounts := []string{fmt.Sprintf("system:serviceaccount:%s:%s", namespace, perceiverServiceAccount.GetName())}

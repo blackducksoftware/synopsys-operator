@@ -25,12 +25,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Get Command flag for -output functionality
@@ -177,7 +177,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("error writing to file '%s' due to %+v", fileName, err)
 		}
-		log.Infof("successfully created the master key in file '%s' for Black Duck '%s' in namespace '%s'", fileName, blackDuckName, blackDuckNamespace)
+		log.Infof("successfully retrieved the master key and stored it in '%s' file for Black Duck '%s' in namespace '%s'", fileName, blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }

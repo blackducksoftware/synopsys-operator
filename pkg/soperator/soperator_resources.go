@@ -414,6 +414,15 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *horizoncomponents.Cluste
 			APIGroups: []string{"image.openshift.io"},
 			Resources: []string{"images"},
 		})
+
+		// add layers rule to pull the image from OpenShift internal registry
+		if len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.OpsSightCRDName) {
+			synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+				Verbs:     []string{"get"},
+				APIGroups: []string{"image.openshift.io", ""},
+				Resources: []string{"imagestreams/layers"},
+			})
+		}
 	} else { // Kube or Error
 		log.Debug("Skipping Openshift Cluster Role Rules")
 	}
@@ -449,9 +458,15 @@ func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "update", "patch"},
+		APIGroups: []string{""},
+		Resources: []string{"namespaces"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{""},
-		Resources: []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
+		Resources: []string{"configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
