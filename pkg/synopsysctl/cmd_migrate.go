@@ -46,6 +46,8 @@ import (
 
 var busyBoxImage = defaultBusyBoxImage
 
+var fromVersion = ""
+
 // migrateCmd migrates a resource before upgrading Synopsys Operator
 var migrateCmd = &cobra.Command{
 	Use:           "migrate",
@@ -70,6 +72,7 @@ var migrateCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		fromVersion = args[0]
 		// Check if a namespace was provided, else determine the namespace from the cluster
 		namespaceToMigrate := metav1.NamespaceAll
 		crdNamespace := metav1.NamespaceAll
@@ -476,7 +479,7 @@ func migrateBlackDuck(namespace string, crdNamespace string) error {
 			return err
 		}
 
-		isVersionGreaterThanorEqual, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.June, 1)
+		isVersionGreaterThanorEqual, err := util.IsVersionGreaterThanOrEqualTo(fromVersion, 2019, time.June, 1)
 		if err != nil {
 			return err
 		}
