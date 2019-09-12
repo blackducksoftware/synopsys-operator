@@ -88,17 +88,6 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	// removeAuthServerRuntimeObjects(&mapOfUniqueIdToBaseRuntimeObject)
 
-	if !r.IsDryRun {
-		for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-			// set an owner reference
-			if err := ctrl.SetControllerReference(polarisCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-				// requeue if we cannot set owner on the object
-				// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-				//return ctrl.Result{}, err
-				return mapOfUniqueIdToBaseRuntimeObject, nil
-			}
-		}
-	}
 	mapOfUniqueIdToDesiredRuntimeObject := patchPolaris(r.Client, polarisCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
@@ -127,7 +116,7 @@ func (r *PolarisReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// _ = r.Log.WithValues("polaris", req.NamespacedName)
 	// your logic here
 
-	return flying_dutchman.MetaReconcile(req, r)
+	return flying_dutchman.MetaReconcile(req, r, r.Scheme)
 }
 
 func (r *PolarisReconciler) SetIndexingForChildrenObjects(mgr ctrl.Manager, ro runtime.Object) error {

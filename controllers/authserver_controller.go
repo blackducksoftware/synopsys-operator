@@ -90,18 +90,6 @@ func (r *AuthServerReconciler) GetRuntimeObjects(cr interface{}) (map[string]run
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.GetAuthServerRuntimeObjects(controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift))
 
 	// filter auth-server runtimeobjects
-
-	if !r.IsDryRun {
-		for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-			// set an owner reference
-			if err := ctrl.SetControllerReference(authServerCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-				// requeue if we cannot set owner on the object
-				// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-				//return ctrl.Result{}, err
-				return mapOfUniqueIdToBaseRuntimeObject, nil
-			}
-		}
-	}
 	mapOfUniqueIdToDesiredRuntimeObject := patchAuthServer(authServerCr, mapOfUniqueIdToBaseRuntimeObject, meta.NewAccessor())
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
@@ -124,7 +112,7 @@ func (r *AuthServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	// _ = r.Log.WithValues("authServer", req.NamespacedName)
 	// your logic here
 
-	return flying_dutchman.MetaReconcile(req, r)
+	return flying_dutchman.MetaReconcile(req, r, r.Scheme)
 }
 
 func (r *AuthServerReconciler) SetIndexingForChildrenObjects(mgr ctrl.Manager, ro runtime.Object) error {

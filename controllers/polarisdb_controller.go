@@ -18,10 +18,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
-
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/controllers/util"
 	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
@@ -33,6 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
+	"strings"
 )
 
 // PolarisDBReconciler reconciles a PolarisDB object
@@ -114,17 +112,6 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 	mapOfUniqueIdToBaseRuntimeObject = removeTestManifests(mapOfUniqueIdToBaseRuntimeObject)
 
-	if !r.IsDryRun {
-		for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-			// set an owner reference
-			if err := ctrl.SetControllerReference(polarisDbCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-				// requeue if we cannot set owner on the object
-				// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-				//return ctrl.Result{}, err
-				return mapOfUniqueIdToBaseRuntimeObject, nil
-			}
-		}
-	}
 	mapOfUniqueIdToDesiredRuntimeObject := patchPolarisDB(r.Client, polarisDbCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
@@ -159,10 +146,10 @@ func (r *PolarisDBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// _ = r.Log.WithValues("polarisdb", req.NamespacedName)
 	// your logic here
 
-	res, err := flying_dutchman.MetaReconcile(req, r)
-	if strings.Contains(fmt.Sprint(err), "is not ready") {
-		res = ctrl.Result{RequeueAfter: 10 * time.Second}
-	}
+	res, err := flying_dutchman.MetaReconcile(req, r, r.Scheme)
+	//if strings.Contains(fmt.Sprint(err), "is not ready") {
+	//	res = ctrl.Result{RequeueAfter: 10 * time.Second}
+	//}
 	return res, err
 }
 

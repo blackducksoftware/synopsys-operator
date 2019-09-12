@@ -96,15 +96,7 @@ func (r *OpsSightReconciler) GetRuntimeObjects(cr interface{}) (map[string]runti
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", opsSight.Spec.Namespace)
 
 	mapOfUniqueIDToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString, r.IsOpenShift)
-	for _, desiredRuntimeObject := range mapOfUniqueIDToDesiredRuntimeObject {
-		// set an owner reference
-		if err := ctrl.SetControllerReference(opsSight, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-			// requeue if we cannot set owner on the object
-			// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-			//return ctrl.Result{}, err
-			return mapOfUniqueIDToDesiredRuntimeObject, nil
-		}
-	}
+
 	objs := patchOpsSight(r.Client, r.Scheme, opsSight, mapOfUniqueIDToDesiredRuntimeObject, r.Log, r.IsOpenShift)
 
 	return objs, nil
@@ -125,7 +117,7 @@ func (r *OpsSightReconciler) GetInstructionManual(mapOfUniqueIDToDesiredRuntimeO
 
 // Reconcile reconcile the OpsSight custom resources
 func (r *OpsSightReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	return flying_dutchman.MetaReconcile(req, r)
+	return flying_dutchman.MetaReconcile(req, r, r.Scheme)
 }
 
 // setIndexingForChildrenObjects set the indexing for child objects

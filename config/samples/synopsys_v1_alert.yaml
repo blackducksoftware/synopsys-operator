@@ -5,8 +5,8 @@ metadata:
 spec:
   namespace: default
   version: 4.2.0
-  exposeService: ClusterIP
-  standAlone: false
+  exposeService: LoadBalancer
+  standAlone: true
   port: 8443
   EncryptionPassword: "yash"
   EncryptionGlobalSalt: "yash"
@@ -17,7 +17,7 @@ spec:
     - ALERT_SERVER_PORT:8443
     - PUBLIC_HUB_WEBSERVER_HOST:<<HOST>>
     - PUBLIC_HUB_WEBSERVER_PORT:443
-  persistentStorage: true
+  persistentStorage: false
   pvcName: alert-pvc
   pvcStorageClass: ""
   pvcSize: 5G

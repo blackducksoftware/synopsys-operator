@@ -1,0 +1,16 @@
+{
+  "AdmissionWebhookListener": false,
+  "ClusterType": "KUBERNETES",
+  "CrdNames": "alerts.synopsys.com",
+  "DryRun": false,
+  "Expose": "NONE",
+  "Image": "",
+  "IsClusterScoped": false,
+  "LogLevel": "debug",
+  "Namespace": "default",
+  "PodWaitTimeoutSeconds": 600,
+  "PostgresRestartInMins": 10,
+  "ResyncIntervalInSeconds": 120,
+  "TerminationGracePeriodSeconds": 180,
+  "Threadiness": 5
+}
