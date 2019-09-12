@@ -1,0 +1,10 @@
+[
+    {
+        "scheme": "scheme",
+        "domain": "domain",
+        "port": 99,
+        "user": "user",
+        "password": "password",
+        "concurrentScanLimit": 88
+    }
+]
