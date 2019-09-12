@@ -84,7 +84,7 @@ func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 
 	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
 
-	objs := patchBlackduck(r.Client, blackduck, mapOfUniqueIdToDesiredRuntimeObject, r.IsDryRun)
+	objs := patchBlackduck(r.Client, blackduck, mapOfUniqueIdToDesiredRuntimeObject, r.IsDryRun, r.Log, r.IsOpenShift)
 
 	return objs, nil
 }

@@ -113,7 +113,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString, r.IsOpenShift)
 
-	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject)
+	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject, r.Log, r.IsOpenShift)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
 }

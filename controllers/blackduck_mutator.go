@@ -35,16 +35,20 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/go-logr/logr"
+
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/controllers/util"
 )
 
-func patchBlackduck(client client.Client, blackDuckCr *synopsysv1.Blackduck, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, isDryRun bool) map[string]runtime.Object {
+func patchBlackduck(client client.Client, blackDuckCr *synopsysv1.Blackduck, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, isDryRun bool, log logr.Logger, isOpenShift bool) map[string]runtime.Object {
 	patcher := BlackduckPatcher{
 		Client:                           client,
 		blackDuckCr:                      blackDuckCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
 		isDryRun:                         isDryRun,
+		log:                              log,
+		isOpenShift:                      isOpenShift,
 	}
 	return patcher.patch()
 }
@@ -54,6 +58,8 @@ type BlackduckPatcher struct {
 	blackDuckCr                      *synopsysv1.Blackduck
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
 	isDryRun                         bool
+	log                              logr.Logger
+	isOpenShift                      bool
 }
 
 func (p *BlackduckPatcher) patch() map[string]runtime.Object {
@@ -149,23 +155,32 @@ func (p *BlackduckPatcher) patchSealKey() error {
 
 // TODO: common with Alert
 func (p *BlackduckPatcher) patchExposeService() error {
+
 	// TODO use contansts
-	id := fmt.Sprintf("Service.%s-blackduck-webserver-exposed", p.blackDuckCr.Name)
-	runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[id]
+	routeID := fmt.Sprintf("Route.%s-blackduck-webserver-exposed", p.blackDuckCr.Name)
+	serviceID := fmt.Sprintf("Service.%s-blackduck-webserver-exposed", p.blackDuckCr.Name)
+	serviceRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[serviceID]
 	if !ok {
 		return nil
 	}
 
 	switch strings.ToUpper(p.blackDuckCr.Spec.ExposeService) {
 	case "LOADBALANCER":
-		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
+		serviceRuntimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
 	case "NODEPORT":
-		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
+		serviceRuntimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
+	case "OPENSHIFT":
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, serviceID)
+		if !p.isOpenShift {
+			p.log.Error(fmt.Errorf("cluster is not Openshift"), "removing route runtime object")
+			delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
+		}
 	default:
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, id)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, serviceID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
 	}
-
-	// TODO add openhift route
 
 	return nil
 }
