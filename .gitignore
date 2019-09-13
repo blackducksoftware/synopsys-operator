@@ -33,3 +33,6 @@ operator-ui-ember/dist/
 cmd/synopsysctl/synopsysctl
 bin/manager
 cover.out
+
+_output
+_output/*
