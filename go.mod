@@ -1,6 +1,6 @@
 module github.com/blackducksoftware/synopsys-operator
 
-go 1.12
+go 1.13
 
 require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
