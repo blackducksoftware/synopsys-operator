@@ -157,28 +157,28 @@ func (p *BlackduckPatcher) patchSealKey() error {
 func (p *BlackduckPatcher) patchExposeService() error {
 
 	// TODO use contansts
-	routeID := fmt.Sprintf("Route.%s-blackduck-webserver-exposed", p.blackDuckCr.Name)
-	serviceID := fmt.Sprintf("Service.%s-blackduck-webserver-exposed", p.blackDuckCr.Name)
-	serviceRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[serviceID]
+	routeID := fmt.Sprintf("Route.%s-blackduck", p.blackDuckCr.Name)
+	exposedServiceID := fmt.Sprintf("Service.%s-blackduck-webserver-exposed", p.blackDuckCr.Name)
+	exposedServiceRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[exposedServiceID]
 	if !ok {
 		return nil
 	}
 
 	switch strings.ToUpper(p.blackDuckCr.Spec.ExposeService) {
 	case "LOADBALANCER":
-		serviceRuntimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
+		exposedServiceRuntimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
 	case "NODEPORT":
-		serviceRuntimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
+		exposedServiceRuntimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
 	case "OPENSHIFT":
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, serviceID)
 		if !p.isOpenShift {
 			p.log.Error(fmt.Errorf("cluster is not Openshift"), "removing route runtime object")
 			delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
 		}
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, exposedServiceID)
 	default:
-		delete(p.mapOfUniqueIdToBaseRuntimeObject, serviceID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, exposedServiceID)
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
 	}
 
