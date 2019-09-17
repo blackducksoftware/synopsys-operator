@@ -132,6 +132,28 @@ var deleteOpsSightCmd = &cobra.Command{
 	},
 }
 
+// deletePolarisCmd deletes Polaris instances from the cluster
+var deletePolarisCmd = &cobra.Command{
+	Use:           "polaris NAME...",
+	Example:       "synopsysctl delete polaris <name>\nsynopsysctl delete polaris <name1> <name2> <name3>",
+	Short:         "Delete one or many polaris instances",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes no argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 func init() {
 	//(PassCmd) deleteCmd.DisableFlagParsing = true // lets deleteCmd pass flags to kube/oc
 	rootCmd.AddCommand(deleteCmd)
@@ -147,4 +169,8 @@ func init() {
 	// Add Delete OpsSight Command
 	deleteOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	deleteCmd.AddCommand(deleteOpsSightCmd)
+
+	// Add Delete Polaris Command
+	deletePolarisCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	deleteCmd.AddCommand(deletePolarisCmd)
 }

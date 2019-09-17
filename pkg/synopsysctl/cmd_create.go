@@ -22,11 +22,17 @@ under the License.
 package synopsysctl
 
 import (
+	"encoding/json"
 	"fmt"
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
+	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	//"k8s.io/apimachinery/pkg/api/meta"
 	"sort"
 	"strings"
 
-	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
+	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -34,20 +40,23 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	alertapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	blackduckapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
-	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
-	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Create Command CRSpecBuilderFromCobraFlagsInterface
 var createAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var createPolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
 
 // Default Base Specs for Create
 var baseAlertSpec string
@@ -526,11 +535,165 @@ var createOpsSightNativeCmd = &cobra.Command{
 	},
 }
 
+// createCmd creates a Polaris instance
+var createPolarisCmd = &cobra.Command{
+	Use:           "polaris",
+	Example:       "synopsysctl create polaris -n <namespace>",
+	Short:         "Create a Polaris instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 argument")
+		}
+		return nil
+	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		err := createPolarisCobraHelper.SetPredefinedCRSpec("")
+		if err != nil {
+			cmd.Help()
+			return err
+		}
+		cobra.MarkFlagRequired(cmd.Flags(), "version")
+		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
+		cobra.MarkFlagRequired(cmd.Flags(), "environment-name")
+		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
+		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
+
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-port")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-username")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
+
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		polarisObj, err := updatePolarisSpecWithFlags(cmd, namespace)
+		if err != nil {
+			return err
+		}
+
+		myscheme := runtime.NewScheme()
+		_ = clientgoscheme.AddToScheme(myscheme)
+
+		// create controller runtime client
+		cl, _ := runtimeclient.New(restconfig, runtimeclient.Options{
+			Scheme: myscheme,
+		})
+
+		// Marshal Polaris
+		polarisByte, err := json.Marshal(polarisObj)
+		if err != nil {
+			return err
+		}
+
+		polarisSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "polaris",
+				Namespace: namespace,
+			},
+			Data: map[string][]byte{
+				"polaris": polarisByte,
+			},
+		}
+
+		// Create secret
+		polarisSecret, err = kubeClient.CoreV1().Secrets(namespace).Create(polarisSecret)
+		if err != nil {
+			return err
+		}
+
+		// Start reconcile process
+		if _, err := flying_dutchman.MetaReconcile(polarisSecret, &polaris.PolarisReconciler{
+			Client:      cl,
+			Scheme:      myscheme,
+			IsDryRun:    false,
+			IsOpenShift: false,
+			BaseUrl:     baseUrl,
+		}); err != nil {
+			return err
+		}
+
+		return nil
+	},
+}
+
+//createPolarisNativeCmd prints the Kubernetes resources for creating a Polaris instance
+var createPolarisNativeCmd = &cobra.Command{
+	Use:           "native",
+	Example:       "synopsysctl create polaris native",
+	Short:         "Print the Kubernetes resources for creating a Polaris instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 arguments")
+		}
+		return nil
+	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		err := createPolarisCobraHelper.SetPredefinedCRSpec("")
+		if err != nil {
+			cmd.Help()
+			return err
+		}
+		cobra.MarkFlagRequired(cmd.Flags(), "version")
+		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
+		cobra.MarkFlagRequired(cmd.Flags(), "environment-name")
+		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
+		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
+
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-port")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-username")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
+
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		polarisObj, err := updatePolarisSpecWithFlags(cmd, namespace)
+		if err != nil {
+			return err
+		}
+
+		var objectArr []interface{}
+		for _, v := range polaris.GetComponents(baseUrl, *polarisObj) {
+			objectArr = append(objectArr, v)
+		}
+
+		PrintComponents(objectArr, nativeFormat)
+
+		return nil
+	},
+}
+
+func updatePolarisSpecWithFlags(cmd *cobra.Command, namespace string) (*polaris.Polaris, error) {
+	// Update Spec with user's flags
+	log.Debugf("updating spec with user's flags")
+	polarisInterface, err := createPolarisCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
+	if err != nil {
+		return nil, err
+	}
+
+	polarisSpec, ok := polarisInterface.(polaris.Polaris)
+	if !ok {
+		panic("Couldn't cast polarisInterface to polarisSpec")
+	}
+	polarisSpec.Namespace = namespace
+
+	return &polarisSpec, nil
+}
+
 func init() {
 	// initialize global resource ctl structs for commands to use
 	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	createBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
+	createPolarisCobraHelper = polaris.NewPolarisCRSpecBuilderFromCobraFlags()
 
 	rootCmd.AddCommand(createCmd)
 
@@ -569,5 +732,16 @@ func init() {
 	createOpsSightCobraHelper.AddCRSpecFlagsToCommand(createOpsSightNativeCmd, true)
 	addNativeFormatFlag(createOpsSightNativeCmd)
 	createOpsSightCmd.AddCommand(createOpsSightNativeCmd)
+
+	// Add Polaris commands
+	createPolarisCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	createPolarisCobraHelper.AddCRSpecFlagsToCommand(createPolarisCmd, true)
+	addBaseUrlFlag(createPolarisCmd)
+	createCmd.AddCommand(createPolarisCmd)
+
+	createPolarisCobraHelper.AddCRSpecFlagsToCommand(createPolarisNativeCmd, true)
+	addNativeFormatFlag(createPolarisNativeCmd)
+	addBaseUrlFlag(createPolarisNativeCmd)
+	createPolarisCmd.AddCommand(createPolarisNativeCmd)
 
 }

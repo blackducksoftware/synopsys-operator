@@ -23,8 +23,12 @@ package synopsysctl
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
+	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/runtime"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -42,12 +46,15 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Update Command ResourceCtlSpecBuilders
 var updateAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var updatePolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
 
 var updateMockFormat = "json"
 
@@ -1176,11 +1183,94 @@ func addUpdateOperatorFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the Synopsys Operator instance")
 }
 
+func updatePolaris(polarisObj polaris.Polaris, flagset *pflag.FlagSet) (*polaris.Polaris, error) {
+	if err := updatePolarisCobraHelper.SetCRSpec(polarisObj); err != nil {
+		return nil, err
+	}
+
+	spec, err := updatePolarisCobraHelper.GenerateCRSpecFromFlags(flagset)
+	if err != nil {
+		return nil, err
+	}
+	newSpec := spec.(polaris.Polaris)
+
+	return &newSpec, nil
+}
+
+// updatePolarisCmd updates a Polaris instance
+var updatePolarisCmd = &cobra.Command{
+	Use:           "polaris",
+	Example:       "synopsyctl update polaris -n <namespace>",
+	Short:         "Update a Polaris instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("this command takes 0 arguments")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		polarisSecret, err := kubeClient.CoreV1().Secrets(namespace).Get("polaris", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		polarisSecretBytes, ok := polarisSecret.Data["polaris"]
+		if !ok {
+			return fmt.Errorf("polaris entry is missing in the secret")
+		}
+
+		var p *polaris.Polaris
+		if err := json.Unmarshal(polarisSecretBytes, &p); err != nil {
+			return err
+		}
+
+		currPolaris, err := updatePolaris(*p, cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		// Marshal Polaris
+		polarisByte, err := json.Marshal(currPolaris)
+		if err != nil {
+			return err
+		}
+
+		polarisSecret.Data["polaris"] = polarisByte
+
+		polarisSecret, err = kubeClient.CoreV1().Secrets(polarisSecret.Namespace).Update(polarisSecret)
+		if err != nil {
+			return err
+		}
+
+		myscheme := runtime.NewScheme()
+		_ = clientgoscheme.AddToScheme(myscheme)
+
+		// create controller runtime client
+		cl, _ := runtimeclient.New(restconfig, runtimeclient.Options{
+			Scheme: myscheme,
+		})
+
+		// Start reconcile process
+		if _, err := flying_dutchman.MetaReconcile(polarisSecret, &polaris.PolarisReconciler{
+			Client:      cl,
+			Scheme:      myscheme,
+			IsDryRun:    false,
+			IsOpenShift: false,
+		}); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 func init() {
 	// initialize global resource ctl structs for commands to use
 	updateBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	updateOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
+	updatePolarisCobraHelper = polaris.NewPolarisCRSpecBuilderFromCobraFlags()
 
 	rootCmd.AddCommand(updateCmd)
 
@@ -1258,4 +1348,9 @@ func init() {
 
 	addNativeFormatFlag(updateOpsSightAddRegistryNativeCmd)
 	updateOpsSightAddRegistryCmd.AddCommand(updateOpsSightAddRegistryNativeCmd)
+
+	// Polaris
+	updatePolarisCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	updatePolarisCobraHelper.AddCRSpecFlagsToCommand(updatePolarisCmd, false)
+	updateCmd.AddCommand(updatePolarisCmd)
 }
