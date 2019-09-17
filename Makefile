@@ -4,13 +4,19 @@ OUTDIR = _output
 LINUX = linux
 MAC = darwin
 WINDOWS = windows
-PLATFORM := ${MAC} ${LINUX} ${WINDOWS}
 
 BUILD_TIME:=$(shell date)
-LAST_COMMIT=$(shell git rev-parse HEAD)
+LAST_COMMIT:=$(shell git rev-parse HEAD)
 CURRENT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-GOROOT := "${CURRENT_DIR}/../../../.."
 CONTROLLER_GEN=/go/bin/controller-gen
+BINARY_TARGET=binary
+BINARIES=manager synopsysctl
+
+ifeq (,$(shell go env GOPATH))
+ROOT:=$(shell go env GOPATH)
+else
+ROOT:="${CURRENT_DIR}/../../../.."
+endif
 
 # Set the release version information
 TAG=$(shell cat build.properties | cut -d'=' -f 2)
@@ -28,9 +34,37 @@ IMG ?= blackducksoftware/synopsys-operator:dev
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
-all: binary
+# Determine what synopsysctl binaries to build
+ifneq ($(MAKECMDGOALS),${BINARY_TARGET})
+  ifeq ($(OS),Windows_NT)
+    PLATFORM=${WINDOWS}
+  else
+    UNAME:=$(shell uname)
+    ifeq ($(UNAME), Linux)
+      PLATFORM=${LINUX}
+    else ifeq (Darwin,$(UNAME))
+      PLATFORM=${MAC}
+    endif
+  endif
+else
+  PLATFORM = ${MAC} ${LINUX} ${WINDOWS}
+endif
 
-binary: manager synopsysctl
+# Function to build synopsysctl
+define sctl_build 
+	@echo "creating synopsysctl binary for $(1) platform"
+
+$(if $(findstring ${BINARY_TARGET},$(MAKECMDGOALS)),
+	docker run --rm -e CGO_ENABLED=0 -e GOOS=$(1) -e GOARCH=amd64 -e GO111MODULE=on -v "${ROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go build -i -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(1)/synopsysctl cmd/synopsysctl/synopsysctl.go,\
+	CGO_ENABLED=0 GOOS=$(1) GOARCH=amd64 GO111MODULE=on go build -i -ldflags "-X main.version=${TAG}" -o ${OUTDIR}/$(1)/synopsysctl cmd/synopsysctl/synopsysctl.go)
+
+	$(if $(findstring $(1),${WINDOWS}),mv -f ${OUTDIR}/$(1)/synopsysctl ${OUTDIR}/$(1)/synopsysctl.exe)
+	@echo "completed synopsysctl binary for $(1) platform"
+endef
+
+all: ${BINARIES}
+
+$(BINARY_TARGET): ${BINARIES}
 
 # Run tests
 test: generate fmt vet manifests
@@ -38,19 +72,15 @@ test: generate fmt vet manifests
 
 # Build manager binary
 manager: clean generate fmt vet
-	docker run --rm -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go build -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/bin/manager main.go
+ifeq ($(MAKECMDGOALS),${BINARY_TARGET})
+	docker run --rm -e GO111MODULE=on -v "${ROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go build -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/bin/manager main.go
+else
+	GO111MODULE=on go build -o ${OUTDIR}/bin/manager main.go
+endif
 
 # Build synopsysctl binaries
 synopsysctl: clean generate fmt vet
-	$(foreach p,${PLATFORM}, \
-		echo "creating synopsysctl binary for $(p) platform" && \
-		if [[ $(p) = ${WINDOWS} ]]; then \
-			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go build -i -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl.exe cmd/synopsysctl/synopsysctl.go; \
-		else \
-			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go build -i -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl cmd/synopsysctl/synopsysctl.go; \
-		fi && \
-		echo "completed synopsysctl binary for $(p) platform" \
-	)
+	$(foreach p,${PLATFORM}, $(call sctl_build,$(p)))
 
 # Build a release package information
 package:
@@ -94,21 +124,37 @@ destroy: manifests
 	kustomize build config/default | kubectl delete -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests:
-	docker run -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 /bin/bash -c "go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1 && $(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths='./...' output:crd:artifacts:config=config/crd/bases"
+manifests: controller-gen
+ifeq ($(MAKECMDGOALS),${BINARY_TARGET})
+	docker run -e GO111MODULE=on -v "${ROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 $(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+else
+	GO111MODULE=on $(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+endif
 
 
 # Run go fmt against code
 fmt:
-	docker run -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go fmt ./...
+ifeq ($(MAKECMDGOALS),${BINARY_TARGET})
+	docker run -e GO111MODULE=on -v "${ROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go fmt ./...
+else
+	GO111MODULE=on go fmt ./...
+endif
 
 # Run go vet against code
 vet:
-	docker run -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go vet ./...
+ifeq ($(MAKECMDGOALS),${BINARY_TARGET})
+	docker run -e GO111MODULE=on -v "${ROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go vet ./...
+else
+	GO111MODULE=on go vet ./...
+endif
 
 # Generate code
 generate: controller-gen
-	docker run -e GO111MODULE=on -v "${GOROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 $(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
+ifeq ($(MAKECMDGOALS),${BINARY_TARGET})
+	docker run -e GO111MODULE=on -v "${ROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 $(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
+else
+	GO111MODULE=on $(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
+endif
 
 # Build the docker image
 docker-build: test
@@ -121,7 +167,12 @@ docker-push:
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:
-	docker run -e GO111MODULE=on -v "${GOROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
+ifeq ($(MAKECMDGOALS),${BINARY_TARGET})
+	docker run -e GO111MODULE=on -v "${ROOT}":/go -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
+else
+	GO111MODULE=on go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
 
 clean:
 	rm -rf ${OUTDIR}
