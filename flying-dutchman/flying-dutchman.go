@@ -42,7 +42,7 @@ type MetaReconcilerInterface interface {
 
 // MetaReconcile takes as input a request and an implementer of MetaReconcilerInterface
 // It's to be used inside of a Reconcile loop
-func MetaReconcile(req ctrl.Request, mri MetaReconcilerInterface) (ctrl.Result, error) {
+func MetaReconcile(req ctrl.Request, mri MetaReconcilerInterface, crScheme *runtime.Scheme) (ctrl.Result, error) {
 
 	// get the client
 	givenClient := mri.GetClient()
@@ -73,10 +73,10 @@ func MetaReconcile(req ctrl.Request, mri MetaReconcilerInterface) (ctrl.Result, 
 
 	// make a copy of the cr
 	copyOfCr := cr.(runtime.Object).DeepCopyObject()
-	metaOfCopyOfCr := copyOfCr.(metav1.Object)
+	metav1CopyOfCr := copyOfCr.(metav1.Object)
 
 	// hand-off to the scheduler
-	err = scheduleResources(givenClient, metaOfCopyOfCr, mapOfuniqueIDToDesiredRuntimeObject, instructionManual)
+	err = scheduleResources(givenClient, metav1CopyOfCr, mapOfuniqueIDToDesiredRuntimeObject, instructionManual, crScheme)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -85,7 +85,7 @@ func MetaReconcile(req ctrl.Request, mri MetaReconcilerInterface) (ctrl.Result, 
 
 // scheduleResources takes as input a controller-runtime client, a custom resource, a map of runtime.Object, and a instruction manual
 // It creates a task graph and schedules the runtime objects to the Kubernetes api-server
-func scheduleResources(myClient client.Client, cr metav1.Object, mapOfuniqueIDToDesiredRuntimeObject map[string]runtime.Object, instructionManual *RuntimeObjectDependencyYaml) error {
+func scheduleResources(myClient client.Client, cr metav1.Object, mapOfuniqueIDToDesiredRuntimeObject map[string]runtime.Object, instructionManual *RuntimeObjectDependencyYaml, crScheme *runtime.Scheme) error {
 
 	// create a context for ScheduleResources
 	ctx := context.Background()
@@ -135,7 +135,7 @@ func scheduleResources(myClient client.Client, cr metav1.Object, mapOfuniqueIDTo
 		// create a task function
 		taskFunc := func(ctx context.Context) error {
 			// TODO: rethink, currently we only use the error, maybe EnsureRuntimeObject should just return an error
-			_, err := EnsureRuntimeObject(ctx, myClient, log, copyOfDesiredRuntimeObject)
+			_, err := EnsureRuntimeObject(ctx, myClient, log, copyOfDesiredRuntimeObject, crScheme, cr)
 			return err
 		}
 		//log.V(1).Info("Adding a task for the runtime object", "Runtime Object", copyOfDesiredRuntimeObject)
@@ -184,7 +184,7 @@ func scheduleResources(myClient client.Client, cr metav1.Object, mapOfuniqueIDTo
 }
 
 // EnsureRuntimeObject ensures the run time object
-func EnsureRuntimeObject(ctx context.Context, myClient client.Client, log logr.Logger, desiredRuntimeObject runtime.Object) (ctrl.Result, error) {
+func EnsureRuntimeObject(ctx context.Context, myClient client.Client, log logr.Logger, desiredRuntimeObject runtime.Object, crScheme *runtime.Scheme, cr metav1.Object) (ctrl.Result, error) {
 	// TODO: either get this working or wait for server side apply
 	// TODO: https://github.com/kubernetes-sigs/controller-runtime/issues/347
 	// TODO: https://github.com/kubernetes/kubernetes/issues/73723
@@ -208,7 +208,7 @@ func EnsureRuntimeObject(ctx context.Context, myClient client.Client, log logr.L
 	//})
 
 	// BEGIN BORROWED CODE FROM controllerutil.CreateOrUpdate
-	opResult, err := CreateOrUpdate(ctx, myClient, desiredRuntimeObject)
+	opResult, err := CreateOrUpdate(ctx, myClient, desiredRuntimeObject, crScheme, cr)
 	// END BORROWED CODE FROM controllerutil.CreateOrUpdate
 	if err != nil {
 		// TODO: Case 1: we needed to update the configMap and now we should delete and redeploy objects in STAGE 3, 4 ...
@@ -344,7 +344,7 @@ func isJobCompleted(job *batchv1.Job) error {
 // Changes include removing the mutateFn, using semantic.DeepEqual, doing a deepcopy before create cause create will muck with it
 
 // CreateOrUpdate creates or updates the run time object
-func CreateOrUpdate(ctx context.Context, c client.Client, desiredRuntimeObject runtime.Object) (controllerutil.OperationResult, error) {
+func CreateOrUpdate(ctx context.Context, c client.Client, desiredRuntimeObject runtime.Object, crScheme *runtime.Scheme, cr metav1.Object) (controllerutil.OperationResult, error) {
 	key, err := client.ObjectKeyFromObject(desiredRuntimeObject)
 	if err != nil {
 		return controllerutil.OperationResultNone, err
@@ -356,6 +356,13 @@ func CreateOrUpdate(ctx context.Context, c client.Client, desiredRuntimeObject r
 		if !apierrs.IsNotFound(err) {
 			return controllerutil.OperationResultNone, err
 		}
+
+		// set an owner reference only when we create
+		if err := ctrl.SetControllerReference(cr, desiredRuntimeObject.(metav1.Object), crScheme); err != nil {
+			// requeue if we cannot set owner on the object
+			return controllerutil.OperationResultNone, err
+		}
+
 		if err := c.Create(ctx, desiredRuntimeObject); err != nil {
 			return controllerutil.OperationResultNone, err
 		}

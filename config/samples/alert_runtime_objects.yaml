@@ -27,7 +27,7 @@ spec:
                 name: ${NAME}-blackduck-alert-config
             - secretRef:
                 name: ${NAME}-alert-secret
-          image: docker.io/blackducksoftware/blackduck-alert:4.0.0
+          image: docker.io/blackducksoftware/blackduck-alert:4.2.0
           imagePullPolicy: Always
           livenessProbe:
             exec:
@@ -40,7 +40,7 @@ spec:
             timeoutSeconds: 10
           name: blackduck-alert
           ports:
-            - containerPort: ${ALERT_PORT}
+            - containerPort: 8443
               protocol: TCP
           resources:
             limits:
@@ -124,14 +124,14 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   ports:
-    - name: port-${ALERT_PORT}
-      port: ${ALERT_PORT}
+    - name: port-8443
+      port: 8443
       protocol: TCP
-      targetPort: ${ALERT_PORT}
+      targetPort: 8443
   selector:
     app: alert
     name: ${NAME}
-  type: ${SERVICE_TYPE}
+  type: ExternalName
 
 ---
 apiVersion: v1
@@ -210,25 +210,23 @@ spec:
   resources:
     requests:
       storage: 5G
-# TODO Routes
-# apiVersion: route.openshift.io/v1
-# kind: Route
-# metadata:
-#   annotations:
-#     openshift.io/host.generated: "true"
-#   labels:
-#     app: alert
-#     component: route
-#     name: ${NAME}
-#   name: ${NAME}-alert
-# spec:
-#   host: demo-alert-demo.192.168.99.100.nip.io
-#   port:
-#     targetPort: port-8443
-#   tls:
-#     termination: passthrough
-#   to:
-#     kind: Service
-#     name: ${NAME}-alert-alert
-#     weight: 100
-#   wildcardPolicy: None
+#---
+#apiVersion: route.openshift.io/v1
+#kind: Route
+#metadata:
+#  labels:
+#    app: alert
+#    component: route
+#    name: ${NAME}
+#  name: ${NAME}-alert
+#  namespace: ${NAMESPACE}
+#spec:
+#  port:
+#    targetPort: port-8443
+#  tls:
+#    termination: passthrough
+#  to:
+#    kind: Service
+#    name: ${NAME}-alert
+#    weight: 100
+#  wildcardPolicy: None

@@ -69,7 +69,17 @@ func (r *AlertReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, er
 
 func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
 	alertCr := cr.(*synopsysv1.Alert)
+
 	// get the base yaml for the app
+
+	// For local development, uncomment here, if you want to read from local base yaml
+	//localCopyOfBaseRuntimeObjects := "config/samples/alert_runtime_objects.yaml"
+	//localBaseYamlAsBytes, err := ioutil.ReadFile(localCopyOfBaseRuntimeObjects)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//latestBaseYamlAsString := string(localBaseYamlAsBytes)
+
 	latestBaseYamlAsString, err := controllers_utils.GetBaseYaml(controllers_utils.ALERT, alertCr.Spec.Version, "")
 	if err != nil {
 		return nil, err
@@ -102,17 +112,6 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	//}
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString, r.IsOpenShift)
-	if !r.IsDryRun {
-		for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-			// set an owner reference
-			if err := ctrl.SetControllerReference(alertCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-				// requeue if we cannot set owner on the object
-				// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-				//return ctrl.Result{}, err
-				return mapOfUniqueIdToBaseRuntimeObject, nil
-			}
-		}
-	}
 
 	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject)
 
@@ -128,7 +127,7 @@ func (r *AlertReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObje
 }
 
 func (r *AlertReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	return flying_dutchman.MetaReconcile(req, r)
+	return flying_dutchman.MetaReconcile(req, r, r.Scheme)
 }
 
 // +kubebuilder:rbac:groups=alerts.synopsys.com,resources=alerts,verbs=get;list;watch;create;update;patch;delete

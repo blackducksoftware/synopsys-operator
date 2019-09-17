@@ -70,11 +70,7 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", reportingCr.Spec.ImagePullSecrets)
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
-	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-		if err := ctrl.SetControllerReference(reportingCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-			return mapOfUniqueIdToBaseRuntimeObject, nil
-		}
-	}
+
 	mapOfUniqueIdToDesiredRuntimeObject := patchReporting(r.Client, reportingCr, mapOfUniqueIdToBaseRuntimeObject)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
@@ -90,7 +86,7 @@ func (r *ReportingReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntime
 }
 
 func (r *ReportingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	return flying_dutchman.MetaReconcile(req, r)
+	return flying_dutchman.MetaReconcile(req, r, r.Scheme)
 }
 
 func (r *ReportingReconciler) SetIndexingForChildrenObjects(mgr ctrl.Manager, ro runtime.Object) error {

@@ -83,17 +83,9 @@ func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	content = strings.ReplaceAll(content, "${POSTGRES_DB_PASSWORD}", blackduck.Spec.PostgresPassword)
 
 	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(content, r.IsOpenShift)
-	// TODO: [yash commented this] figure out why this didn't work for black duck, probably just a namespace thing
-	//for _, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
-	//	// set an owner reference
-	//	if err := ctrl.SetControllerReference(blackduck, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-	//		// requeue if we cannot set owner on the object
-	//		// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-	//		//return ctrl.Result{}, err
-	//		return mapOfUniqueIdToDesiredRuntimeObject, nil
-	//	}
-	//}
+
 	objs := patchBlackduck(r.Client, blackduck, mapOfUniqueIdToDesiredRuntimeObject, r.IsDryRun)
+
 	return objs, nil
 }
 
@@ -115,7 +107,7 @@ func (r *BlackduckReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// your logic here
 
-	return flying_dutchman.MetaReconcile(req, r)
+	return flying_dutchman.MetaReconcile(req, r, r.Scheme)
 }
 
 func (r *BlackduckReconciler) SetIndexingForChildrenObjects(mgr ctrl.Manager, ro runtime.Object) error {
