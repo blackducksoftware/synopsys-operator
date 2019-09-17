@@ -56,7 +56,9 @@ func (a *SpecConfig) getAlertSecret() (*components.Secret, error) {
 	if len(a.alert.Spec.EncryptionGlobalSalt) > 0 {
 		alertSecretData["ALERT_ENCRYPTION_GLOBAL_SALT"] = []byte(a.alert.Spec.EncryptionGlobalSalt)
 	}
-	alertSecret.AddData(alertSecretData)
+	if len(alertSecretData) > 0 {
+		alertSecret.AddData(alertSecretData)
+	}
 
 	alertSecret.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
 	return alertSecret, nil
