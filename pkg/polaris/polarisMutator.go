@@ -28,10 +28,10 @@ import (
 	"strings"
 )
 
-func GetPolarisComponents(baseUrl string, polaris Polaris) map[string]runtime.Object {
+func GetPolarisComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
 	content, err := GetBaseYaml(baseUrl, "polaris", polaris.Version, "polaris_base.yaml")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// regex patching
@@ -49,7 +49,7 @@ func GetPolarisComponents(baseUrl string, polaris Polaris) map[string]runtime.Ob
 		polaris:                          polaris,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
 	}
-	return patcher.patch()
+	return patcher.patch(), nil
 }
 
 type polarisPatcher struct {

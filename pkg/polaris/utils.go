@@ -14,12 +14,16 @@ import (
 func HTTPGet(url string) (content []byte, err error) {
 	response, err := http.Get(url)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("INVALID RESPONSE; status: %s", response.Status)
+	if response.StatusCode != http.StatusOK {
+		proxyUrl, _ := http.ProxyFromEnvironment(response.Request)
+		if proxyUrl != nil {
+			return nil, fmt.Errorf("failed to fetch %s using proxy %s | %s", response.Request.URL.String(), proxyUrl.String(), response.Status)
+		}
+		return nil, fmt.Errorf("failed to fetch %s | %s", response.Request.URL.String(), response.Status)
 	}
 	return ioutil.ReadAll(response.Body)
 }

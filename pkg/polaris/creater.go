@@ -33,15 +33,25 @@ import (
 	"strings"
 )
 
-func GetComponents(baseUrl string, polaris Polaris) map[string]runtime.Object {
+func GetComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
 	components := make(map[string]runtime.Object)
-	for k, v := range GetPolarisDBComponents(baseUrl, polaris) {
+
+	dbComponents, err := GetPolarisDBComponents(baseUrl, polaris)
+	if err != nil {
+		return nil, err
+	}
+	polarisComponents, err := GetPolarisComponents(baseUrl, polaris)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range dbComponents {
 		components[k] = v
 	}
-	for k, v := range GetPolarisComponents(baseUrl, polaris) {
+	for k, v := range polarisComponents {
 		components[k] = v
 	}
-	return components
+	return components, nil
 }
 
 // ConvertYamlFileToRuntimeObjects converts the yaml file string to map of runtime object

@@ -613,6 +613,7 @@ var createPolarisCmd = &cobra.Command{
 			IsOpenShift: false,
 			BaseUrl:     baseUrl,
 		}); err != nil {
+			kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
 			return err
 		}
 
@@ -660,8 +661,13 @@ var createPolarisNativeCmd = &cobra.Command{
 			return err
 		}
 
+		components, err := polaris.GetComponents(baseUrl, *polarisObj)
+		if err != nil {
+			return err
+		}
+
 		var objectArr []interface{}
-		for _, v := range polaris.GetComponents(baseUrl, *polarisObj) {
+		for _, v := range components {
 			objectArr = append(objectArr, v)
 		}
 

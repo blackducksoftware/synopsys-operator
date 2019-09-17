@@ -36,10 +36,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func GetPolarisDBComponents(baseUrl string, polaris Polaris) map[string]runtime.Object {
+func GetPolarisDBComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
 	content, err := GetBaseYaml(baseUrl, "polaris", polaris.Version, "polarisdb_base.yaml")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// regex patching
@@ -79,7 +79,7 @@ func GetPolarisDBComponents(baseUrl string, polaris Polaris) map[string]runtime.
 		polaris:                          polaris,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
 	}
-	return patcher.patch()
+	return patcher.patch(), nil
 }
 
 func removeTestManifests(objects map[string]runtime.Object) map[string]runtime.Object {

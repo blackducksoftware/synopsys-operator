@@ -75,7 +75,11 @@ func (r *PolarisReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtim
 		return nil, err
 	}
 
-	mapOfUniqueIdToDesiredRuntimeObject := GetComponents(r.BaseUrl, *p)
+	mapOfUniqueIdToDesiredRuntimeObject, err := GetComponents(r.BaseUrl, *p)
+	if err != nil {
+		return nil, err
+	}
+
 	if !r.IsDryRun {
 		for _, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
 			// set an owner reference
