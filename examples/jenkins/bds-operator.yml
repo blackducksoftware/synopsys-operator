@@ -8,6 +8,9 @@ objects:
   metadata:
     name: ${HUB_NAME}
   spec:
+    adminPassword: dGVzdA==
+    postgresPassword: dGVzdA==
+    userPassword: dGVzdA==
     namespace: ${HUB_NAME}
     certificateName: default
     livenessProbes: false
