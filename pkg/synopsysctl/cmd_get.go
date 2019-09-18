@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -146,7 +147,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		filePath := args[1]
 		log.Infof("getting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
-		_, err = util.GetBlackduck(blackDuckClient, crdNamespace, blackDuckName, metav1.GetOptions{})
+		blackDuck, err := util.GetBlackduck(blackDuckClient, crdNamespace, blackDuckName, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, crdNamespace, err)
 		}
@@ -166,8 +167,12 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 
 		// Create the exec into Kubernetes pod request
 		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
-		// TODO: changed the upload cache service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
-		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
+		uploadCache := "uploadcache"
+		if isVersionGreaterThanorEqualTo, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.August, 0); err == nil && isVersionGreaterThanorEqualTo {
+			uploadCache = util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache")
+		}
+
+		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://%s:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)), uploadCache)})
 		if err != nil {
 			return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", namespace, err)
 		}
