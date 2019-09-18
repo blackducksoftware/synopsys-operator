@@ -12,10 +12,10 @@ CONTROLLER_GEN=/go/bin/controller-gen
 BINARY_TARGET=binary
 BINARIES=manager synopsysctl
 
-ifeq (,$(shell go env GOPATH))
-ROOT:=$(shell go env GOPATH)
+ifeq (,$(shell printenv GOPATH))
+ROOT="${CURRENT_DIR}/../../../.."
 else
-ROOT:="${CURRENT_DIR}/../../../.."
+ROOT=$(shell go env GOPATH)
 endif
 
 # Set the release version information
