@@ -434,16 +434,16 @@ func convertPolarisUIResponseToCRs(polarisUIRequestConfig PolarisUIRequest) (*sy
 	polarisDBSpec.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
 	polarisDBSpec.PostgresStorageDetails.StorageClass = &polarisUIRequestConfig.StorageClass
 	//polarisDBSpec.UploadServerDetails.Storage.StorageClass = &polarisUIRequestConfig.StorageClass
-	polarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost
+	//polarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost // TODO: PostgresHost is not currently supported
 	var err error
-	var postPort int64
-	if polarisUIRequestConfig.PostgresPort != "" {
-		postPort, err = strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 32)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("falied to convert postgres port to an int: %s", polarisUIRequestConfig.PostgresPort)
-		}
-	}
-	polarisDBSpec.PostgresDetails.Port = int(postPort)
+	// var postPort int64 // TODO: PostgresPort is not currently supported
+	// if polarisUIRequestConfig.PostgresPort != "" {
+	// 	postPort, err = strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 32)
+	// 	if err != nil {
+	// 		return nil, nil, nil, fmt.Errorf("falied to convert postgres port to an int: %s", polarisUIRequestConfig.PostgresPort)
+	// 	}
+	// }
+	// polarisDBSpec.PostgresDetails.Port = int(postPort)
 	polarisDBSpec.PostgresDetails.Username = polarisUIRequestConfig.PostgresUsername
 	polarisDBSpec.PostgresDetails.Password = polarisUIRequestConfig.PostgresPassword
 	polarisDBSpec.PostgresStorageDetails.StorageSize = polarisUIRequestConfig.PostgresSize
