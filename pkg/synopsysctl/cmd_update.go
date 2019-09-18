@@ -32,6 +32,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -611,7 +612,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 		newSealKey := args[0]
 		filePath := args[1]
 
-		blackducks, err := util.ListBlackduck(blackDuckClient, crdnamespace, metav1.ListOptions{})
+		blackDucks, err := util.ListBlackduck(blackDuckClient, crdnamespace, metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", operatorNamespace, err)
 		}
@@ -621,9 +622,9 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			return fmt.Errorf("unable to find Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
 		}
 
-		for _, blackduck := range blackducks.Items {
-			blackDuckName := blackduck.Name
-			blackDuckNamespace := blackduck.Spec.Namespace
+		for _, blackDuck := range blackDucks.Items {
+			blackDuckName := blackDuck.Name
+			blackDuckNamespace := blackDuck.Spec.Namespace
 			log.Infof("updating Black Duck '%s's master key in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 			fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
@@ -640,8 +641,12 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 
 			// Create the exec into Kubernetes pod request
 			req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
-			// TODO: changed the upload cache service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
-			_, err = util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://uploadcache:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(newSealKey)), masterKey)})
+			uploadCache := "uploadcache"
+			if isVersionGreaterThanorEqualTo, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.August, 0); err == nil && isVersionGreaterThanorEqualTo {
+				uploadCache = util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache")
+			}
+
+			_, err = util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://%s:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(newSealKey)), masterKey, uploadCache)})
 			if err != nil {
 				return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", blackDuckNamespace, err)
 			}
