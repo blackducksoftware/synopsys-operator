@@ -83,7 +83,7 @@ func (hc *Creater) GetPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, postgresRc)
+		componentList.Deployments = append(componentList.Deployments, postgresRc)
 		componentList.Services = append(componentList.Services, postgres.GetPostgresService())
 	}
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetPostgresConfigmap())
@@ -124,7 +124,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, cfsslRc)
+		componentList.Deployments = append(componentList.Deployments, cfsslRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetCfsslService())
 	}
 
@@ -135,7 +135,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, nginxRc)
+		componentList.Deployments = append(componentList.Deployments, nginxRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetWebServerService())
 	}
 
@@ -146,7 +146,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, documentationRc)
+		componentList.Deployments = append(componentList.Deployments, documentationRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetDocumentationService())
 	}
 
@@ -157,7 +157,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, solrRc)
+		componentList.Deployments = append(componentList.Deployments, solrRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetSolrService())
 	}
 
@@ -168,7 +168,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, registrationRc)
+		componentList.Deployments = append(componentList.Deployments, registrationRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetRegistrationService())
 	}
 
@@ -179,7 +179,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, zookeeperRc)
+		componentList.Deployments = append(componentList.Deployments, zookeeperRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetZookeeperService())
 	}
 
@@ -190,7 +190,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, jobRunnerRc)
+		componentList.Deployments = append(componentList.Deployments, jobRunnerRc)
 	}
 
 	// hub-scan
@@ -200,7 +200,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, scanRc)
+		componentList.Deployments = append(componentList.Deployments, scanRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetScanService())
 	}
 
@@ -211,7 +211,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, authRc)
+		componentList.Deployments = append(componentList.Deployments, authRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetAuthenticationService())
 	}
 
@@ -222,7 +222,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, webappLogstashRc)
+		componentList.Deployments = append(componentList.Deployments, webappLogstashRc)
 		componentList.Services = append(componentList.Services, containerCreater.GetWebAppService())
 		componentList.Services = append(componentList.Services, containerCreater.GetLogStashService())
 	}
@@ -235,7 +235,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
-			componentList.ReplicationControllers = append(componentList.ReplicationControllers, uploadCacheRc)
+			componentList.Deployments = append(componentList.Deployments, uploadCacheRc)
 			componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
 		}
 
@@ -246,7 +246,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
-			componentList.ReplicationControllers = append(componentList.ReplicationControllers, binaryScannerRc)
+			componentList.Deployments = append(componentList.Deployments, binaryScannerRc)
 		}
 
 		// Rabbitmq
@@ -256,7 +256,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
-			componentList.ReplicationControllers = append(componentList.ReplicationControllers, rabbitmqRc)
+			componentList.Deployments = append(componentList.Deployments, rabbitmqRc)
 			componentList.Services = append(componentList.Services, containerCreater.GetRabbitmqService())
 		}
 	}

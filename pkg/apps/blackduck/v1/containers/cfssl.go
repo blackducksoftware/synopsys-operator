@@ -28,7 +28,7 @@ import (
 )
 
 // GetCfsslDeployment will return the cfssl deployment
-func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationController, error) {
+func (c *Creater) GetCfsslDeployment(imageName string) (*components.Deployment, error) {
 	cfsslVolumeMounts := c.getCfsslolumeMounts()
 	cfsslContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: imageName,
@@ -66,8 +66,8 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl"), Replicas: util.IntToInt32(1)},
+	return util.CreateDeploymentFromContainer(
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("cfssl"))
 }
 

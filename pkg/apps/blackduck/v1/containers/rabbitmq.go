@@ -28,7 +28,7 @@ import (
 )
 
 // GetRabbitmqDeployment will return the rabbitmq deployment
-func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.ReplicationController, error) {
+func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Deployment, error) {
 	volumeMounts := c.getRabbitmqVolumeMounts()
 
 	rabbitmqContainerConfig := &util.Container{
@@ -51,8 +51,8 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
+	return util.CreateDeploymentFromContainer(
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("rabbitmq"))
 }
 
