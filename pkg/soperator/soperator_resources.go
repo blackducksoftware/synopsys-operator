@@ -389,11 +389,13 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *horizoncomponents.Cluste
 		Resources: []string{"*"},
 	})
 
-	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch"},
-		APIGroups: []string{"storage.k8s.io"},
-		Resources: []string{"storageclasses", "volumeattachments"},
-	})
+	if specConfig.Expose != util.NONE && len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.BlackDuckCRDName) {
+		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+			Verbs:     []string{"get", "list"},
+			APIGroups: []string{"storage.k8s.io"},
+			Resources: []string{"storageclasses"},
+		})
+	}
 
 	// Add Openshift rules
 	if specConfig.ClusterType == OpenshiftClusterType {
@@ -487,11 +489,13 @@ func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 		Resources: []string{"*"},
 	})
 
-	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch"},
-		APIGroups: []string{"storage.k8s.io"},
-		Resources: []string{"storageclasses", "volumeattachments"},
-	})
+	if specConfig.Expose != util.NONE && len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.BlackDuckCRDName) {
+		synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+			Verbs:     []string{"get", "list"},
+			APIGroups: []string{"storage.k8s.io"},
+			Resources: []string{"storageclasses"},
+		})
+	}
 
 	// Add Openshift rules
 	if specConfig.ClusterType == OpenshiftClusterType {

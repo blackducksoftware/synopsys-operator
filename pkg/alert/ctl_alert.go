@@ -42,25 +42,28 @@ import (
 // When flags are used the correspoding value in this struct will by set. You can then
 // generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
 type CRSpecBuilderFromCobraFlags struct {
-	alertSpec            *alertapi.AlertSpec
-	Version              string
-	StandAlone           string
-	ExposeService        string
-	Port                 int32
-	EncryptionPassword   string
-	EncryptionGlobalSalt string
-	Environs             []string
-	PersistentStorage    string
-	PVCName              string
-	PVCStorageClass      string
-	PVCSize              string
-	AlertMemory          string
-	CfsslMemory          string
-	DesiredState         string
-	Registry             string
-	RegistryNamespace    string
-	PullSecrets          []string
-	ImageRegistries      []string
+	alertSpec              *alertapi.AlertSpec
+	Version                string
+	StandAlone             string
+	ExposeService          string
+	Port                   int32
+	EncryptionPassword     string
+	EncryptionGlobalSalt   string
+	Environs               []string
+	PersistentStorage      string
+	PVCName                string
+	PVCStorageClass        string
+	PVCSize                string
+	AlertMemory            string
+	CfsslMemory            string
+	DesiredState           string
+	Registry               string
+	RegistryNamespace      string
+	PullSecrets            []string
+	ImageRegistries        []string
+	CertificateFilePath    string
+	CertificateKeyFilePath string
+	JavaKeyStoreFilePath   string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -131,6 +134,9 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
+	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to the PEM certificate to use for Alert")
+	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to the PEM certificate key for Alert")
+	cmd.Flags().StringVar(&ctl.JavaKeyStoreFilePath, "java-keystore-file-path", ctl.JavaKeyStoreFilePath, "Absolute path to the Java Keystore to use for Alert")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("alert-desired-state", "alert-desired-state flag is deprecated and will be removed by the next release")
@@ -226,6 +232,27 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.alertSpec.RegistryConfiguration.PullSecrets = ctl.PullSecrets
 		case "image-registries":
 			ctl.alertSpec.ImageRegistries = ctl.ImageRegistries
+		case "certificate-file-path":
+			data, err := util.ReadFileData(ctl.CertificateFilePath)
+			if err != nil {
+				log.Errorf("failed to read certificate file: %+v", err)
+				return
+			}
+			ctl.alertSpec.Certificate = data
+		case "certificate-key-file-path":
+			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
+			if err != nil {
+				log.Errorf("failed to read certificate file: %+v", err)
+				return
+			}
+			ctl.alertSpec.CertificateKey = data
+		case "java-keystore-file-path":
+			data, err := util.ReadFileData(ctl.JavaKeyStoreFilePath)
+			if err != nil {
+				log.Errorf("failed to read Java keystore file: %+v", err)
+				return
+			}
+			ctl.alertSpec.JavaKeyStore = data
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
