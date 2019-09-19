@@ -22,6 +22,8 @@
 package polaris
 
 import (
+	"strings"
+
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -34,7 +36,8 @@ func updateServiceCoreContainerImage(containers *[]corev1.Container, serviceName
 	for index, container := range *containers {
 		if container.Name == *serviceName {
 			// Update image details in container
-			container.Image = imageDetails.Repository + "/" + imageDetails.Image + ":" + imageDetails.Tag
+			container.Image = strings.ReplaceAll(container.Image, "gcr.io/snps-swip-staging", imageDetails.Repository)
+
 			// Replace the container object in list
 			(*containers)[index] = container
 		}

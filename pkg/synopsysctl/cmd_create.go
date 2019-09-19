@@ -24,10 +24,12 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
+
 	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
 	//"k8s.io/apimachinery/pkg/api/meta"
 	"sort"
 	"strings"
@@ -566,6 +568,7 @@ var createPolarisCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-port")
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-sender-email")
 
 		return nil
 	},

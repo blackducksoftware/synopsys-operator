@@ -23,6 +23,7 @@ package polaris
 
 import (
 	"fmt"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
 	log "github.com/sirupsen/logrus"
@@ -52,10 +53,11 @@ type PolarisCRSpecBuilderFromCobraFlags struct {
 	PostgresPassword string
 	PostgresSize     string
 
-	SMTPHost     string
-	SMTPPort     int
-	SMTPUsername string
-	SMTPPassword string
+	SMTPHost        string
+	SMTPPort        int
+	SMTPUsername    string
+	SMTPPassword    string
+	SMTPSenderEmail string
 
 	UploadServerSize string
 	EventstoreSize   string
@@ -158,7 +160,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 		case "postgres-password":
 			ctl.spec.PolarisDBSpec.PostgresDetails.Password = ctl.PostgresPassword
 		case "postgres-size":
-			ctl.spec.PolarisDBSpec.PostgresStorageDetails.StorageSize = ctl.PostgresSize
+			ctl.spec.PolarisDBSpec.PostgresDetails.Storage.StorageSize = ctl.PostgresSize
 		case "uploadserver-size":
 			ctl.spec.PolarisDBSpec.UploadServerDetails.Storage.StorageSize = ctl.UploadServerSize
 		case "eventstore-size":
@@ -171,6 +173,8 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.PolarisDBSpec.SMTPDetails.Username = ctl.SMTPUsername
 		case "smtp-password":
 			ctl.spec.PolarisDBSpec.SMTPDetails.Password = ctl.SMTPPassword
+		case "smtp-sender-email":
+			ctl.spec.PolarisDBSpec.SMTPDetails.SenderEmail = ctl.SMTPSenderEmail
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
@@ -185,9 +189,8 @@ func GetPolarisDefault() *Polaris {
 		EnvironmentName: "polaris",
 		PolarisSpec:     &PolarisSpec{},
 		PolarisDBSpec: &PolarisDBSpec{
-			SMTPDetails:            SMTPDetails{},
-			PostgresInstanceType:   "internal",
-			PostgresStorageDetails: PostgresStorageDetails{},
+			SMTPDetails:          SMTPDetails{},
+			PostgresInstanceType: "internal",
 			PostgresDetails: PostgresDetails{
 				Host: "postgresql",
 				Port: 5432,
