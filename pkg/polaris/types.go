@@ -31,6 +31,7 @@ type Polaris struct {
 	PolarisDBSpec    *PolarisDBSpec `json:"polaris_db_spec,omitempty"`
 	PolarisSpec      *PolarisSpec   `json:"polaris_spec,omitempty"`
 	ReportingSpec    *ReportingSpec `json:"reporting_spec,omitempty"`
+	Repository       string         `json:"repository"`
 }
 
 type PolarisDBSpec struct {
@@ -97,7 +98,6 @@ type LimitsSpec struct {
 }
 
 type ImageDetails struct {
-	Repository string `json:"repository"`
 }
 
 type Storage struct {

@@ -655,6 +655,7 @@ var createPolarisNativeCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-port")
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
+		cobra.MarkFlagRequired(cmd.Flags(), "smtp-sender-email")
 
 		return nil
 	},

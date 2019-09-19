@@ -31,13 +31,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func updateServiceCoreContainerImage(containers *[]corev1.Container, serviceName *string, imageDetails *ImageDetails) *[]corev1.Container {
+func updateServiceCoreContainerImage(containers *[]corev1.Container, serviceName *string, repository string) *[]corev1.Container {
 	// pop the service core container
 	for index, container := range *containers {
 		if container.Name == *serviceName {
 			// Update image details in container
-			container.Image = strings.ReplaceAll(container.Image, "gcr.io/snps-swip-staging", imageDetails.Repository)
-
+			container.Image = strings.ReplaceAll(container.Image, "gcr.io/snps-swip-staging", repository)
 			// Replace the container object in list
 			(*containers)[index] = container
 		}
@@ -45,11 +44,11 @@ func updateServiceCoreContainerImage(containers *[]corev1.Container, serviceName
 	return containers
 }
 
-func PatchImageForService(imageDetails *ImageDetails, deployment *appsv1.Deployment) *appsv1.Deployment {
+func PatchImageForService(polaris *Polaris, deployment *appsv1.Deployment) *appsv1.Deployment {
 	deployment.Spec.Template.Spec.Containers = *updateServiceCoreContainerImage(
 		&deployment.Spec.Template.Spec.Containers,
 		&deployment.ObjectMeta.Name,
-		imageDetails,
+		polaris.Repository,
 	)
 	return deployment
 }
