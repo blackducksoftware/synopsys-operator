@@ -253,9 +253,10 @@ func CreatePod(podConfig *PodConfig) (*components.Pod, error) {
 }
 
 // CreateDeployment will create a deployment
-func CreateDeployment(deploymentConfig *horizonapi.DeploymentConfig, pod *components.Pod, labelSelector map[string]string) *components.Deployment {
+func CreateDeployment(deploymentConfig *horizonapi.DeploymentConfig, pod *components.Pod, labels map[string]string, labelSelector map[string]string) *components.Deployment {
 	deployment := components.NewDeployment(*deploymentConfig)
 	deployment.AddMatchLabelsSelectors(labelSelector)
+	deployment.AddLabels(labels)
 	deployment.AddPod(pod)
 	return deployment
 }
@@ -267,7 +268,7 @@ func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig
 	if err != nil {
 		return nil, fmt.Errorf("unable to create pod for the deployment %s due to %+v", deploymentConfig.Name, err)
 	}
-	deployment := CreateDeployment(deploymentConfig, pod, labelSelector)
+	deployment := CreateDeployment(deploymentConfig, pod, podConfig.Labels, labelSelector)
 	return deployment, nil
 }
 
