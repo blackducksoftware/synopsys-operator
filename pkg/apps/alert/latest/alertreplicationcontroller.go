@@ -77,6 +77,15 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 		pod.AddVolume(vol)
 	}
 
+	// add cert volume
+	if len(a.alert.Spec.JavaKeyStore) > 0 || (len(a.alert.Spec.Certificate) > 0 && len(a.alert.Spec.CertificateKey) > 0) {
+		certVolume, err := a.getAlertCustomCertSecretVolume()
+		if err != nil {
+			return nil, fmt.Errorf("failed to Add Cert Volume to Alert Pod: %s", err)
+		}
+		pod.AddVolume(certVolume)
+	}
+
 	if a.alert.Spec.RegistryConfiguration != nil && len(a.alert.Spec.RegistryConfiguration.PullSecrets) > 0 {
 		pod.AddImagePullSecrets(a.alert.Spec.RegistryConfiguration.PullSecrets)
 	}
@@ -111,6 +120,39 @@ func (a *SpecConfig) getAlertContainer() (*components.Container, error) {
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
+	}
+
+	if len(a.alert.Spec.JavaKeyStore) > 0 || (len(a.alert.Spec.Certificate) > 0 && len(a.alert.Spec.CertificateKey) > 0) {
+		container.AddEnv(horizonapi.EnvConfig{
+			Type:         horizonapi.EnvFromName,
+			NameOrPrefix: "RUN_SECRETS_DIR",
+			KeyOrVal:     "/tmp/secrets",
+		})
+	}
+
+	if len(a.alert.Spec.Certificate) > 0 && len(a.alert.Spec.CertificateKey) > 0 {
+		err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
+			Name: "certificate", MountPath: "/tmp/secrets/WEBSERVER_CUSTOM_CERT_FILE", SubPath: "WEBSERVER_CUSTOM_CERT_FILE",
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
+			Name: "certificate", MountPath: "/tmp/secrets/WEBSERVER_CUSTOM_KEY_FILE", SubPath: "WEBSERVER_CUSTOM_KEY_FILE",
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	if len(a.alert.Spec.JavaKeyStore) > 0 {
+		err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
+			Name: "certificate", MountPath: "/tmp/secrets/cacerts", SubPath: "cacerts",
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
 
 	container.AddEnv(horizonapi.EnvConfig{
@@ -164,4 +206,13 @@ func (a *SpecConfig) getAlertPVCVolume() *components.Volume {
 	})
 
 	return vol
+}
+
+func (a *SpecConfig) getAlertCustomCertSecretVolume() (*components.Volume, error) {
+	// Custom cert
+	customCertVolume, err := util.CreateSecretVolume("certificate", util.GetResourceName(a.alert.Name, util.AlertName, "certificate"), 0444)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Alert Custom certificate secret volume: %s", err)
+	}
+	return customCertVolume, nil
 }
