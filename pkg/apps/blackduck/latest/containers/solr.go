@@ -28,7 +28,7 @@ import (
 )
 
 // GetSolrDeployment will return the solr deployment
-func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationController, error) {
+func (c *Creater) GetSolrDeployment(imageName string) (*components.Deployment, error) {
 	solrVolumeMount := c.getSolrVolumeMounts()
 	solrContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: imageName,
@@ -66,8 +66,8 @@ func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationCo
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "solr"), Replicas: util.IntToInt32(1)},
+	return util.CreateDeploymentFromContainer(
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "solr"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("solr"))
 }
 
