@@ -32,14 +32,14 @@ import (
 )
 
 // getCfsslReplicationController returns a new Replication Controller for a Cffsl
-func (a *SpecConfig) getCfsslReplicationController() (*components.Deployment, error) {
+func (a *SpecConfig) getCfsslReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(1)
-	replicationController := components.NewDeployment(horizonapi.DeploymentConfig{
+	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
 		Namespace: a.alert.Spec.Namespace,
 	})
-	replicationController.AddMatchLabelsSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
+	replicationController.AddSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
 
 	pod, err := a.getCfsslPod()
 	if err != nil {

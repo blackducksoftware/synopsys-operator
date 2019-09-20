@@ -28,7 +28,7 @@ import (
 )
 
 // GetScanDeployment will return the scan deployment
-func (c *Creater) GetScanDeployment(imageName string) (*components.Deployment, error) {
+func (c *Creater) GetScanDeployment(imageName string) (*components.ReplicationController, error) {
 	scannerEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.ScanHubMaxMemory})
 	hubScanEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-scan")
@@ -101,8 +101,8 @@ func (c *Creater) GetScanDeployment(imageName string) (*components.Deployment, e
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "scan"), Replicas: c.hubContainerFlavor.ScanReplicas},
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "scan"), Replicas: c.hubContainerFlavor.ScanReplicas},
 		podConfig, c.GetLabel("scan"))
 }
 
