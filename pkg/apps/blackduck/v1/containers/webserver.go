@@ -28,7 +28,7 @@ import (
 )
 
 // GetWebserverDeployment will return the webserver deployment
-func (c *Creater) GetWebserverDeployment(imageName string) (*components.ReplicationController, error) {
+func (c *Creater) GetWebserverDeployment(imageName string) (*components.Deployment, error) {
 	webServerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit,
@@ -66,8 +66,8 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Replicat
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"), Replicas: util.IntToInt32(1)},
+	return util.CreateDeploymentFromContainer(
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("webserver"))
 }
 
