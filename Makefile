@@ -80,7 +80,7 @@ synopsysctl: clean generate fmt vet
 
 # Build a release package information
 package:
-	$(foreach p,${PLATFORM}, \
+	$(foreach p,$(shell (find _output -name synopsysctl && find _output -name synopsysctl.*) | cut -d'/' -f 2), \
 		echo "creating synopsysctl package for $(p) platform" && \
 		cd ${OUTDIR}/$(p) && \
 		if [[ $(p) = ${LINUX} ]]; then \
