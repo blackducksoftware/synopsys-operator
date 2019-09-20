@@ -11,6 +11,7 @@ CURRENT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 CONTROLLER_GEN=/go/bin/controller-gen
 BINARY_TARGET=binary
 BINARIES=manager synopsysctl
+SCTL_BINARY_NAME=synopsysctl
 
 # Set the release version information
 TAG=$(shell cat build.properties | cut -d'=' -f 2)
@@ -48,11 +49,12 @@ endif
 define sctl_build 
 	@echo "creating synopsysctl binary for $(1) platform"
 
-$(if $(findstring ${BINARY_TARGET},$(MAKECMDGOALS)),
-	docker run --rm -e CGO_ENABLED=0 -e GOOS=$(1) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go build -i -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(1)/synopsysctl cmd/synopsysctl/synopsysctl.go,\
-	CGO_ENABLED=0 GOOS=$(1) GOARCH=amd64 GO111MODULE=on go build -i -ldflags "-X main.version=${TAG}" -o ${OUTDIR}/$(1)/synopsysctl cmd/synopsysctl/synopsysctl.go)
+$(if $(findstring $(WINDOWS), $(1)), $(eval SCTL_BINARY_NAME=synopsysctl.exe))
 
-	$(if $(findstring $(1),${WINDOWS}),mv -f ${OUTDIR}/$(1)/synopsysctl ${OUTDIR}/$(1)/synopsysctl.exe)
+$(if $(findstring ${BINARY_TARGET},$(MAKECMDGOALS)),
+	docker run --rm -e CGO_ENABLED=0 -e GOOS=$(1) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.13 go build -i -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(1)/$(SCTL_BINARY_NAME) cmd/synopsysctl/synopsysctl.go,\
+	CGO_ENABLED=0 GOOS=$(1) GOARCH=amd64 GO111MODULE=on go build -i -ldflags "-X main.version=${TAG}" -o ${OUTDIR}/$(1)/$(SCTL_BINARY_NAME) cmd/synopsysctl/synopsysctl.go)
+
 	@echo "completed synopsysctl binary for $(1) platform"
 endef
 
