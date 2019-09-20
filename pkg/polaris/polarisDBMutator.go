@@ -96,6 +96,10 @@ func GetPolarisDBComponents(baseUrl string, polaris Polaris) (map[string]runtime
 		content = strings.ReplaceAll(content, "${POSTGRES_PV_SIZE}", POSTGRES_PV_SIZE)
 	}
 
+	if len(polaris.Repository) != 0 {
+		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)
+	}
+
 	mapOfUniqueIdToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIdToBaseRuntimeObject = removeTestManifests(mapOfUniqueIdToBaseRuntimeObject)
 

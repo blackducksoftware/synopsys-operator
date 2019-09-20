@@ -31,7 +31,7 @@ type Polaris struct {
 	PolarisDBSpec    *PolarisDBSpec `json:"polaris_db_spec,omitempty"`
 	PolarisSpec      *PolarisSpec   `json:"polaris_spec,omitempty"`
 	ReportingSpec    *ReportingSpec `json:"reporting_spec,omitempty"`
-	Repository       string         `json:"repository"`
+	Repository       string         `json:"repository,omitempty"`
 }
 
 type PolarisDBSpec struct {
@@ -97,9 +97,6 @@ type LimitsSpec struct {
 	Memory string `json:"memory,omitempty"`
 }
 
-type ImageDetails struct {
-}
-
 type Storage struct {
 	StorageSize string `json:"size,omitempty"`
 }
@@ -150,76 +147,58 @@ Specification for Polaris services goes here
 */
 
 type AuthServerDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type ConfigsServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type CosServerDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type DesktopMetricsServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type DownloadServerDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
-	Storage      *Storage      `json:"storage,omitempty"`
+	Storage *Storage `json:"storage,omitempty"`
 }
 
 type IssueServerDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type JobsControllerServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type JobsServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type LogsServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type PericlesSwaggerUIDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type TaxonomyServerDeails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type TDSCodeAnalysisDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type ToolsServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type TriageCommandHandlerDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type TriageQueryDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type VinylServerDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type WebCoreDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type WebHelpDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 /*
@@ -229,34 +208,26 @@ Reporting Services
 Specification for Reporting services goes here
 */
 type RPFrontendDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type RPIssueManager struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type RPPolarisAgentServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type RPPortfolioServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type RPReportServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type RPSwaggerDocDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type RPToolsPortfolioServiceDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
 }
 
 type ReportStorageDetails struct {
-	ImageDetails *ImageDetails `json:"image_details,omitempty"`
-	Storage      *Storage      `json:"storage,omitempty"`
+	Storage *Storage `json:"storage,omitempty"`
 }
