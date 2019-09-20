@@ -28,7 +28,7 @@ import (
 )
 
 // GetWebappLogstashDeployment will return the webapp and logstash deployment
-func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashImageName string) (*components.Deployment, error) {
+func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashImageName string) (*components.ReplicationController, error) {
 	webappEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.WebappHubMaxMemory})
 
@@ -99,8 +99,8 @@ func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashIm
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webapp-logstash"), Replicas: util.IntToInt32(1)},
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webapp-logstash"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("webapp-logstash"))
 }
 
