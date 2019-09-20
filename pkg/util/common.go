@@ -255,6 +255,7 @@ func CreatePod(podConfig *PodConfig) (*components.Pod, error) {
 // CreateDeployment will create a deployment
 func CreateDeployment(deploymentConfig *horizonapi.DeploymentConfig, pod *components.Pod, labels map[string]string, labelSelector map[string]string) *components.Deployment {
 	deployment := components.NewDeployment(*deploymentConfig)
+	deployment.Spec.Strategy.Type = appsv1.RecreateDeploymentStrategyType
 	deployment.AddMatchLabelsSelectors(labelSelector)
 	deployment.AddLabels(labels)
 	deployment.AddPod(pod)
