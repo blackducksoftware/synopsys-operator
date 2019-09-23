@@ -72,29 +72,10 @@ func GetPolarisDBComponents(baseUrl string, polaris Polaris) (map[string]runtime
 		content = strings.ReplaceAll(content, "${POSTGRES_TYPE}", "external")
 	}
 
-	if len(polaris.PolarisDBSpec.EventstoreDetails.Storage.StorageSize) > 0 {
-		content = strings.ReplaceAll(content, "${EVENTSTORE_PV_SIZE}", polaris.PolarisDBSpec.EventstoreDetails.Storage.StorageSize)
-	} else {
-		content = strings.ReplaceAll(content, "${EVENTSTORE_PV_SIZE}", EVENTSTORE_PV_SIZE)
-	}
-
-	if len(polaris.PolarisDBSpec.MongoDBDetails.Storage.StorageSize) > 0 {
-		content = strings.ReplaceAll(content, "${MONGODB_PV_SIZE}", polaris.PolarisDBSpec.MongoDBDetails.Storage.StorageSize)
-	} else {
-		content = strings.ReplaceAll(content, "${MONGODB_PV_SIZE}", MONGODB_PV_SIZE)
-	}
-
-	if len(polaris.PolarisDBSpec.UploadServerDetails.Storage.StorageSize) > 0 {
-		content = strings.ReplaceAll(content, "${UPLOAD_SERVER_PV_SIZE}", polaris.PolarisDBSpec.UploadServerDetails.Storage.StorageSize)
-	} else {
-		content = strings.ReplaceAll(content, "${UPLOAD_SERVER_PV_SIZE}", UPLOAD_SERVER_PV_SIZE)
-	}
-
-	if len(polaris.PolarisDBSpec.PostgresDetails.Storage.StorageSize) > 0 {
-		content = strings.ReplaceAll(content, "${POSTGRES_PV_SIZE}", polaris.PolarisDBSpec.PostgresDetails.Storage.StorageSize)
-	} else {
-		content = strings.ReplaceAll(content, "${POSTGRES_PV_SIZE}", POSTGRES_PV_SIZE)
-	}
+	content = strings.ReplaceAll(content, "${EVENTSTORE_PV_SIZE}", polaris.PolarisDBSpec.EventstoreDetails.Storage.StorageSize)
+	content = strings.ReplaceAll(content, "${MONGODB_PV_SIZE}", polaris.PolarisDBSpec.MongoDBDetails.Storage.StorageSize)
+	content = strings.ReplaceAll(content, "${UPLOAD_SERVER_PV_SIZE}", polaris.PolarisDBSpec.UploadServerDetails.Storage.StorageSize)
+	content = strings.ReplaceAll(content, "${POSTGRES_PV_SIZE}", polaris.PolarisDBSpec.PostgresDetails.Storage.StorageSize)
 
 	if len(polaris.Repository) != 0 {
 		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)

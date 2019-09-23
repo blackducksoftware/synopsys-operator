@@ -22,9 +22,12 @@ under the License.
 package synopsysctl
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
+	"time"
 
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -147,9 +150,42 @@ var deletePolarisCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{}); err != nil {
+		p, err := getPolarisFromSecret()
+		if err != nil {
 			return err
 		}
+
+		components, err := polaris.GetComponents(baseUrl, *p)
+		if err != nil {
+			return err
+		}
+
+		var content []byte
+		for _, v := range components {
+			polarisComponentsByte, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			content = append(content, polarisComponentsByte...)
+		}
+
+		log.Info("Deleting Polaris")
+		ch := make(chan struct{})
+		go printWaitingDots(time.Second*5, ch)
+
+		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "delete", "-f", "-")
+		if err != nil {
+			close(ch)
+			return fmt.Errorf("couldn't delete polaris |  %+v - %s", out, err)
+		}
+
+		if err := kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{}); err != nil {
+			close(ch)
+			return err
+		}
+		close(ch)
+
+		fmt.Println("\nPolaris has been successfully Deleted!")
 		return nil
 	},
 }
@@ -172,5 +208,6 @@ func init() {
 
 	// Add Delete Polaris Command
 	deletePolarisCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	addBaseUrlFlag(deletePolarisCmd)
 	deleteCmd.AddCommand(deletePolarisCmd)
 }

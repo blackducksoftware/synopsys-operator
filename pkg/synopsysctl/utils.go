@@ -22,9 +22,15 @@ under the License.
 package synopsysctl
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -35,6 +41,7 @@ import (
 	"github.com/spf13/cobra"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -154,10 +161,7 @@ func DetermineClusterClients(restConfig *rest.Config, kubeClient *kubernetes.Cli
 	return false, false // neither client exists
 }
 
-// RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
-// TODO consider replacing w/ go api but not crucial for now.
-func RunKubeCmd(restconfig *rest.Config, kubeClient *kubernetes.Clientset, args ...string) (string, error) {
-	var cmd2 *exec.Cmd
+func getKubeExecCmd(restconfig *rest.Config, kubeClient *kubernetes.Clientset, args ...string) (*exec.Cmd, error) {
 	kube, openshift := DetermineClusterClients(restconfig, kubeClient)
 
 	// cluster-info in kube doesnt seem to be in
@@ -174,19 +178,49 @@ func RunKubeCmd(restconfig *rest.Config, kubeClient *kubernetes.Clientset, args 
 		args = append([]string{fmt.Sprintf("--kubeconfig=%s", kubeconfig)}, args...)
 	}
 	if openshift {
-		cmd2 = exec.Command("oc", args...)
-		log.Debugf("Command: %+v", cmd2.Args)
+		return exec.Command("oc", args...), nil
 	} else if kube {
-		cmd2 = exec.Command("kubectl", args...)
-		log.Debugf("Command: %+v", cmd2.Args)
+		return exec.Command("kubectl", args...), nil
 	} else {
-		return "", fmt.Errorf("couldn't determine if running in Openshift or Kubernetes")
+		return nil, fmt.Errorf("couldn't determine if running in Openshift or Kubernetes")
 	}
+}
+
+// RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
+// TODO consider replacing w/ go api but not crucial for now.
+func RunKubeCmd(restconfig *rest.Config, kubeClient *kubernetes.Clientset, args ...string) (string, error) {
+	cmd2, err := getKubeExecCmd(restconfig, kubeClient, args...)
+	if err != nil {
+		return "", err
+	}
+
 	stdoutErr, err := cmd2.CombinedOutput()
 	if err != nil {
 		return string(stdoutErr), err
 	}
-	//time.Sleep(1 * time.Second) TODO why did Jay put this here???
+	return string(stdoutErr), nil
+}
+
+func RunKubeCmdWithStdin(restconfig *rest.Config, kubeClient *kubernetes.Clientset, stdin string, args ...string) (string, error) {
+	cmd2, err := getKubeExecCmd(restconfig, kubeClient, args...)
+	if err != nil {
+		return "", err
+	}
+
+	stdinPipe, err := cmd2.StdinPipe()
+	if err != nil {
+		return "", err
+	}
+
+	go func() {
+		defer stdinPipe.Close()
+		io.WriteString(stdinPipe, stdin)
+	}()
+
+	stdoutErr, err := cmd2.CombinedOutput()
+	if err != nil {
+		return string(stdoutErr), err
+	}
 	return string(stdoutErr), nil
 }
 
@@ -261,4 +295,63 @@ func getInstanceInfo(mock bool, crdName string, appName string, namespace string
 	}
 
 	return namespace, crdNamespace, crdScope, nil
+}
+
+func getPolarisFromSecret() (*polaris.Polaris, error) {
+	polarisSecret, err := kubeClient.CoreV1().Secrets(namespace).Get("polaris", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	polarisSecretBytes, ok := polarisSecret.Data["polaris"]
+	if !ok {
+		return nil, fmt.Errorf("polaris entry is missing in the secret")
+	}
+
+	var p *polaris.Polaris
+	if err := json.Unmarshal(polarisSecretBytes, &p); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func polarisToTmpComponentFile(polarisObj polaris.Polaris) (string, error) {
+	components, err := polaris.GetComponents(baseUrl, polarisObj)
+	if err != nil {
+		return "", err
+	}
+
+	var content []byte
+	for _, v := range components {
+		polarisComponentsByte, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+		content = append(content, polarisComponentsByte...)
+	}
+
+	dir, err := ioutil.TempDir("", "synopsysctl")
+	if err != nil {
+		return "", err
+	}
+
+	tmpfn := filepath.Join(dir, "tmp_polaris_components.json")
+	if err := ioutil.WriteFile(tmpfn, content, 0600); err != nil {
+		os.RemoveAll(dir)
+		return "", err
+	}
+	return tmpfn, nil
+}
+
+func printWaitingDots(delay time.Duration, stop <-chan struct{}) {
+	ticker := time.NewTicker(delay)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			fmt.Print(".")
+		case <-stop:
+			return
+		}
+	}
 }

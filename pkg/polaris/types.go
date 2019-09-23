@@ -231,3 +231,23 @@ type RPToolsPortfolioServiceDetails struct {
 type ReportStorageDetails struct {
 	Storage *Storage `json:"storage,omitempty"`
 }
+
+type ProvisionJob struct {
+	Namespace                                    string
+	EnvironmentName                              string
+	EnvironmentDNS                               string
+	ImagePullSecrets                             string
+	Repository                                   string
+	Version                                      string
+	OrganizationProvisionOrganizationDescription string
+	OrganizationProvisionOrganizationName        string
+	OrganizationProvisionAdminName               string
+	OrganizationProvisionAdminUsername           string
+	OrganizationProvisionAdminEmail              string
+	OrganizationProvisionLicenseSeatCount        string
+	OrganizationProvisionLicenseType             string
+	OrganizationProvisionResultsStartDate        string
+	OrganizationProvisionResultsEndDate          string
+	OrganizationProvisionRetentionStartDate      string
+	OrganizationProvisionRetentionEndDate        string
+}
