@@ -63,7 +63,7 @@ type Postgres struct {
 }
 
 // GetPostgresReplicationController will return the postgres replication controller
-func (p *Postgres) GetPostgresReplicationController() (*components.Deployment, error) {
+func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationController, error) {
 	postgresEnvs := p.getPostgresEnvconfigs()
 	postgresVolumes := p.getPostgresVolumes()
 	postgresVolumeMounts := p.getPostgresVolumeMounts()
@@ -124,7 +124,7 @@ func (p *Postgres) GetPostgresReplicationController() (*components.Deployment, e
 	// increase TerminationGracePeriod to better handle pg shutdown
 	pod.Spec.TerminationGracePeriodSeconds = &p.TerminationGracePeriodSeconds
 
-	postgres := util.CreateDeployment(&horizonapi.DeploymentConfig{Namespace: p.Namespace,
+	postgres := util.CreateReplicationController(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
 		Name: p.Name, Replicas: util.IntToInt32(1)}, pod, p.Labels, p.Labels)
 
 	return postgres, nil
