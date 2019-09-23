@@ -23,14 +23,12 @@ package synopsysctl
 
 import (
 	"encoding/json"
+	"time"
+
 	"fmt"
 
-	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	//"k8s.io/apimachinery/pkg/api/meta"
 	"sort"
 	"strings"
 
@@ -50,8 +48,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Create Command CRSpecBuilderFromCobraFlagsInterface
@@ -578,13 +574,19 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		myscheme := runtime.NewScheme()
-		_ = clientgoscheme.AddToScheme(myscheme)
+		components, err := polaris.GetComponents(baseUrl, *polarisObj)
+		if err != nil {
+			return err
+		}
 
-		// create controller runtime client
-		cl, _ := runtimeclient.New(restconfig, runtimeclient.Options{
-			Scheme: myscheme,
-		})
+		var content []byte
+		for _, v := range components {
+			polarisComponentsByte, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			content = append(content, polarisComponentsByte...)
+		}
 
 		// Marshal Polaris
 		polarisByte, err := json.Marshal(polarisObj)
@@ -601,25 +603,24 @@ var createPolarisCmd = &cobra.Command{
 				"polaris": polarisByte,
 			},
 		}
-
 		// Create secret
 		polarisSecret, err = kubeClient.CoreV1().Secrets(namespace).Create(polarisSecret)
 		if err != nil {
 			return err
 		}
 
-		// Start reconcile process
-		if _, err := flying_dutchman.MetaReconcile(polarisSecret, &polaris.PolarisReconciler{
-			Client:      cl,
-			Scheme:      myscheme,
-			IsDryRun:    false,
-			IsOpenShift: false,
-			BaseUrl:     baseUrl,
-		}); err != nil {
-			kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
-			return err
-		}
+		fmt.Print("Deploying Polaris")
+		ch := make(chan struct{})
+		go printWaitingDots(time.Second*5, ch)
 
+		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
+		if err != nil {
+			kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
+			close(ch)
+			return fmt.Errorf("Couldn't deploy polaris |  %+v - %s", out, err)
+		}
+		close(ch)
+		fmt.Println("\nPolaris has been successfully deployed!")
 		return nil
 	},
 }

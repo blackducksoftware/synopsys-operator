@@ -23,6 +23,7 @@ package polaris
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -61,6 +62,7 @@ type PolarisCRSpecBuilderFromCobraFlags struct {
 
 	UploadServerSize string
 	EventstoreSize   string
+	Reporting        string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -104,7 +106,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 	cmd.Flags().StringVar(&ctl.EnvironmentName, "environment-name", ctl.EnvironmentName, "Environment name")
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
-
+	cmd.Flags().StringVar(&ctl.Reporting, "reporting", ctl.Reporting, "Enable reporting [true|false]")
 	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
 	//cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
@@ -118,6 +120,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 	cmd.Flags().IntVar(&ctl.SMTPPort, "smtp-port", ctl.SMTPPort, "SMTP port")
 	cmd.Flags().StringVar(&ctl.SMTPUsername, "smtp-username", ctl.SMTPUsername, "SMTP username")
 	cmd.Flags().StringVar(&ctl.SMTPPassword, "smtp-password", ctl.SMTPPassword, "SMTP password")
+	cmd.Flags().StringVar(&ctl.SMTPSenderEmail, "smtp-sender-email", ctl.SMTPSenderEmail, "SMTP sender email")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
@@ -149,6 +152,8 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.EnvironmentDNS = ctl.EnvironmentDNS
 		case "environment-name":
 			ctl.spec.EnvironmentName = ctl.EnvironmentName
+		case "reporting":
+			ctl.spec.EnableReporting = strings.ToUpper(ctl.Reporting) == "TRUE"
 		case "pull-secret":
 			ctl.spec.ImagePullSecrets = ctl.ImagePullSecrets
 		case "postgres-host":
@@ -187,19 +192,40 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 func GetPolarisDefault() *Polaris {
 	return &Polaris{
 		EnvironmentName: "polaris",
-		PolarisSpec:     &PolarisSpec{},
+		EnableReporting: false,
+		PolarisSpec: &PolarisSpec{
+			DownloadServerDetails: &DownloadServerDetails{
+				Storage: &Storage{
+					StorageSize: DOWNLOAD_SERVER_PV_SIZE,
+				},
+			},
+		},
 		PolarisDBSpec: &PolarisDBSpec{
 			SMTPDetails:          SMTPDetails{},
 			PostgresInstanceType: "internal",
 			PostgresDetails: PostgresDetails{
 				Host: "postgresql",
 				Port: 5432,
+				Storage: Storage{
+					StorageSize: POSTGRES_PV_SIZE,
+				},
+			},
+			MongoDBDetails: MongoDBDetails{
+				Storage: Storage{
+					StorageSize: MONGODB_PV_SIZE,
+				},
 			},
 			EventstoreDetails: EventstoreDetails{
 				Replicas: util.IntToInt32(3),
+				Storage: Storage{
+					StorageSize: EVENTSTORE_PV_SIZE,
+				},
 			},
 			UploadServerDetails: UploadServerDetails{
 				Replicas: util.IntToInt32(1),
+				Storage: Storage{
+					StorageSize: UPLOAD_SERVER_PV_SIZE,
+				},
 			},
 		},
 	}

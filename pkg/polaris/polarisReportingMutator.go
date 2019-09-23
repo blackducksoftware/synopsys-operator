@@ -29,48 +29,33 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func GetPolarisComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseUrl, "polaris", polaris.Version, "polaris_base.yaml")
+func GetPolarisReportingComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
+	content, err := GetBaseYaml(baseUrl, "polaris", polaris.Version, "reporting_base.yaml")
 	if err != nil {
 		return nil, err
 	}
 
 	// regex patching
 	content = strings.ReplaceAll(content, "${NAMESPACE}", polaris.Namespace)
-	content = strings.ReplaceAll(content, "$(JAEGER_NAMESPACE)", polaris.Namespace)
-	content = strings.ReplaceAll(content, "$(EVENT_STORE_NAMESPACE)", polaris.Namespace)
-	content = strings.ReplaceAll(content, "$(LEADER_ELECTOR_NAMESPACE)", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.EnvironmentName)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polaris.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polaris.ImagePullSecrets)
-	content = strings.ReplaceAll(content, "${DOWNLOAD_SERVER_PV_SIZE}", polaris.PolarisSpec.DownloadServerDetails.Storage.StorageSize)
-
-	if polaris.EnableReporting {
-		content = strings.ReplaceAll(content, "${REPORTING_URL}", fmt.Sprintf("https://%s/reporting", polaris.EnvironmentDNS))
-	} else {
-		content = strings.ReplaceAll(content, "${REPORTING_URL}", "")
-	}
-
-	if len(polaris.Repository) != 0 {
-		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)
-	}
 
 	mapOfUniqueIdToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
-	mapOfUniqueIdToBaseRuntimeObject = removeTestManifests(mapOfUniqueIdToBaseRuntimeObject)
 
-	patcher := polarisPatcher{
+	patcher := polarisReportingPatcher{
 		polaris:                          polaris,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
 	}
 	return patcher.patch(), nil
 }
 
-type polarisPatcher struct {
+type polarisReportingPatcher struct {
 	polaris                          Polaris
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
 }
 
-func (p *polarisPatcher) patch() map[string]runtime.Object {
+func (p *polarisReportingPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
 	}
@@ -83,7 +68,7 @@ func (p *polarisPatcher) patch() map[string]runtime.Object {
 	return p.mapOfUniqueIdToBaseRuntimeObject
 }
 
-func (p *polarisPatcher) patchNamespace() error {
+func (p *polarisReportingPatcher) patchNamespace() error {
 	accessor := meta.NewAccessor()
 	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
 		accessor.SetNamespace(runtimeObject, p.polaris.Namespace)

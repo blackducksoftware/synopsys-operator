@@ -24,11 +24,11 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"encoding/json"
+	v1 "k8s.io/api/core/v1"
+
 	"fmt"
-	flying_dutchman "github.com/blackducksoftware/synopsys-operator/flying-dutchman"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/runtime"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -47,8 +47,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Update Command ResourceCtlSpecBuilders
@@ -1216,56 +1214,63 @@ var updatePolarisCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		polarisSecret, err := kubeClient.CoreV1().Secrets(namespace).Get("polaris", metav1.GetOptions{})
+		p, err := getPolarisFromSecret()
 		if err != nil {
 			return err
 		}
 
-		polarisSecretBytes, ok := polarisSecret.Data["polaris"]
-		if !ok {
-			return fmt.Errorf("polaris entry is missing in the secret")
-		}
-
-		var p *polaris.Polaris
-		if err := json.Unmarshal(polarisSecretBytes, &p); err != nil {
-			return err
-		}
-
-		currPolaris, err := updatePolaris(*p, cmd.Flags())
+		newPolaris, err := updatePolaris(*p, cmd.Flags())
 		if err != nil {
 			return err
+		}
+
+		components, err := polaris.GetComponents(baseUrl, *newPolaris)
+		if err != nil {
+			return err
+		}
+
+		var content []byte
+		for _, v := range components {
+			polarisComponentsByte, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			content = append(content, polarisComponentsByte...)
+		}
+
+		fmt.Print("Updating Polaris")
+		ch := make(chan struct{})
+		go printWaitingDots(time.Second*5, ch)
+
+		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
+		if err != nil {
+			close(ch)
+			return fmt.Errorf("Couldn't update polaris |  %+v - %s", out, err)
 		}
 
 		// Marshal Polaris
-		polarisByte, err := json.Marshal(currPolaris)
+		polarisByte, err := json.Marshal(newPolaris)
 		if err != nil {
 			return err
 		}
 
-		polarisSecret.Data["polaris"] = polarisByte
+		polarisSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "polaris",
+				Namespace: namespace,
+			},
+			Data: map[string][]byte{
+				"polaris": polarisByte,
+			},
+		}
 
-		polarisSecret, err = kubeClient.CoreV1().Secrets(polarisSecret.Namespace).Update(polarisSecret)
+		_, err = kubeClient.CoreV1().Secrets(namespace).Update(polarisSecret)
 		if err != nil {
+			close(ch)
 			return err
 		}
-
-		myscheme := runtime.NewScheme()
-		_ = clientgoscheme.AddToScheme(myscheme)
-
-		// create controller runtime client
-		cl, _ := runtimeclient.New(restconfig, runtimeclient.Options{
-			Scheme: myscheme,
-		})
-
-		// Start reconcile process
-		if _, err := flying_dutchman.MetaReconcile(polarisSecret, &polaris.PolarisReconciler{
-			Client:      cl,
-			Scheme:      myscheme,
-			IsDryRun:    false,
-			IsOpenShift: false,
-		}); err != nil {
-			return err
-		}
+		close(ch)
+		fmt.Println("\nPolaris has been successfully updated!")
 		return nil
 	},
 }
