@@ -82,11 +82,11 @@ var provisionPolarisCmd = &cobra.Command{
 			OrganizationProvisionAdminUsername:           ctlProvisionJob.organizationProvisionAdminUsername,
 			OrganizationProvisionAdminEmail:              ctlProvisionJob.organizationProvisionAdminEmail,
 			OrganizationProvisionLicenseSeatCount:        "100",
-			OrganizationProvisionLicenseType:             "internal",
-			OrganizationProvisionResultsStartDate:        "",
-			OrganizationProvisionResultsEndDate:          "",
-			OrganizationProvisionRetentionStartDate:      "",
-			OrganizationProvisionRetentionEndDate:        "",
+			OrganizationProvisionLicenseType:             "PAID",
+			OrganizationProvisionResultsStartDate:        "2019-02-22",
+			OrganizationProvisionResultsEndDate:          "2030-10-01",
+			OrganizationProvisionRetentionStartDate:      "2019-02-22",
+			OrganizationProvisionRetentionEndDate:        "2031-10-01",
 		}
 
 		license, err := util.ReadFileData(ctlProvisionJob.coverityLicensePath)
@@ -96,7 +96,7 @@ var provisionPolarisCmd = &cobra.Command{
 
 		if _, err := kubeClient.CoreV1().Secrets(namespace).Create(&v12.Secret{
 			ObjectMeta: v1.ObjectMeta{
-				Name:      "coverity-licensed",
+				Name:      "coverity-license",
 				Namespace: namespace,
 			},
 			Data: map[string][]byte{
