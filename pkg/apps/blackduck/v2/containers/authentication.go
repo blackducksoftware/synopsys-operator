@@ -28,7 +28,7 @@ import (
 )
 
 // GetAuthenticationDeployment will return the authentication deployment
-func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Deployment, error) {
+func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.ReplicationController, error) {
 	volumeMounts := c.getAuthenticationVolumeMounts()
 	var authEnvs []*horizonapi.EnvConfig
 	authEnvs = append(authEnvs, c.getHubDBConfigEnv())
@@ -75,8 +75,8 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Dep
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("authentication"))
 }
 
