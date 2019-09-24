@@ -27,16 +27,20 @@ import (
 
 	controllers_utils "github.com/blackducksoftware/synopsys-operator/controllers/util"
 
+	"github.com/go-logr/logr"
+
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func patchAlert(alertCr *synopsysv1.Alert, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object) map[string]runtime.Object {
+func patchAlert(alertCr *synopsysv1.Alert, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, log logr.Logger, isOpenShift bool) map[string]runtime.Object {
 	patcher := AlertPatcher{
 		alertCr:                          alertCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
+		log:                              log,
+		isOpenShift:                      isOpenShift,
 	}
 	return patcher.patch()
 }
@@ -44,6 +48,8 @@ func patchAlert(alertCr *synopsysv1.Alert, mapOfUniqueIdToBaseRuntimeObject map[
 type AlertPatcher struct {
 	alertCr                          *synopsysv1.Alert
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
+	log                              logr.Logger
+	isOpenShift                      bool
 }
 
 func (p *AlertPatcher) patch() map[string]runtime.Object {
@@ -51,31 +57,37 @@ func (p *AlertPatcher) patch() map[string]runtime.Object {
 	err := p.patchEnvirons()
 	if err != nil {
 		fmt.Printf("%s\n", err)
+		p.log.Error(fmt.Errorf("%s", err), "patchEnvirons failed")
 	}
 
 	err = p.patchSecrets()
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		p.log.Error(fmt.Errorf("%s", err), "patchSecrets failed")
 	}
 
 	err = p.patchImages()
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		p.log.Error(fmt.Errorf("%s", err), "patchImages failed")
 	}
 
 	err = p.patchStorage()
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		p.log.Error(fmt.Errorf("%s", err), "patchStorage failed")
 	}
 
 	err = p.patchDesiredState()
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		p.log.Error(fmt.Errorf("%s", err), "patchDesiredState failed")
 	}
 
 	err = p.patchStandAlone()
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		p.log.Error(fmt.Errorf("%s", err), "patchStandAlone failed")
+	}
+
+	err = p.patchExposeService()
+	if err != nil {
+		p.log.Error(fmt.Errorf("%s", err), "patchExposeService failed")
 	}
 
 	return p.mapOfUniqueIdToBaseRuntimeObject
@@ -89,9 +101,9 @@ func (p *AlertPatcher) patchEnvirons() error {
 	}
 	configMap := configMapRuntimeObject.(*corev1.ConfigMap)
 	for _, e := range p.alertCr.Spec.Environs {
-		vals := strings.Split(e, ":") // TODO - doesn't handle multiple colons
+		vals := strings.SplitN(e, ":", 2)
 		if len(vals) != 2 {
-			fmt.Printf("Could not split environ '%s' on ':'\n", e) // TODO change to log
+			p.log.Error(fmt.Errorf("could not split environ '%s' on ':' into a key and a value", e), "patchEnvirons")
 			continue
 		}
 		environKey := strings.TrimSpace(vals[0])
@@ -108,9 +120,9 @@ func (p *AlertPatcher) patchSecrets() error {
 	}
 	secret := secretRuntimeObject.(*corev1.Secret)
 	for _, s := range p.alertCr.Spec.Secrets {
-		vals := strings.Split(*s, ":") // TODO - doesn't handle multiple colons
+		vals := strings.SplitN(*s, ":", 2)
 		if len(vals) != 2 {
-			fmt.Printf("Could not split environ '%s' on ':'\n", *s) // TODO change to log
+			p.log.Error(fmt.Errorf("could not split environ '%s' on ':' into a key and a value", *s), "patchEnvirons")
 			continue
 		}
 		secretKey := strings.TrimSpace(vals[0])
@@ -213,6 +225,47 @@ func (p *AlertPatcher) patchStandAlone() error {
 		// TODO: NOTE: THIS WILL NOT WORK WITHOUT SETTING 'HUB_CFSSL_HOST' manually
 		// See: https://synopsys.atlassian.net/wiki/spaces/BDLM/pages/153583626/Synopsys+Alert+Installation+Guide+for+Synopsys+Operator
 		// TODO: this should really be implemented by removing standalone field, and reconciling on an environs add of 'HUB_CFSSL_HOST'
+	} else {
+		configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-blackduck-alert-config", p.alertCr.Name)]
+		if !ok {
+			return nil
+		}
+		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
+		environKey := "HUB_CFSSL_HOST"
+		environVal := fmt.Sprintf("%s-cfssl", p.alertCr.Name)
+		configMap.Data[environKey] = environVal
 	}
+
+	return nil
+}
+
+func (p *AlertPatcher) patchExposeService() error {
+
+	// TODO use contansts
+	routeID := fmt.Sprintf("Route.%s-alert", p.alertCr.Name)
+	exposedServiceID := fmt.Sprintf("Service.%s-alert-exposed", p.alertCr.Name)
+	exposedServiceRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[exposedServiceID]
+	if !ok {
+		return nil
+	}
+
+	switch strings.ToUpper(p.alertCr.Spec.ExposeService) {
+	case "LOADBALANCER":
+		exposedServiceRuntimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
+	case "NODEPORT":
+		exposedServiceRuntimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
+	case "OPENSHIFT":
+		if !p.isOpenShift {
+			p.log.Error(fmt.Errorf("cluster is not Openshift"), "removing route runtime object")
+			delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
+		}
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, exposedServiceID)
+	default:
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, exposedServiceID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeID)
+	}
+
 	return nil
 }

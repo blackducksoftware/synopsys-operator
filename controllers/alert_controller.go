@@ -87,11 +87,6 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAME}", alertCr.Name)
 	latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${NAMESPACE}", alertCr.Spec.Namespace)
-	if len(alertCr.Spec.ExposeService) > 0 {
-		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "ExternalName", alertCr.Spec.ExposeService)
-	} else {
-		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "ExternalName", string(corev1.ServiceTypeClusterIP))
-	}
 
 	if len(alertCr.Spec.AlertMemory) > 0 {
 		latestBaseYamlAsString = strings.ReplaceAll(latestBaseYamlAsString, "${ALERT_MEM}", alertCr.Spec.AlertMemory)
@@ -113,7 +108,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(latestBaseYamlAsString, r.IsOpenShift)
 
-	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject)
+	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject, r.Log, r.IsOpenShift)
 
 	return mapOfUniqueIdToDesiredRuntimeObject, nil
 }
