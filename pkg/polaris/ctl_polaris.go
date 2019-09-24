@@ -196,6 +196,13 @@ func GetPolarisDefault() *Polaris {
 				},
 			},
 		},
+		ReportingSpec: &ReportingSpec{
+			ReportStorageDetails: &ReportStorageDetails{
+				Storage: &Storage{
+					StorageSize: REPORT_STORAGE_PV_SIZE,
+				},
+			},
+		},
 		PolarisDBSpec: &PolarisDBSpec{
 			SMTPDetails:          SMTPDetails{},
 			PostgresInstanceType: "internal",
