@@ -43,6 +43,9 @@ func GenPVC(defaultPVC map[string]string, blackDuck *blackduckapi.Blackduck) ([]
 
 			if _, ok := pvcMap[name]; ok {
 				claim = pvcMap[name]
+				if len(claim.StorageClass) == 0 {
+					claim.StorageClass = blackDuck.Spec.PVCStorageClass
+				}
 			} else {
 				claim = blackduckapi.PVC{
 					Name:         name,
