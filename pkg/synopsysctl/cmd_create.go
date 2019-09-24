@@ -609,7 +609,7 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Print("Deploying Polaris")
+		log.Info("Deploying Polaris")
 		ch := make(chan struct{})
 		go printWaitingDots(time.Second*5, ch)
 
@@ -617,10 +617,10 @@ var createPolarisCmd = &cobra.Command{
 		if err != nil {
 			kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
 			close(ch)
-			return fmt.Errorf("Couldn't deploy polaris |  %+v - %s", out, err)
+			return fmt.Errorf("couldn't deploy polaris |  %+v - %s", out, err)
 		}
 		close(ch)
-		fmt.Println("\nPolaris has been successfully deployed!")
+		log.Info("Polaris has been successfully deployed!")
 		return nil
 	},
 }

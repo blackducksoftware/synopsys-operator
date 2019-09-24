@@ -44,7 +44,7 @@ func GetPolarisDBComponents(baseUrl string, polaris Polaris) (map[string]runtime
 
 	// regex patching
 	content = strings.ReplaceAll(content, "${NAMESPACE}", polaris.Namespace)
-	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.EnvironmentName)
+	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polaris.ImagePullSecrets)
 	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", polaris.PolarisDBSpec.PostgresDetails.Username)
 	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", polaris.PolarisDBSpec.PostgresDetails.Password)

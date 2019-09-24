@@ -26,8 +26,8 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
-	v12 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type polarisProvisionJob struct {
@@ -71,7 +71,7 @@ var provisionPolarisCmd = &cobra.Command{
 
 		jobConfig := polaris.ProvisionJob{
 			Namespace:        p.Namespace,
-			EnvironmentName:  p.EnvironmentName,
+			EnvironmentName:  p.Namespace,
 			EnvironmentDNS:   p.EnvironmentDNS,
 			ImagePullSecrets: p.ImagePullSecrets,
 			Repository:       p.Repository,
@@ -94,15 +94,18 @@ var provisionPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		if _, err := kubeClient.CoreV1().Secrets(namespace).Create(&v12.Secret{
-			ObjectMeta: v1.ObjectMeta{
+		if _, err := kubeClient.CoreV1().Secrets(namespace).Create(&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "coverity-license",
 				Namespace: namespace,
+				Labels: map[string]string{
+					"environment": p.Namespace,
+				},
 			},
 			Data: map[string][]byte{
 				"license": []byte(license),
 			},
-			Type: v12.SecretTypeOpaque,
+			Type: corev1.SecretTypeOpaque,
 		}); err != nil {
 			return err
 		}

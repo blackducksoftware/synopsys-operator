@@ -40,7 +40,7 @@ func GetPolarisComponents(baseUrl string, polaris Polaris) (map[string]runtime.O
 	content = strings.ReplaceAll(content, "$(JAEGER_NAMESPACE)", polaris.Namespace)
 	content = strings.ReplaceAll(content, "$(EVENT_STORE_NAMESPACE)", polaris.Namespace)
 	content = strings.ReplaceAll(content, "$(LEADER_ELECTOR_NAMESPACE)", polaris.Namespace)
-	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.EnvironmentName)
+	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polaris.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polaris.ImagePullSecrets)
 

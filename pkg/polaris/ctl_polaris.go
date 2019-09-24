@@ -106,7 +106,6 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType stri
 func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris")
 	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "Environment DNS")
-	cmd.Flags().StringVar(&ctl.EnvironmentName, "environment-name", ctl.EnvironmentName, "Environment name")
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
 	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", false, "Send this flag if you wish to enable ReportingPlatform")
@@ -205,12 +204,18 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 // GetPolarisDBDefault returns PolarisDB default configuration
 func GetPolarisDefault() *Polaris {
 	return &Polaris{
-		EnvironmentName: "polaris",
 		EnableReporting: false,
 		PolarisSpec: &PolarisSpec{
 			DownloadServerDetails: DownloadServerDetails{
 				Storage: Storage{
 					StorageSize: DOWNLOAD_SERVER_PV_SIZE,
+				},
+			},
+		},
+		ReportingSpec: &ReportingSpec{
+			ReportStorageDetails: &ReportStorageDetails{
+				Storage: &Storage{
+					StorageSize: REPORT_STORAGE_PV_SIZE,
 				},
 			},
 		},
