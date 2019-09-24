@@ -103,7 +103,6 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType stri
 func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris")
 	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "Environment DNS")
-	cmd.Flags().StringVar(&ctl.EnvironmentName, "environment-name", ctl.EnvironmentName, "Environment name")
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
 	cmd.Flags().StringVar(&ctl.Reporting, "reporting", ctl.Reporting, "Enable reporting [true|false]")
@@ -150,8 +149,6 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.Version = ctl.Version
 		case "environment-dns":
 			ctl.spec.EnvironmentDNS = ctl.EnvironmentDNS
-		case "environment-name":
-			ctl.spec.EnvironmentName = ctl.EnvironmentName
 		case "reporting":
 			ctl.spec.EnableReporting = strings.ToUpper(ctl.Reporting) == "TRUE"
 		case "pull-secret":
@@ -191,7 +188,6 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 // GetPolarisDBDefault returns PolarisDB default configuration
 func GetPolarisDefault() *Polaris {
 	return &Polaris{
-		EnvironmentName: "polaris",
 		EnableReporting: false,
 		PolarisSpec: &PolarisSpec{
 			DownloadServerDetails: &DownloadServerDetails{

@@ -37,7 +37,7 @@ func GetPolarisReportingComponents(baseUrl string, polaris Polaris) (map[string]
 
 	// regex patching
 	content = strings.ReplaceAll(content, "${NAMESPACE}", polaris.Namespace)
-	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.EnvironmentName)
+	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polaris.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polaris.ImagePullSecrets)
 

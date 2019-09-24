@@ -1238,14 +1238,14 @@ var updatePolarisCmd = &cobra.Command{
 			content = append(content, polarisComponentsByte...)
 		}
 
-		fmt.Print("Updating Polaris")
+		log.Info("Updating Polaris")
 		ch := make(chan struct{})
 		go printWaitingDots(time.Second*5, ch)
 
 		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
 		if err != nil {
 			close(ch)
-			return fmt.Errorf("Couldn't update polaris |  %+v - %s", out, err)
+			return fmt.Errorf("couldn't update polaris |  %+v - %s", out, err)
 		}
 
 		// Marshal Polaris
@@ -1270,7 +1270,7 @@ var updatePolarisCmd = &cobra.Command{
 			return err
 		}
 		close(ch)
-		fmt.Println("\nPolaris has been successfully updated!")
+		log.Info("Polaris has been successfully updated!")
 		return nil
 	},
 }
