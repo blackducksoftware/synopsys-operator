@@ -77,6 +77,14 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.Secrets = append(components.Secrets, sec)
 
+	if len(a.alert.Spec.JavaKeyStore) > 0 || (len(a.alert.Spec.Certificate) > 0 && len(a.alert.Spec.CertificateKey) > 0) {
+		certificateSecret, err := a.getAlertCustomCertSecret()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Alert Certificate Secret: %s", err)
+		}
+		components.Secrets = append(components.Secrets, certificateSecret)
+	}
+
 	if a.alert.Spec.PersistentStorage {
 		pvc, err := a.getAlertPersistentVolumeClaim()
 		if err != nil {

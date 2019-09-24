@@ -145,6 +145,9 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
+	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to the PEM certificate to use for Alert")
+	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to the PEM certificate key for Alert")
+	cmd.Flags().StringVar(&ctl.JavaKeyStoreFilePath, "java-keystore-file-path", ctl.JavaKeyStoreFilePath, "Absolute path to the Java Keystore to use for Alert")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("alert-desired-state", "alert-desired-state flag is deprecated and will be removed by the next release")

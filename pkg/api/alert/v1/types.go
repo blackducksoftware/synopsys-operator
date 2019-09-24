@@ -52,6 +52,9 @@ type AlertSpec struct {
 	PersistentStorage    bool     `json:"persistentStorage"`
 	PVCName              string   `json:"pvcName"`
 	PVCStorageClass      string   `json:"pvcStorageClass"`
+	Certificate          string   `json:"certificate,omitempty"`
+	CertificateKey       string   `json:"certificateKey,omitempty"`
+	JavaKeyStore         string   `json:"javaKeyStore,omitempty"`
 
 	// Should be passed like: e.g "1300Mi"
 	PVCSize     string `json:"pvcSize"`
