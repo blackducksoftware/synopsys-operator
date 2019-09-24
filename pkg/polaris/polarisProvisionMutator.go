@@ -23,8 +23,9 @@ package polaris
 
 import (
 	"fmt"
-	v1 "k8s.io/api/batch/v1"
 	"strings"
+
+	v1 "k8s.io/api/batch/v1"
 )
 
 func GetPolarisProvisionJob(baseUrl string, jobConfig ProvisionJob) (*v1.Job, error) {
@@ -35,7 +36,7 @@ func GetPolarisProvisionJob(baseUrl string, jobConfig ProvisionJob) (*v1.Job, er
 
 	// regex patching
 	content = strings.ReplaceAll(content, "${NAMESPACE}", jobConfig.Namespace)
-	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", jobConfig.EnvironmentName)
+	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", jobConfig.Namespace)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", jobConfig.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", jobConfig.ImagePullSecrets)
 	content = strings.ReplaceAll(content, "${ORG_DESCRIPTION}", jobConfig.OrganizationProvisionOrganizationDescription)

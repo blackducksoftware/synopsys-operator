@@ -233,7 +233,6 @@ type ReportStorageDetails struct {
 
 type ProvisionJob struct {
 	Namespace                                    string
-	EnvironmentName                              string
 	EnvironmentDNS                               string
 	ImagePullSecrets                             string
 	Repository                                   string

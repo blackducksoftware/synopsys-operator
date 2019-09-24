@@ -40,13 +40,8 @@ func GetPolarisReportingComponents(baseUrl string, polaris Polaris) (map[string]
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polaris.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polaris.ImagePullSecrets)
-	content = strings.ReplaceAll(content, "${REPORT_STORAGE_PV_SIZE}", polaris.ReportingSpec.ReportStorageDetails.Storage.StorageSize)
 
-	if len(polaris.ReportingSpec.ReportStorageDetails.Storage.StorageSize) != 0 {
-		content = strings.ReplaceAll(content, "${REPORT_STORAGE_PV_SIZE}", polaris.ReportingSpec.ReportStorageDetails.Storage.StorageSize)
-	} else {
-		content = strings.ReplaceAll(content, "${REPORT_STORAGE_PV_SIZE}", REPORT_STORAGE_PV_SIZE)
-	}
+	content = strings.ReplaceAll(content, "${REPORT_STORAGE_PV_SIZE}", polaris.ReportingSpec.ReportStorageDetails.Storage.StorageSize)
 
 	mapOfUniqueIdToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 

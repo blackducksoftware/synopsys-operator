@@ -27,10 +27,11 @@ import (
 
 	"fmt"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
-	v1 "k8s.io/api/core/v1"
 	"sort"
 	"strings"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
@@ -556,7 +557,6 @@ var createPolarisCmd = &cobra.Command{
 		}
 		cobra.MarkFlagRequired(cmd.Flags(), "version")
 		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
-		cobra.MarkFlagRequired(cmd.Flags(), "environment-name")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
 
@@ -648,7 +648,6 @@ var createPolarisNativeCmd = &cobra.Command{
 		}
 		cobra.MarkFlagRequired(cmd.Flags(), "version")
 		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
-		cobra.MarkFlagRequired(cmd.Flags(), "environment-name")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
 

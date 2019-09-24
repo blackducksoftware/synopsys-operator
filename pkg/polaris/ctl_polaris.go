@@ -155,8 +155,6 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.Version = ctl.Version
 		case "environment-dns":
 			ctl.spec.EnvironmentDNS = ctl.EnvironmentDNS
-		case "environment-name":
-			ctl.spec.EnvironmentName = ctl.EnvironmentName
 		case "enable-reporting":
 			ctl.spec.EnableReporting = ctl.EnableReporting
 		case "pull-secret":
@@ -213,8 +211,8 @@ func GetPolarisDefault() *Polaris {
 			},
 		},
 		ReportingSpec: &ReportingSpec{
-			ReportStorageDetails: &ReportStorageDetails{
-				Storage: &Storage{
+			ReportStorageDetails: ReportStorageDetails{
+				Storage: Storage{
 					StorageSize: REPORT_STORAGE_PV_SIZE,
 				},
 			},
@@ -244,13 +242,6 @@ func GetPolarisDefault() *Polaris {
 				Replicas: util.IntToInt32(1),
 				Storage: Storage{
 					StorageSize: UPLOAD_SERVER_PV_SIZE,
-				},
-			},
-		},
-		ReportingSpec: &ReportingSpec{
-			ReportStorageDetails: ReportStorageDetails{
-				Storage: Storage{
-					StorageSize: REPORT_STORAGE_PV_SIZE,
 				},
 			},
 		},
