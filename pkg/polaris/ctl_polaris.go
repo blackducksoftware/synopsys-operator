@@ -23,7 +23,6 @@ package polaris
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -60,9 +59,13 @@ type PolarisCRSpecBuilderFromCobraFlags struct {
 	SMTPPassword    string
 	SMTPSenderEmail string
 
-	UploadServerSize string
-	EventstoreSize   string
-	Reporting        string
+	UploadServerSize   string
+	EventstoreSize     string
+	MongoDBSize        string
+	DownloadServerSize string
+	ReportStorageSize  string
+
+	EnableReporting bool
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -106,7 +109,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 	cmd.Flags().StringVar(&ctl.EnvironmentName, "environment-name", ctl.EnvironmentName, "Environment name")
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
-	cmd.Flags().StringVar(&ctl.Reporting, "reporting", ctl.Reporting, "Enable reporting [true|false]")
+	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", false, "Send this flag if you wish to enable ReportingPlatform")
 	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
 	//cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
@@ -115,6 +118,9 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", ctl.PostgresSize, "PVC size to use for postgres. e.g. 100Gi")
 	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", ctl.UploadServerSize, "PVC size to use for uploadserver. e.g. 100Gi")
 	cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", ctl.EventstoreSize, "PVC size to use for eventstore. e.g. 100Gi")
+	cmd.Flags().StringVar(&ctl.MongoDBSize, "mongodb-size", ctl.MongoDBSize, "PVC size to use for mongodb. e.g.100Gi")
+	cmd.Flags().StringVar(&ctl.DownloadServerSize, "downloadserver-size", ctl.DownloadServerSize, "PVC size to use for downloadserver. e.g. 100Gi")
+	cmd.Flags().StringVar(&ctl.ReportStorageSize, "reportstorage-size", ctl.ReportStorageSize, "PVC size to use for reportstorage. e.g. 100Gi, applicable only if --enable-reporting is set to true.")
 
 	cmd.Flags().StringVar(&ctl.SMTPHost, "smtp-host", ctl.SMTPHost, "SMTP host")
 	cmd.Flags().IntVar(&ctl.SMTPPort, "smtp-port", ctl.SMTPPort, "SMTP port")
@@ -152,8 +158,8 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.EnvironmentDNS = ctl.EnvironmentDNS
 		case "environment-name":
 			ctl.spec.EnvironmentName = ctl.EnvironmentName
-		case "reporting":
-			ctl.spec.EnableReporting = strings.ToUpper(ctl.Reporting) == "TRUE"
+		case "enable-reporting":
+			ctl.spec.EnableReporting = ctl.EnableReporting
 		case "pull-secret":
 			ctl.spec.ImagePullSecrets = ctl.ImagePullSecrets
 		case "postgres-host":
@@ -170,6 +176,14 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.PolarisDBSpec.UploadServerDetails.Storage.StorageSize = ctl.UploadServerSize
 		case "eventstore-size":
 			ctl.spec.PolarisDBSpec.EventstoreDetails.Storage.StorageSize = ctl.EventstoreSize
+		case "mongodb-size":
+			ctl.spec.PolarisDBSpec.MongoDBDetails.Storage.StorageSize = ctl.MongoDBSize
+		case "downloadserver-size":
+			ctl.spec.PolarisSpec.DownloadServerDetails.Storage.StorageSize = ctl.DownloadServerSize
+		case "reportstorage-size":
+			if ctl.EnableReporting {
+				ctl.spec.ReportingSpec.ReportStorageDetails.Storage.StorageSize = ctl.ReportStorageSize
+			}
 		case "smtp-host":
 			ctl.spec.PolarisDBSpec.SMTPDetails.Host = ctl.SMTPHost
 		case "smtp-port":
@@ -194,8 +208,8 @@ func GetPolarisDefault() *Polaris {
 		EnvironmentName: "polaris",
 		EnableReporting: false,
 		PolarisSpec: &PolarisSpec{
-			DownloadServerDetails: &DownloadServerDetails{
-				Storage: &Storage{
+			DownloadServerDetails: DownloadServerDetails{
+				Storage: Storage{
 					StorageSize: DOWNLOAD_SERVER_PV_SIZE,
 				},
 			},
@@ -225,6 +239,13 @@ func GetPolarisDefault() *Polaris {
 				Replicas: util.IntToInt32(1),
 				Storage: Storage{
 					StorageSize: UPLOAD_SERVER_PV_SIZE,
+				},
+			},
+		},
+		ReportingSpec: &ReportingSpec{
+			ReportStorageDetails: ReportStorageDetails{
+				Storage: Storage{
+					StorageSize: REPORT_STORAGE_PV_SIZE,
 				},
 			},
 		},

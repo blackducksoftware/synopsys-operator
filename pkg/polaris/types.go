@@ -48,7 +48,7 @@ type PolarisSpec struct {
 	ConfigsServiceDetails        *ConfigsServiceDetails        `json:"configs_service_details,omitempty"`
 	CosServerDetails             *CosServerDetails             `json:"cos_server_details,omitempty"`
 	DesktopMetricsServiceDetails *DesktopMetricsServiceDetails `json:"desktop_metrics_service_details,omitempty"`
-	DownloadServerDetails        *DownloadServerDetails        `json:"download_server_details,omitempty"`
+	DownloadServerDetails        DownloadServerDetails         `json:"download_server_details,omitempty"`
 	IssueServerDetails           *IssueServerDetails           `json:"issue_server_details,omitempty"`
 	JobsControllerServiceDetails *JobsControllerServiceDetails `json:"jobs_controller_service_details,omitempty"`
 	JobsServiceDetails           *JobsServiceDetails           `json:"jobs_service_details,omitempty"`
@@ -72,7 +72,7 @@ type ReportingSpec struct {
 	RPReportServiceDetails         *RPReportServiceDetails         `json:"rp_report_service_details,omitempty"`
 	RPSwaggerDocDetails            *RPSwaggerDocDetails            `json:"rp_swagger_doc_details,omitempty"`
 	RPToolsPortfolioServiceDetails *RPToolsPortfolioServiceDetails `json:"rp_tools_portfolio_service_details,omitempty"`
-	ReportStorageDetails           *ReportStorageDetails           `json:"report_storage_details,omitempty"`
+	ReportStorageDetails           ReportStorageDetails            `json:"report_storage_details,omitempty"`
 }
 
 /*
@@ -159,7 +159,7 @@ type DesktopMetricsServiceDetails struct {
 }
 
 type DownloadServerDetails struct {
-	Storage *Storage `json:"storage,omitempty"`
+	Storage Storage `json:"storage,omitempty"`
 }
 
 type IssueServerDetails struct {
@@ -229,7 +229,7 @@ type RPToolsPortfolioServiceDetails struct {
 }
 
 type ReportStorageDetails struct {
-	Storage *Storage `json:"storage,omitempty"`
+	Storage Storage `json:"storage,omitempty"`
 }
 
 type ProvisionJob struct {

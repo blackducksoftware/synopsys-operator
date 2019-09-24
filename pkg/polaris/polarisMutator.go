@@ -43,7 +43,12 @@ func GetPolarisComponents(baseUrl string, polaris Polaris) (map[string]runtime.O
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.EnvironmentName)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polaris.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polaris.ImagePullSecrets)
-	content = strings.ReplaceAll(content, "${DOWNLOAD_SERVER_PV_SIZE}", polaris.PolarisSpec.DownloadServerDetails.Storage.StorageSize)
+
+	if len(polaris.PolarisSpec.DownloadServerDetails.Storage.StorageSize) != 0 {
+		content = strings.ReplaceAll(content, "${DOWNLOAD_SERVER_PV_SIZE}", polaris.PolarisSpec.DownloadServerDetails.Storage.StorageSize)
+	} else {
+		content = strings.ReplaceAll(content, "${DOWNLOAD_SERVER_PV_SIZE}", DOWNLOAD_SERVER_PV_SIZE)
+	}
 
 	if polaris.EnableReporting {
 		content = strings.ReplaceAll(content, "${REPORTING_URL}", fmt.Sprintf("https://%s/reporting", polaris.EnvironmentDNS))
