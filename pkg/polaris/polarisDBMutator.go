@@ -62,6 +62,7 @@ func GetPolarisDBComponents(baseUrl string, polaris Polaris) (map[string]runtime
 	} else {
 		content = strings.ReplaceAll(content, "${SMTP_PASSWORD}", "Cg==")
 	}
+	content = strings.ReplaceAll(content, "${SMTP_SENDER_EMAIL}", polaris.PolarisDBSpec.SMTPDetails.SenderEmail)
 	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", polaris.PolarisDBSpec.PostgresDetails.Host)
 	if polaris.PolarisDBSpec.PostgresDetails.Port != 5432 {
 		content = strings.ReplaceAll(content, "5432", strconv.Itoa(polaris.PolarisDBSpec.PostgresDetails.Port))
