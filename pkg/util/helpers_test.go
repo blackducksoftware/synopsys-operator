@@ -228,3 +228,76 @@ func TestGetResourceName(t *testing.T) {
 		})
 	}
 }
+
+func TestIsNotDefaultVersionGreaterThanOrEqualTo(t *testing.T) {
+	type args struct {
+		version      string
+		majorRelease int
+		minorRelease int
+		dotRelease   int
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "less version",
+			args: args{
+				version:      "4.2.0",
+				majorRelease: 5,
+				minorRelease: 0,
+				dotRelease:   0,
+			},
+			want: false,
+		},
+		{
+			name: "equal version",
+			args: args{
+				version:      "5.0.0",
+				majorRelease: 5,
+				minorRelease: 0,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater minor version",
+			args: args{
+				version:      "5.2.0",
+				majorRelease: 5,
+				minorRelease: 0,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater dot version",
+			args: args{
+				version:      "5.0.1",
+				majorRelease: 5,
+				minorRelease: 0,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater major version",
+			args: args{
+				version:      "6.0.0",
+				majorRelease: 5,
+				minorRelease: 0,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := IsNotDefaultVersionGreaterThanOrEqualTo(tt.args.version, tt.args.majorRelease, tt.args.minorRelease, tt.args.dotRelease); got != tt.want {
+				t.Errorf("IsNotDefaultVersionGreaterThanOrEqualTo() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

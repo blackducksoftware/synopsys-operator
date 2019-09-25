@@ -386,6 +386,38 @@ func updateAlert(alt *alertapi.Alert, flagset *pflag.FlagSet) (*alertapi.Alert, 
 	}
 	newSpec := alertInterface.(alertapi.AlertSpec)
 	newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, alt.Spec.Environs)
+
+	// check whether the update Alert version is greater than or equal to 5.0.0
+	isGreaterThanOrEqualTo, err := util.IsNotDefaultVersionGreaterThanOrEqualTo(newSpec.Version, 5, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// if greater than or equal to 5.0.0, then copy PUBLIC_HUB_WEBSERVER_HOST to ALERT_HOSTNAME and PUBLIC_HUB_WEBSERVER_PORT to ALERT_SERVER_PORT
+	// and delete PUBLIC_HUB_WEBSERVER_HOST and PUBLIC_HUB_WEBSERVER_PORT from the environs. In future, we need to request the customer to use the new params
+	if isGreaterThanOrEqualTo {
+		isChanged := false
+		maps := util.StringArrayToMapSplitBySeparator(newSpec.Environs, ":")
+		if _, ok := maps["PUBLIC_HUB_WEBSERVER_HOST"]; ok {
+			if _, ok1 := maps["ALERT_HOSTNAME"]; !ok1 {
+				maps["ALERT_HOSTNAME"] = maps["PUBLIC_HUB_WEBSERVER_HOST"]
+				isChanged = true
+			}
+			delete(maps, "PUBLIC_HUB_WEBSERVER_HOST")
+		}
+
+		if _, ok := maps["PUBLIC_HUB_WEBSERVER_PORT"]; ok {
+			if _, ok1 := maps["ALERT_SERVER_PORT"]; !ok1 {
+				maps["ALERT_SERVER_PORT"] = maps["PUBLIC_HUB_WEBSERVER_PORT"]
+				isChanged = true
+			}
+			delete(maps, "PUBLIC_HUB_WEBSERVER_PORT")
+		}
+
+		if isChanged {
+			newSpec.Environs = util.MapToStringArrayJoinBySeparator(maps, ":")
+		}
+	}
 	alt.Spec = newSpec
 	return alt, nil
 }
@@ -415,7 +447,7 @@ var updateAlertCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
-		newAlert, err := updateAlert(currAlert, cmd.Flags())
+		currAlert, err = updateAlert(currAlert, cmd.Flags())
 		if err != nil {
 			return err
 		}
@@ -428,14 +460,14 @@ var updateAlertCmd = &cobra.Command{
 
 		log.Infof("updating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 		// update the namespace label if the version of the app got changed
-		_, err = util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alertNamespace, alertName, newAlert.Spec.Version, false)
+		_, err = util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alertNamespace, alertName, currAlert.Spec.Version, false)
 		if err != nil {
 			return err
 		}
 		// Update the Alert
-		_, err = util.UpdateAlert(alertClient, crdnamespace, newAlert)
+		_, err = util.UpdateAlert(alertClient, crdnamespace, currAlert)
 		if err != nil {
-			return fmt.Errorf("error updating Alert '%s' due to %+v", newAlert.Name, err)
+			return fmt.Errorf("error updating Alert '%s' due to %+v", currAlert.Name, err)
 		}
 		log.Infof("successfully submitted updates to Alert '%s' in namespace '%s'", alertName, alertNamespace)
 		return nil
