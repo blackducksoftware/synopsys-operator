@@ -24,10 +24,7 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"encoding/json"
-	v1 "k8s.io/api/core/v1"
-
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	"io/ioutil"
 	"path/filepath"
 	"strconv"
@@ -40,12 +37,14 @@ import (
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -391,6 +390,37 @@ func updateAlert(alt *alertapi.Alert, flagset *pflag.FlagSet) (*alertapi.Alert, 
 	}
 	newSpec := alertInterface.(alertapi.AlertSpec)
 	newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, alt.Spec.Environs)
+	// check whether the update Alert version is greater than or equal to 5.0.0
+	isGreaterThanOrEqualTo, err := util.IsNotDefaultVersionGreaterThanOrEqualTo(newSpec.Version, 5, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// if greater than or equal to 5.0.0, then copy PUBLIC_HUB_WEBSERVER_HOST to ALERT_HOSTNAME and PUBLIC_HUB_WEBSERVER_PORT to ALERT_SERVER_PORT
+	// and delete PUBLIC_HUB_WEBSERVER_HOST and PUBLIC_HUB_WEBSERVER_PORT from the environs. In future, we need to request the customer to use the new params
+	if isGreaterThanOrEqualTo {
+		isChanged := false
+		maps := util.StringArrayToMapSplitBySeparator(newSpec.Environs, ":")
+		if _, ok := maps["PUBLIC_HUB_WEBSERVER_HOST"]; ok {
+			if _, ok1 := maps["ALERT_HOSTNAME"]; !ok1 {
+				maps["ALERT_HOSTNAME"] = maps["PUBLIC_HUB_WEBSERVER_HOST"]
+				isChanged = true
+			}
+			delete(maps, "PUBLIC_HUB_WEBSERVER_HOST")
+		}
+
+		if _, ok := maps["PUBLIC_HUB_WEBSERVER_PORT"]; ok {
+			if _, ok1 := maps["ALERT_SERVER_PORT"]; !ok1 {
+				maps["ALERT_SERVER_PORT"] = maps["PUBLIC_HUB_WEBSERVER_PORT"]
+				isChanged = true
+			}
+			delete(maps, "PUBLIC_HUB_WEBSERVER_PORT")
+		}
+
+		if isChanged {
+			newSpec.Environs = util.MapToStringArrayJoinBySeparator(maps, ":")
+		}
+	}
 	alt.Spec = newSpec
 	return alt, nil
 }
@@ -420,7 +450,7 @@ var updateAlertCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
-		newAlert, err := updateAlert(currAlert, cmd.Flags())
+		currAlert, err = updateAlert(currAlert, cmd.Flags())
 		if err != nil {
 			return err
 		}
@@ -433,14 +463,14 @@ var updateAlertCmd = &cobra.Command{
 
 		log.Infof("updating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 		// update the namespace label if the version of the app got changed
-		_, err = util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alertNamespace, alertName, newAlert.Spec.Version, false)
+		_, err = util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alertNamespace, alertName, currAlert.Spec.Version, false)
 		if err != nil {
 			return err
 		}
 		// Update the Alert
-		_, err = util.UpdateAlert(alertClient, crdnamespace, newAlert)
+		_, err = util.UpdateAlert(alertClient, crdnamespace, currAlert)
 		if err != nil {
-			return fmt.Errorf("error updating Alert '%s' due to %+v", newAlert.Name, err)
+			return fmt.Errorf("error updating Alert '%s' due to %+v", currAlert.Name, err)
 		}
 		log.Infof("successfully submitted updates to Alert '%s' in namespace '%s'", alertName, alertNamespace)
 		return nil
@@ -1254,7 +1284,7 @@ var updatePolarisCmd = &cobra.Command{
 			return err
 		}
 
-		polarisSecret := &v1.Secret{
+		polarisSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "polaris",
 				Namespace: namespace,

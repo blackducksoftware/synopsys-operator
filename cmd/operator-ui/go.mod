@@ -7,15 +7,13 @@ require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20190827201936-f790f893b3e1
+	github.com/blackducksoftware/synopsys-operator v0.0.0-20190925103257-c6785452462b
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.15+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
-	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-kit/kit v0.9.0 // indirect
@@ -33,13 +31,10 @@ require (
 	github.com/gogo/protobuf v1.2.2-0.20190730201129-28a6bbf47e48 // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/google/pprof v0.0.0-20190723021845-34ac40c74b70 // indirect
-	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.9.6 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
-	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
-	github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2 // indirect
 	github.com/kr/pty v1.1.8 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
@@ -71,12 +66,11 @@ require (
 	google.golang.org/api v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55 // indirect
 	google.golang.org/grpc v1.23.0 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	honnef.co/go/tools v0.0.1-2019.2.2 // indirect
 	k8s.io/api v0.0.0-20190826194732-9f642ccb7a30 // indirect
 	k8s.io/apiextensions-apiserver v0.0.0-20190827195709-e883aab73540 // indirect
 	k8s.io/apimachinery v0.0.0-20190827074644-f378a67c6af3
-	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/gengo v0.0.0-20190826232639-a874a240740c // indirect
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
 	sigs.k8s.io/structured-merge-diff v0.0.0-20190820212518-960c3cc04183 // indirect
@@ -85,9 +79,8 @@ require (
 replace (
 	cloud.google.com/go => cloud.google.com/go v0.44.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent => contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
-	git.apache.org/thrift.git => github.com/apache/thrift v0.12.0
 	github.com/NYTimes/gziphandler => github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190827201936-f790f893b3e1
+	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190925103257-c6785452462b
 	github.com/cockroachdb/cockroach-go => github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt => github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.13+incompatible // indirect
