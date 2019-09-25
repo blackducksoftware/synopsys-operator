@@ -1304,6 +1304,31 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 	return err
 }
 
+// filterPodsByNamePrefixInNamespace will filter the pod based on pod name prefix from a list a pods in a given namespace
+func filterPodsByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace string, prefix string) ([]*corev1.Pod, error) {
+	pods, err := ListPods(clientset, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
+	}
+
+	pod := filterPodsByNamePrefix(pods, prefix)
+	if len(pod) > 0 {
+		return pod, nil
+	}
+	return nil, nil
+}
+
+// filterPodsByNamePrefix will filter the pod based on pod name prefix from a list a pods
+func filterPodsByNamePrefix(pods *corev1.PodList, prefix string) []*corev1.Pod {
+	podsArr := make([]*corev1.Pod, 0)
+	for _, pod := range pods.Items {
+		if strings.HasPrefix(pod.Name, prefix) {
+			podsArr = append(podsArr, &pod)
+		}
+	}
+	return podsArr
+}
+
 // PatchReplicationControllerForReplicas patch a replication controller for replica update
 func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old *corev1.ReplicationController, replicas *int32) (*corev1.ReplicationController, error) {
 	oldData, err := json.Marshal(old)
@@ -1324,7 +1349,37 @@ func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old 
 	if err != nil {
 		return nil, err
 	}
-	return rc, nil
+
+	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
+	timeout := time.NewTimer(120 * time.Second)
+	// ticker starts and execute the task for every n intervals
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	defer timeout.Stop()
+
+	for {
+		select {
+		case <-timeout.C:
+			pods, err := filterPodsByNamePrefixInNamespace(clientset, new.Namespace, new.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(pods) == Int32ToInt(replicas) {
+				return rc, nil
+			}
+			return rc, fmt.Errorf("[WARNING] timeout expired to scale down the pod for replication controller %s in namespace %s", new.Name, new.Namespace)
+		case <-ticker.C:
+			pods, err := filterPodsByNamePrefixInNamespace(clientset, new.Namespace, new.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(pods) == Int32ToInt(replicas) {
+				return rc, nil
+			}
+		}
+	}
 }
 
 // PatchReplicationController patch a replication controller

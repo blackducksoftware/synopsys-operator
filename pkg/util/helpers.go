@@ -207,3 +207,49 @@ func IsVersionGreaterThanOrEqualTo(version string, year int, month time.Month, d
 	}
 	return false, nil
 }
+
+// IsNotDefaultVersionGreaterThanOrEqualTo returns whether the given version is greater than or equal to the given inputs
+func IsNotDefaultVersionGreaterThanOrEqualTo(version string, majorRelease int, minorRelease int, dotRelease int) (bool, error) {
+	versionArr := strings.Split(version, ".")
+	if len(versionArr) >= 3 {
+		majorReleaseVersion, err := strconv.Atoi(versionArr[0])
+		if err != nil {
+			return false, err
+		}
+		minorReleaseVersion, err := strconv.Atoi(versionArr[1])
+		if err != nil {
+			return false, err
+		}
+		dotReleaseVersion, err := strconv.Atoi(versionArr[2])
+		if err != nil {
+			return false, err
+		}
+		if (majorReleaseVersion > majorRelease) ||
+			(majorReleaseVersion == majorRelease && minorReleaseVersion > minorRelease) ||
+			(majorReleaseVersion == majorRelease && minorReleaseVersion == minorRelease && dotReleaseVersion >= dotRelease) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// StringArrayToMapSplitBySeparator converts the string array to map based on separator for each string in the array
+func StringArrayToMapSplitBySeparator(strs []string, separator string) map[string]string {
+	maps := make(map[string]string, 0)
+	for _, str := range strs {
+		strArr := strings.SplitN(str, separator, 2)
+		if len(strArr) == 2 {
+			maps[strArr[0]] = strArr[1]
+		}
+	}
+	return maps
+}
+
+// MapToStringArrayJoinBySeparator converts the map to string array and each key and value of the map will be joined by separator
+func MapToStringArrayJoinBySeparator(maps map[string]string, separator string) []string {
+	strs := make([]string, 0)
+	for key, value := range maps {
+		strs = append(strs, fmt.Sprintf("%s%s%s", key, separator, value))
+	}
+	return strs
+}
