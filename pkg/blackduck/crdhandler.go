@@ -110,7 +110,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 
 // ObjectDeleted will be called for delete hub events
 func (h *Handler) ObjectDeleted(name string) {
-	log.Debugf("ObjectDeleted: %+v", name)
+	log.Debugf("in ObjectDeleted: %+v", name)
 
 	// if cluster scope, then check whether the Black Duck CRD exist. If not exist, then don't delete the instance
 	if h.config.IsClusterScoped {
@@ -134,6 +134,7 @@ func (h *Handler) ObjectDeleted(name string) {
 // ObjectUpdated will be called for update black duck events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	var err error
+
 	bd, ok := objNew.(*blackduckv1.Blackduck)
 	if !ok {
 		log.Error("unable to cast Black Duck object")
