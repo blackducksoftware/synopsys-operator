@@ -43,35 +43,35 @@ type PolarisDBSpec struct {
 }
 
 type PolarisSpec struct {
-	AuthServerDetails            *AuthServerDetails            `json:"auth_server_details,omitempty"`
-	ConfigsServiceDetails        *ConfigsServiceDetails        `json:"configs_service_details,omitempty"`
-	CosServerDetails             *CosServerDetails             `json:"cos_server_details,omitempty"`
-	DesktopMetricsServiceDetails *DesktopMetricsServiceDetails `json:"desktop_metrics_service_details,omitempty"`
-	DownloadServerDetails        *DownloadServerDetails        `json:"download_server_details,omitempty"`
-	IssueServerDetails           *IssueServerDetails           `json:"issue_server_details,omitempty"`
-	JobsControllerServiceDetails *JobsControllerServiceDetails `json:"jobs_controller_service_details,omitempty"`
-	JobsServiceDetails           *JobsServiceDetails           `json:"jobs_service_details,omitempty"`
-	LogsServiceDetails           *LogsServiceDetails           `json:"logs_service_details,omitempty"`
-	PericlesSwaggerUIDetails     *PericlesSwaggerUIDetails     `json:"pericles_swagger_ui_detail,omitempty"`
-	TaxonomyServerDeails         *TaxonomyServerDeails         `json:"taxonomy_server_details,omitempty"`
-	TDSCodeAnalysisDetails       *TDSCodeAnalysisDetails       `json:"tds_code_analysis_details,omitempty"`
-	ToolsServiceDetails          *ToolsServiceDetails          `json:"tools_service_details,omitempty"`
-	TriageCommandHandlerDetails  *TriageCommandHandlerDetails  `json:"triage_command_handler,omitempty"`
-	TriageQueryDetails           *TriageQueryDetails           `json:"triage_query_details,omitempty"`
-	VinylServerDetails           *VinylServerDetails           `json:"vinyl_server_details,omitempty"`
-	WebCoreDetails               *WebCoreDetails               `json:"web_core_details,omitempty"`
-	WebHelpDetails               *WebHelpDetails               `json:"web_help_details,omitempty"`
+	AuthServerDetails            AuthServerDetails            `json:"auth_server_details,omitempty"`
+	ConfigsServiceDetails        ConfigsServiceDetails        `json:"configs_service_details,omitempty"`
+	CosServerDetails             CosServerDetails             `json:"cos_server_details,omitempty"`
+	DesktopMetricsServiceDetails DesktopMetricsServiceDetails `json:"desktop_metrics_service_details,omitempty"`
+	DownloadServerDetails        DownloadServerDetails        `json:"download_server_details,omitempty"`
+	IssueServerDetails           IssueServerDetails           `json:"issue_server_details,omitempty"`
+	JobsControllerServiceDetails JobsControllerServiceDetails `json:"jobs_controller_service_details,omitempty"`
+	JobsServiceDetails           JobsServiceDetails           `json:"jobs_service_details,omitempty"`
+	LogsServiceDetails           LogsServiceDetails           `json:"logs_service_details,omitempty"`
+	PericlesSwaggerUIDetails     PericlesSwaggerUIDetails     `json:"pericles_swagger_ui_detail,omitempty"`
+	TaxonomyServerDeails         TaxonomyServerDeails         `json:"taxonomy_server_details,omitempty"`
+	TDSCodeAnalysisDetails       TDSCodeAnalysisDetails       `json:"tds_code_analysis_details,omitempty"`
+	ToolsServiceDetails          ToolsServiceDetails          `json:"tools_service_details,omitempty"`
+	TriageCommandHandlerDetails  TriageCommandHandlerDetails  `json:"triage_command_handler,omitempty"`
+	TriageQueryDetails           TriageQueryDetails           `json:"triage_query_details,omitempty"`
+	VinylServerDetails           VinylServerDetails           `json:"vinyl_server_details,omitempty"`
+	WebCoreDetails               WebCoreDetails               `json:"web_core_details,omitempty"`
+	WebHelpDetails               WebHelpDetails               `json:"web_help_details,omitempty"`
 }
 
 type ReportingSpec struct {
-	RPFrontendDetails              *RPFrontendDetails              `json:"rp_frontend_details,omitempty"`
-	RPIssueManager                 *RPIssueManager                 `json:"rp_issue_manager,omitemtpy"`
-	RPPolarisAgentServiceDetails   *RPPolarisAgentServiceDetails   `json:"rp_polaris_agent_service_details,omitempty"`
-	RPPortfolioServiceDetails      *RPPortfolioServiceDetails      `json:"rp_portfolio_service_details,omitempty"`
-	RPReportServiceDetails         *RPReportServiceDetails         `json:"rp_report_service_details,omitempty"`
-	RPSwaggerDocDetails            *RPSwaggerDocDetails            `json:"rp_swagger_doc_details,omitempty"`
-	RPToolsPortfolioServiceDetails *RPToolsPortfolioServiceDetails `json:"rp_tools_portfolio_service_details,omitempty"`
-	ReportStorageDetails           *ReportStorageDetails           `json:"report_storage_details,omitempty"`
+	RPFrontendDetails              RPFrontendDetails              `json:"rp_frontend_details,omitempty"`
+	RPIssueManager                 RPIssueManager                 `json:"rp_issue_manager,omitemtpy"`
+	RPPolarisAgentServiceDetails   RPPolarisAgentServiceDetails   `json:"rp_polaris_agent_service_details,omitempty"`
+	RPPortfolioServiceDetails      RPPortfolioServiceDetails      `json:"rp_portfolio_service_details,omitempty"`
+	RPReportServiceDetails         RPReportServiceDetails         `json:"rp_report_service_details,omitempty"`
+	RPSwaggerDocDetails            RPSwaggerDocDetails            `json:"rp_swagger_doc_details,omitempty"`
+	RPToolsPortfolioServiceDetails RPToolsPortfolioServiceDetails `json:"rp_tools_portfolio_service_details,omitempty"`
+	ReportStorageDetails           ReportStorageDetails           `json:"report_storage_details,omitempty"`
 }
 
 /*
@@ -158,7 +158,7 @@ type DesktopMetricsServiceDetails struct {
 }
 
 type DownloadServerDetails struct {
-	Storage *Storage `json:"storage,omitempty"`
+	Storage Storage `json:"storage,omitempty"`
 }
 
 type IssueServerDetails struct {
@@ -228,12 +228,11 @@ type RPToolsPortfolioServiceDetails struct {
 }
 
 type ReportStorageDetails struct {
-	Storage *Storage `json:"storage,omitempty"`
+	Storage Storage `json:"storage,omitempty"`
 }
 
 type ProvisionJob struct {
 	Namespace                                    string
-	EnvironmentName                              string
 	EnvironmentDNS                               string
 	ImagePullSecrets                             string
 	Repository                                   string

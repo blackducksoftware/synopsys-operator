@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
@@ -71,7 +72,6 @@ var provisionPolarisCmd = &cobra.Command{
 
 		jobConfig := polaris.ProvisionJob{
 			Namespace:        p.Namespace,
-			EnvironmentName:  p.Namespace,
 			EnvironmentDNS:   p.EnvironmentDNS,
 			ImagePullSecrets: p.ImagePullSecrets,
 			Repository:       p.Repository,
