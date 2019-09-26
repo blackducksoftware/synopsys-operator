@@ -22,49 +22,58 @@
 package polaris
 
 import (
-	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
-
-	v1 "k8s.io/api/batch/v1"
 )
 
-func GetPolarisProvisionJob(baseUrl string, jobConfig ProvisionJob) (*v1.Job, error) {
-	content, err := GetBaseYaml(baseUrl, "polaris", jobConfig.Version, "organization-provision-job.yaml")
+func GetPolarisProvisionComponents(baseUrl string, polarisConf Polaris) (map[string]runtime.Object, error) {
+	content, err := GetBaseYaml(baseUrl, "polaris", polarisConf.Version, "organization-provision-job.yaml")
 	if err != nil {
 		return nil, err
 	}
 
 	// regex patching
-	content = strings.ReplaceAll(content, "${NAMESPACE}", jobConfig.Namespace)
-	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", jobConfig.Namespace)
-	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", jobConfig.EnvironmentDNS)
-	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", jobConfig.ImagePullSecrets)
-	content = strings.ReplaceAll(content, "${ORG_DESCRIPTION}", jobConfig.OrganizationProvisionOrganizationDescription)
-	content = strings.ReplaceAll(content, "${ORG_NAME}", jobConfig.OrganizationProvisionOrganizationName)
-	content = strings.ReplaceAll(content, "${ADMIN_NAME}", jobConfig.OrganizationProvisionAdminName)
-	content = strings.ReplaceAll(content, "${ADMIN_USERNAME}", jobConfig.OrganizationProvisionAdminUsername)
-	content = strings.ReplaceAll(content, "${ADMIN_EMAIL}", jobConfig.OrganizationProvisionAdminEmail)
-	content = strings.ReplaceAll(content, "${SEAT_COUNT}", jobConfig.OrganizationProvisionLicenseSeatCount)
-	content = strings.ReplaceAll(content, "${TYPE}", jobConfig.OrganizationProvisionLicenseType)
-	content = strings.ReplaceAll(content, "${RESULTS_START_DATE}", jobConfig.OrganizationProvisionResultsStartDate)
-	content = strings.ReplaceAll(content, "${RESULTS_END_DATE}", jobConfig.OrganizationProvisionResultsEndDate)
-	content = strings.ReplaceAll(content, "${RETENTION_START_DATE}", jobConfig.OrganizationProvisionRetentionStartDate)
-	content = strings.ReplaceAll(content, "${RETENTION_END_DATE}", jobConfig.OrganizationProvisionRetentionEndDate)
+	content = strings.ReplaceAll(content, "${NAMESPACE}", polarisConf.Namespace)
+	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polarisConf.Namespace)
+	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polarisConf.EnvironmentDNS)
+	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisConf.ImagePullSecrets)
+	content = strings.ReplaceAll(content, "${ORG_DESCRIPTION}", polarisConf.OrganizationDetails.OrganizationProvisionOrganizationDescription)
+	content = strings.ReplaceAll(content, "${ORG_NAME}", polarisConf.OrganizationDetails.OrganizationProvisionOrganizationName)
+	content = strings.ReplaceAll(content, "${ADMIN_NAME}", polarisConf.OrganizationDetails.OrganizationProvisionAdminName)
+	content = strings.ReplaceAll(content, "${ADMIN_USERNAME}", polarisConf.OrganizationDetails.OrganizationProvisionAdminUsername)
+	content = strings.ReplaceAll(content, "${ADMIN_EMAIL}", polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail)
+	content = strings.ReplaceAll(content, "${SEAT_COUNT}", polarisConf.OrganizationDetails.OrganizationProvisionLicenseSeatCount)
+	content = strings.ReplaceAll(content, "${TYPE}", polarisConf.OrganizationDetails.OrganizationProvisionLicenseType)
+	content = strings.ReplaceAll(content, "${RESULTS_START_DATE}", polarisConf.OrganizationDetails.OrganizationProvisionResultsStartDate)
+	content = strings.ReplaceAll(content, "${RESULTS_END_DATE}", polarisConf.OrganizationDetails.OrganizationProvisionResultsEndDate)
+	content = strings.ReplaceAll(content, "${RETENTION_START_DATE}", polarisConf.OrganizationDetails.OrganizationProvisionRetentionStartDate)
+	content = strings.ReplaceAll(content, "${RETENTION_END_DATE}", polarisConf.OrganizationDetails.OrganizationProvisionRetentionEndDate)
 
-	if len(jobConfig.Repository) != 0 {
-		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", jobConfig.Repository)
+	if len(polarisConf.Repository) != 0 {
+		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polarisConf.Repository)
 	}
 
 	mapOfUniqueIdToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
-	jobRuntimeObject, ok := mapOfUniqueIdToBaseRuntimeObject["Job.organization-provision-job"]
-	if !ok {
-		return nil, fmt.Errorf("couldn't find organization-provision-job Job ")
+
+	mapOfUniqueIdToBaseRuntimeObject["Secret.coverity-license"] = &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "coverity-license",
+			Namespace: polarisConf.Namespace,
+			Labels: map[string]string{
+				"environment": polarisConf.Namespace,
+			},
+		},
+		Data: map[string][]byte{
+			"license": []byte(polarisConf.Licenses.Coverity),
+		},
+		Type: corev1.SecretTypeOpaque,
 	}
 
-	job, ok := jobRuntimeObject.(*v1.Job)
-	if !ok {
-		return nil, fmt.Errorf("couldn't cast organization-provision-job ")
-	}
-
-	return job, nil
+	return mapOfUniqueIdToBaseRuntimeObject, nil
 }
