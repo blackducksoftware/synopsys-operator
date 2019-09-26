@@ -21,16 +21,19 @@ OUTDIR = _output
 LINUX = linux
 WINDOWS = windows
 PLATFORM := darwin linux windows
+ARCHITECTURE := amd64 386
 
 binary: clean ${OUTDIR} 
 	$(foreach p,${PLATFORM}, \
-		echo "creating synopsysctl binary for $(p) platform" && \
-		if [[ $(p) = ${WINDOWS} ]]; then \
-			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl.exe; \
-		else \
-			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl; \
-		fi && \
-		echo "completed synopsysctl binary for $(p) platform" \
+	  $(foreach arc,${ARCHITECTURE}, \
+			echo "creating synopsysctl binary for $(p) platform and architecture ${arc}" && \
+			if [[ $(p) = ${WINDOWS} ]]; then \
+				docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=${arc} -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/${arc}/synopsysctl.exe; \
+			else \
+				docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=${arc} -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/${arc}/synopsysctl; \
+			fi && \
+			echo "completed synopsysctl binary for $(p) platform and architecture ${arc}" \
+		) \
 	)
 
 package:
