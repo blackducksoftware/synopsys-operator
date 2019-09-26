@@ -103,26 +103,27 @@ run: generate fmt vet manifests
 
 # Install CRDs into a cluster
 install: manifests
-	kustomize build config/crd | kubectl apply -f -
+	kubectl kustomize config/crd | kubectl apply -f -
 
 # Delete CRDs from a cluster
 delete-crd:
-	kustomize build config/crd | kubectl delete -f -
+	kubectl kustomize config/crd | kubectl delete -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
+    # TODO: [ybhutwala] replace kustomize here to use kubectl kustomize
 	cd config/manager && kustomize edit set image controller=${IMG}
-	kustomize build config/default | kubectl apply -f -
+	kubectl kustomize config/default | kubectl apply -f -
 
 # Remove the controller in the configured Kubernetes cluster in ~/.kube/config
 destroy: manifests
+    # TODO: [ybhutwala] replace kustomize here to use kubectl kustomize
 	cd config/manager && kustomize edit set image controller=${IMG}
-	kustomize build config/default | kubectl delete -f -
+	kubectl kustomize config/default | kubectl delete -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	GO111MODULE=on $(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-
 
 # Run go fmt against code
 fmt:

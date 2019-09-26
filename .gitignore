@@ -34,5 +34,4 @@ cmd/synopsysctl/synopsysctl
 bin/manager
 cover.out
 
-_output
-_output/*
+_output/
