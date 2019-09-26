@@ -25,6 +25,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -121,7 +122,7 @@ var getBlackDuckCmd = &cobra.Command{
 // getBlackDuckRootKeyCmd get Black Duck master key for source code upload in the cluster
 var getBlackDuckRootKeyCmd = &cobra.Command{
 	Use:           "masterkey BLACK_DUCK_NAME FILE_PATH_TO_STORE_MASTER_KEY",
-	Example:       "synopsysctl get blackduck masterkey <name> <file path to store the master key>\nsynopsysctl get blackduck masterkey <name> <file path to store the master key> -n <namespace>",
+	Example:       "synopsysctl get blackduck masterkey <name> <directory path to store the master key>\nsynopsysctl get blackduck masterkey <name> <directory path to store the master key> -n <namespace>",
 	Short:         "Get the master key of the Black Duck instance that is used for source code upload and store it in the host",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -178,6 +179,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		}
 
 		fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
+		os.MkdirAll(filePath, os.ModePerm)
 		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
 		if err != nil {
 			return fmt.Errorf("error writing to file '%s' due to %+v", fileName, err)
