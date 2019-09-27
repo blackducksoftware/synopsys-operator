@@ -66,6 +66,13 @@ type PolarisCRSpecBuilderFromCobraFlags struct {
 	ReportStorageSize  string
 
 	EnableReporting bool
+
+	coverityLicensePath                          string
+	organizationProvisionOrganizationDescription string
+	organizationProvisionOrganizationName        string
+	organizationProvisionAdminName               string
+	organizationProvisionAdminUsername           string
+	organizationProvisionAdminEmail              string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -126,6 +133,13 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 	cmd.Flags().StringVar(&ctl.SMTPUsername, "smtp-username", ctl.SMTPUsername, "SMTP username")
 	cmd.Flags().StringVar(&ctl.SMTPPassword, "smtp-password", ctl.SMTPPassword, "SMTP password")
 	cmd.Flags().StringVar(&ctl.SMTPSenderEmail, "smtp-sender-email", ctl.SMTPSenderEmail, "SMTP sender email")
+
+	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationDescription, "organization-description", "", ctl.organizationProvisionOrganizationDescription, "Organization description")
+	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationName, "organization-name", "", ctl.organizationProvisionOrganizationName, "Organization name")
+	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminName, "organization-admin-name", "", ctl.organizationProvisionAdminName, "Organization admin name")
+	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminUsername, "organization-admin-username", "", ctl.organizationProvisionAdminUsername, "Organization admin username")
+	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminEmail, "organization-admin-email", "", ctl.organizationProvisionAdminEmail, "Organization admin username")
+	cmd.Flags().StringVarP(&ctl.coverityLicensePath, "coverity-license-path", "", ctl.coverityLicensePath, "Path to the coverity license")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
@@ -191,6 +205,23 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 			ctl.spec.PolarisDBSpec.SMTPDetails.Password = ctl.SMTPPassword
 		case "smtp-sender-email":
 			ctl.spec.PolarisDBSpec.SMTPDetails.SenderEmail = ctl.SMTPSenderEmail
+		case "organization-description":
+			ctl.spec.OrganizationDetails.OrganizationProvisionOrganizationDescription = ctl.organizationProvisionOrganizationDescription
+		case "organization-name":
+			ctl.spec.OrganizationDetails.OrganizationProvisionOrganizationName = ctl.organizationProvisionOrganizationName
+		case "organization-admin-name":
+			ctl.spec.OrganizationDetails.OrganizationProvisionAdminName = ctl.organizationProvisionAdminName
+		case "organization-admin-username":
+			ctl.spec.OrganizationDetails.OrganizationProvisionAdminUsername = ctl.organizationProvisionAdminUsername
+		case "organization-admin-email":
+			ctl.spec.OrganizationDetails.OrganizationProvisionAdminEmail = ctl.organizationProvisionAdminEmail
+		case "coverity-license-path":
+			data, err := util.ReadFileData(ctl.coverityLicensePath)
+			if err != nil {
+				panic(err)
+			}
+			ctl.spec.Licenses.Coverity = data
+
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
@@ -202,6 +233,15 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 // GetPolarisDBDefault returns PolarisDB default configuration
 func GetPolarisDefault() *Polaris {
 	return &Polaris{
+		Licenses: &Licenses{},
+		OrganizationDetails: &OrganizationDetails{
+			OrganizationProvisionLicenseSeatCount:   "100",
+			OrganizationProvisionLicenseType:        "PAID",
+			OrganizationProvisionResultsStartDate:   "2019-02-22",
+			OrganizationProvisionResultsEndDate:     "2030-10-01",
+			OrganizationProvisionRetentionStartDate: "2019-02-22",
+			OrganizationProvisionRetentionEndDate:   "2031-10-01",
+		},
 		EnableReporting: false,
 		PolarisSpec: &PolarisSpec{
 			DownloadServerDetails: DownloadServerDetails{

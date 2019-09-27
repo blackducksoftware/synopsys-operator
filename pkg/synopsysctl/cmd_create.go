@@ -23,7 +23,7 @@ package synopsysctl
 
 import (
 	"encoding/json"
-	"time"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"fmt"
 
@@ -566,6 +566,13 @@ var createPolarisCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-sender-email")
 
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-description")
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-name")
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-name")
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-username")
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-email")
+		cobra.MarkFlagRequired(cmd.Flags(), "coverity-license-path")
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -574,19 +581,38 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		components, err := polaris.GetComponents(baseUrl, *polarisObj)
+		type deploy struct {
+			name string
+			obj  map[string]runtime.Object
+		}
+
+		var deployments []deploy
+
+		dbComponents, err := polaris.GetPolarisDBComponents(baseUrl, *polarisObj)
 		if err != nil {
 			return err
 		}
+		deployments = append(deployments, deploy{name: "Polaris DB", obj: dbComponents})
 
-		var content []byte
-		for _, v := range components {
-			polarisComponentsByte, err := json.Marshal(v)
+		polarisComponents, err := polaris.GetPolarisComponents(baseUrl, *polarisObj)
+		if err != nil {
+			return err
+		}
+		deployments = append(deployments, deploy{name: "Polaris Core", obj: polarisComponents})
+
+		if polarisObj.EnableReporting {
+			reportingComponents, err := polaris.GetPolarisReportingComponents(baseUrl, *polarisObj)
 			if err != nil {
 				return err
 			}
-			content = append(content, polarisComponentsByte...)
+			deployments = append(deployments, deploy{name: "Polaris Reporting", obj: reportingComponents})
 		}
+
+		provisionComponents, err := polaris.GetPolarisProvisionComponents(baseUrl, *polarisObj)
+		if err != nil {
+			return err
+		}
+		deployments = append(deployments, deploy{name: "Polaris Organization Provision", obj: provisionComponents})
 
 		// Marshal Polaris
 		polarisByte, err := json.Marshal(polarisObj)
@@ -610,16 +636,25 @@ var createPolarisCmd = &cobra.Command{
 		}
 
 		log.Info("Deploying Polaris")
-		ch := make(chan struct{})
-		go printWaitingDots(time.Second*5, ch)
 
-		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
-		if err != nil {
-			kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
-			close(ch)
-			return fmt.Errorf("couldn't deploy polaris |  %+v - %s", out, err)
+		for _, v := range deployments {
+			log.Infof("Deploying %s", v.name)
+			var content []byte
+			for _, v := range v.obj {
+				polarisComponentsByte, err := json.Marshal(v)
+				if err != nil {
+					return err
+				}
+				content = append(content, polarisComponentsByte...)
+			}
+			out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
+			if err != nil {
+				kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
+
+				return fmt.Errorf("couldn't deploy polaris |  %+v - %s", out, err)
+			}
 		}
-		close(ch)
+
 		log.Info("Polaris has been successfully deployed!")
 		return nil
 	},
@@ -656,6 +691,13 @@ var createPolarisNativeCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-sender-email")
+
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-description")
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-name")
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-name")
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-username")
+		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-email")
+		cobra.MarkFlagRequired(cmd.Flags(), "coverity-license-path")
 
 		return nil
 	},

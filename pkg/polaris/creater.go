@@ -61,6 +61,15 @@ func GetComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, 
 			components[k] = v
 		}
 	}
+
+	provisionComponents, err := GetPolarisProvisionComponents(baseUrl, polaris)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range provisionComponents {
+		components[k] = v
+	}
+
 	return components, nil
 }
 

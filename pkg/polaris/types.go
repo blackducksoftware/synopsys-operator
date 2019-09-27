@@ -22,15 +22,17 @@
 package polaris
 
 type Polaris struct {
-	Namespace        string         `json:"namespace,omitempty"`
-	EnvironmentDNS   string         `json:"environment_address"`
-	ImagePullSecrets string         `json:"image_pull_secrets"`
-	Version          string         `json:"version"`
-	EnableReporting  bool           `json:"enable_reporting"`
-	PolarisDBSpec    *PolarisDBSpec `json:"polaris_db_spec,omitempty"`
-	PolarisSpec      *PolarisSpec   `json:"polaris_spec,omitempty"`
-	ReportingSpec    *ReportingSpec `json:"reporting_spec,omitempty"`
-	Repository       string         `json:"repository,omitempty"`
+	Namespace           string               `json:"namespace,omitempty"`
+	EnvironmentDNS      string               `json:"environment_address"`
+	ImagePullSecrets    string               `json:"image_pull_secrets"`
+	Version             string               `json:"version"`
+	EnableReporting     bool                 `json:"enable_reporting"`
+	PolarisDBSpec       *PolarisDBSpec       `json:"polaris_db_spec,omitempty"`
+	PolarisSpec         *PolarisSpec         `json:"polaris_spec,omitempty"`
+	ReportingSpec       *ReportingSpec       `json:"reporting_spec,omitempty"`
+	Repository          string               `json:"repository,omitempty"`
+	OrganizationDetails *OrganizationDetails `json:"organization_details"`
+	Licenses            *Licenses            `json:"licenses"`
 }
 
 type PolarisDBSpec struct {
@@ -231,12 +233,7 @@ type ReportStorageDetails struct {
 	Storage Storage `json:"storage,omitempty"`
 }
 
-type ProvisionJob struct {
-	Namespace                                    string
-	EnvironmentDNS                               string
-	ImagePullSecrets                             string
-	Repository                                   string
-	Version                                      string
+type OrganizationDetails struct {
 	OrganizationProvisionOrganizationDescription string
 	OrganizationProvisionOrganizationName        string
 	OrganizationProvisionAdminName               string
@@ -248,4 +245,8 @@ type ProvisionJob struct {
 	OrganizationProvisionResultsEndDate          string
 	OrganizationProvisionRetentionStartDate      string
 	OrganizationProvisionRetentionEndDate        string
+}
+
+type Licenses struct {
+	Coverity string
 }
