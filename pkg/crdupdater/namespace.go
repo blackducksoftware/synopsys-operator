@@ -123,8 +123,15 @@ func (n *Namespace) patch(ns interface{}, isPatched bool) (bool, error) {
 	if val, ok := namespace.Labels[fmt.Sprintf("synopsys.com/%s.%s", app, name)]; !ok || val != n.config.version {
 		if len(app) > 0 && len(name) > 0 && len(n.config.version) > 0 {
 			log.Debugf("patch namespace for synopsys label in namespace '%s'", namespace.Name)
-			namespace.Labels[fmt.Sprintf("synopsys.com/%s.%s", app, name)] = n.config.version
-			_, err := util.UpdateNamespace(n.config.kubeClient, namespace)
+
+			getN, err := n.get(namespace.GetName())
+			if err != nil {
+				return false, errors.Annotatef(err, "unable to get the namespace %s", namespace.GetName())
+			}
+			oldNamespace := getN.(*corev1.Namespace)
+			oldNamespace.Labels[fmt.Sprintf("synopsys.com/%s.%s", app, name)] = n.config.version
+
+			_, err = util.UpdateNamespace(n.config.kubeClient, oldNamespace)
 			if err != nil {
 				return false, fmt.Errorf("unable to update namespace %s due to %+v", namespace.GetName(), err)
 			}
