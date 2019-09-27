@@ -611,8 +611,8 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 
 // updateBlackDuckRootKeyCmd create new Black Duck root key for source code upload in the cluster
 var updateBlackDuckRootKeyCmd = &cobra.Command{
-	Use:           "masterkey NEW_SEAL_KEY STORED_MASTER_KEY_FILE_PATH",
-	Example:       "synopsysctl update blackduck masterkey <new seal key> <file path of the stored master key>",
+	Use:           "masterkey NEW_SEAL_KEY DIRECTORY_PATH_OF_STORED_MASTER_KEY",
+	Example:       "synopsysctl update blackduck masterkey <new seal key> <directory path of the stored master key>",
 	Short:         "Update the master key to all Black Duck instances for source code upload functionality",
 	SilenceUsage:  true,
 	SilenceErrors: true,
