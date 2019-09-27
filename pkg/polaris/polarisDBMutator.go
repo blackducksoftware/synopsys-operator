@@ -114,6 +114,7 @@ type polarisDBPatcher struct {
 func (p *polarisDBPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
+		p.patchVersionLabel,
 		p.patchSMTPSecretDetails,
 		p.patchSMTPConfigMapDetails,
 		p.patchPostgresDetails,
@@ -133,6 +134,28 @@ func (p *polarisDBPatcher) patchNamespace() error {
 	accessor := meta.NewAccessor()
 	for _, runtimeObject := range p.mapOfUniqueIDToBaseRuntimeObject {
 		accessor.SetNamespace(runtimeObject, p.polaris.Namespace)
+	}
+	return nil
+}
+
+func (p *polarisDBPatcher) patchVersionLabel() error {
+	accessor := meta.NewAccessor()
+	for _, runtimeObject := range p.mapOfUniqueIDToBaseRuntimeObject {
+		labels, err := accessor.Labels(runtimeObject)
+		if err != nil {
+			return err
+		}
+
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+
+		labels["polaris.synopsys.com/version"] = p.polaris.Version
+		labels["polaris.synopsys.com/environment"] = p.polaris.Namespace
+
+		if err := accessor.SetLabels(runtimeObject, labels); err != nil {
+			return err
+		}
 	}
 	return nil
 }

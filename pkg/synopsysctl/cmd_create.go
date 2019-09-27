@@ -22,17 +22,12 @@ under the License.
 package synopsysctl
 
 import (
-	"encoding/json"
-
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"fmt"
 
 	"sort"
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
@@ -582,80 +577,8 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		type deploy struct {
-			name string
-			obj  map[string]runtime.Object
-		}
-
-		var deployments []deploy
-
-		dbComponents, err := polaris.GetPolarisDBComponents(baseURL, *polarisObj)
-		if err != nil {
+		if err := ensurePolaris(polarisObj, false); err != nil {
 			return err
-		}
-		deployments = append(deployments, deploy{name: "Polaris DB", obj: dbComponents})
-
-		polarisComponents, err := polaris.GetPolarisComponents(baseURL, *polarisObj)
-		if err != nil {
-			return err
-		}
-		deployments = append(deployments, deploy{name: "Polaris Core", obj: polarisComponents})
-
-		if polarisObj.EnableReporting {
-			reportingComponents, err := polaris.GetPolarisReportingComponents(baseURL, *polarisObj)
-			if err != nil {
-				return err
-			}
-			deployments = append(deployments, deploy{name: "Polaris Reporting", obj: reportingComponents})
-		}
-
-		provisionComponents, err := polaris.GetPolarisProvisionComponents(baseURL, *polarisObj)
-		if err != nil {
-			return err
-		}
-
-		deployments = append(deployments, deploy{name: "Polaris Organization Provision", obj: provisionComponents})
-
-		// Marshal Polaris
-		polarisByte, err := json.Marshal(polarisObj)
-		if err != nil {
-			return err
-		}
-
-		polarisSecret := &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "polaris",
-				Namespace: namespace,
-			},
-			Data: map[string][]byte{
-				"polaris": polarisByte,
-			},
-		}
-		// Create secret
-		polarisSecret, err = kubeClient.CoreV1().Secrets(namespace).Create(polarisSecret)
-		if err != nil {
-			return err
-		}
-
-		log.Info("Deploying Polaris")
-
-		for _, v := range deployments {
-			log.Infof("Deploying %s", v.name)
-			var content []byte
-			for _, v := range v.obj {
-				polarisComponentsByte, err := json.Marshal(v)
-				if err != nil {
-					return err
-				}
-				content = append(content, polarisComponentsByte...)
-			}
-
-			out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
-			if err != nil {
-				kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
-
-				return fmt.Errorf("couldn't deploy polaris |  %+v - %s", out, err)
-			}
 		}
 
 		log.Info("Polaris has been successfully deployed!")

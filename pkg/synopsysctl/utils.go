@@ -42,6 +42,7 @@ import (
 	"github.com/spf13/cobra"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -302,6 +303,9 @@ func getInstanceInfo(mock bool, crdName string, appName string, namespace string
 func getPolarisFromSecret() (*polaris.Polaris, error) {
 	polarisSecret, err := kubeClient.CoreV1().Secrets(namespace).Get("polaris", metav1.GetOptions{})
 	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -356,4 +360,120 @@ func printWaitingDots(delay time.Duration, stop <-chan struct{}) {
 			return
 		}
 	}
+}
+
+func cleanupByLabel(namespace, labelSelector string) error {
+	// statefulSets
+	statefulSets, err := kubeClient.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return err
+	}
+	for _, v := range statefulSets.Items {
+		log.Infof("Deleting %s | %s", v.Kind, v.Name)
+		if err := kubeClient.AppsV1().StatefulSets(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	// Deployments
+	deployments, err := kubeClient.AppsV1().Deployments(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return err
+	}
+	for _, v := range deployments.Items {
+		log.Infof("Deleting %s | %s", v.Kind, v.Name)
+		if err := kubeClient.AppsV1().Deployments(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	// pods
+	pods, err := kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return err
+	}
+	for _, v := range pods.Items {
+		log.Infof("Deleting %s | %s", v.Kind, v.Name)
+		if err := kubeClient.CoreV1().Pods(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	// Jobs
+	jobs, err := kubeClient.BatchV1().Jobs(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return err
+	}
+	for _, v := range jobs.Items {
+		log.Infof("Deleting %s | %s", v.Kind, v.Name)
+		if err := kubeClient.BatchV1().Jobs(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	// Services
+	services, err := kubeClient.CoreV1().Services(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return err
+	}
+	for _, v := range services.Items {
+		log.Infof("Deleting %s | %s", v.Kind, v.Name)
+		if err := kubeClient.CoreV1().Services(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	// Secret
+	secrets, err := kubeClient.CoreV1().Secrets(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return err
+	}
+	for _, v := range secrets.Items {
+		log.Infof("Deleting %s | %s", v.Kind, v.Name)
+		if err := kubeClient.CoreV1().Secrets(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	// Configmap
+	configMap, err := kubeClient.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return err
+	}
+	for _, v := range configMap.Items {
+		log.Infof("Deleting %s | %s", v.Kind, v.Name)
+		if err := kubeClient.CoreV1().ConfigMaps(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	// Persistent Volume Claim
+	pvcs, err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return err
+	}
+	for _, v := range pvcs.Items {
+		log.Infof("Deleting %s | %s", v.Kind, v.Name)
+		if err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
