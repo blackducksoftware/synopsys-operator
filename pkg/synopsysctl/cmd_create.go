@@ -614,7 +614,6 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		log.Infof("provisionComponents: %+v", provisionComponents)
 		deployments = append(deployments, deploy{name: "Polaris Organization Provision", obj: provisionComponents})
 
 		// Marshal Polaris
@@ -650,6 +649,7 @@ var createPolarisCmd = &cobra.Command{
 				}
 				content = append(content, polarisComponentsByte...)
 			}
+
 			out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
 			if err != nil {
 				kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
