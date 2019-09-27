@@ -1254,7 +1254,7 @@ var updatePolarisCmd = &cobra.Command{
 			return err
 		}
 
-		components, err := polaris.GetComponents(baseUrl, *newPolaris)
+		components, err := polaris.GetComponents(baseURL, *newPolaris)
 		if err != nil {
 			return err
 		}
@@ -1310,7 +1310,7 @@ func init() {
 	updateBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	updateOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
-	updatePolarisCobraHelper = polaris.NewPolarisCRSpecBuilderFromCobraFlags()
+	updatePolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
 
 	rootCmd.AddCommand(updateCmd)
 

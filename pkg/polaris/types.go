@@ -21,6 +21,7 @@
 
 package polaris
 
+// Polaris configures all Polaris specifications
 type Polaris struct {
 	Namespace           string               `json:"namespace,omitempty"`
 	EnvironmentDNS      string               `json:"environment_address"`
@@ -35,6 +36,7 @@ type Polaris struct {
 	Licenses            *Licenses            `json:"licenses"`
 }
 
+// PolarisDBSpec configures Polaris DB specifications
 type PolarisDBSpec struct {
 	SMTPDetails          SMTPDetails         `json:"smtp_details"`
 	PostgresInstanceType string              `json:"postgres_instance_type"`
@@ -44,6 +46,7 @@ type PolarisDBSpec struct {
 	MongoDBDetails       MongoDBDetails      `json:"mongodb_details,omitempty"`
 }
 
+// PolarisSpec configure Polaris Specifications
 type PolarisSpec struct {
 	AuthServerDetails            AuthServerDetails            `json:"auth_server_details,omitempty"`
 	ConfigsServiceDetails        ConfigsServiceDetails        `json:"configs_service_details,omitempty"`
@@ -65,6 +68,7 @@ type PolarisSpec struct {
 	WebHelpDetails               WebHelpDetails               `json:"web_help_details,omitempty"`
 }
 
+// ReportingSpec configure Polaris reporting Specifications
 type ReportingSpec struct {
 	RPFrontendDetails              RPFrontendDetails              `json:"rp_frontend_details,omitempty"`
 	RPIssueManager                 RPIssueManager                 `json:"rp_issue_manager,omitemtpy"`
@@ -83,21 +87,25 @@ Common types
 Shared structures across components should be defined here
 */
 
+// ResourcesSpec configures resource specifications
 type ResourcesSpec struct {
 	RequestsSpec RequestsSpec `json:"requests,omitempty"`
 	LimitsSpec   LimitsSpec   `json:"limits,omitempty"`
 }
 
+// RequestsSpec configures pod request specifications
 type RequestsSpec struct {
 	CPU    string `json:"cpu,omitempty"`
 	Memory string `json:"memory,omitempty"`
 }
 
+// LimitsSpec configures pod limit specifications
 type LimitsSpec struct {
 	CPU    string `json:"cpu,omitempty"`
 	Memory string `json:"memory,omitempty"`
 }
 
+// Storage configures volume storage specifications
 type Storage struct {
 	StorageSize string `json:"size,omitempty"`
 }
@@ -109,15 +117,18 @@ Polaris DB Services
 Specification for PolarisDB services goes here
 */
 
+// EventstoreDetails configures event store specifications
 type EventstoreDetails struct {
 	Replicas *int32  `json:"replicas,omitempty"`
 	Storage  Storage `json:"storage,omitempty"`
 }
 
+// MongoDBDetails configures Mongo DB specifications
 type MongoDBDetails struct {
 	Storage Storage `json:"storage,omitempty"`
 }
 
+// SMTPDetails configures SMTP specifications
 type SMTPDetails struct {
 	Host        string `json:"host"`
 	Port        int    `json:"port"`
@@ -126,6 +137,7 @@ type SMTPDetails struct {
 	SenderEmail string `json:"sender_email,omitempty"`
 }
 
+// PostgresDetails configures postgres details specifications
 type PostgresDetails struct {
 	Host     string  `json:"host"`
 	Port     int     `json:"port"`
@@ -134,6 +146,7 @@ type PostgresDetails struct {
 	Storage  Storage `json:"storage,omitempty"`
 }
 
+// UploadServerDetails configures upload server specifications
 type UploadServerDetails struct {
 	Replicas      *int32        `json:"replicas,omitempty"`
 	ResourcesSpec ResourcesSpec `json:"resources,omitempty"`
@@ -147,58 +160,76 @@ Polaris Services
 Specification for Polaris services goes here
 */
 
+// AuthServerDetails configures authentication server specifications
 type AuthServerDetails struct {
 }
 
+// ConfigsServiceDetails configures configuration service specifications
 type ConfigsServiceDetails struct {
 }
 
+// CosServerDetails configures cos server specifications
 type CosServerDetails struct {
 }
 
+// DesktopMetricsServiceDetails configures desktop metrics specifications
 type DesktopMetricsServiceDetails struct {
 }
 
+// DownloadServerDetails configures download server specifications
 type DownloadServerDetails struct {
 	Storage Storage `json:"storage,omitempty"`
 }
 
+// IssueServerDetails configures issue server specifications
 type IssueServerDetails struct {
 }
 
+// JobsControllerServiceDetails configures job controller specifications
 type JobsControllerServiceDetails struct {
 }
 
+// JobsServiceDetails configures job service specifications
 type JobsServiceDetails struct {
 }
 
+// LogsServiceDetails configures log service specifications
 type LogsServiceDetails struct {
 }
 
+// PericlesSwaggerUIDetails configures pericles swagger UI specifications
 type PericlesSwaggerUIDetails struct {
 }
 
+// TaxonomyServerDeails configures taxonomy server specifications
 type TaxonomyServerDeails struct {
 }
 
+// TDSCodeAnalysisDetails configures TDS code analysis specifications
 type TDSCodeAnalysisDetails struct {
 }
 
+// ToolsServiceDetails configures tools service specifications
 type ToolsServiceDetails struct {
 }
 
+// TriageCommandHandlerDetails configures triage command handler specifications
 type TriageCommandHandlerDetails struct {
 }
 
+// TriageQueryDetails configures triage query specifications
 type TriageQueryDetails struct {
 }
 
+// VinylServerDetails configures vinyl server specifications
 type VinylServerDetails struct {
 }
 
+// WebCoreDetails configures web core specifications
 type WebCoreDetails struct {
 }
 
+// WebHelpDetails configures web help specifications
 type WebHelpDetails struct {
 }
 
@@ -208,31 +239,41 @@ Reporting Services
 ------------------
 Specification for Reporting services goes here
 */
+
+// RPFrontendDetails configures report front end specifications
 type RPFrontendDetails struct {
 }
 
+// RPIssueManager configures report issue manager specifications
 type RPIssueManager struct {
 }
 
+// RPPolarisAgentServiceDetails configures report polaris agent service specifications
 type RPPolarisAgentServiceDetails struct {
 }
 
+// RPPortfolioServiceDetails configures report portfolio specifications
 type RPPortfolioServiceDetails struct {
 }
 
+// RPReportServiceDetails configures report service specifications
 type RPReportServiceDetails struct {
 }
 
+// RPSwaggerDocDetails configures report swagger specifications
 type RPSwaggerDocDetails struct {
 }
 
+// RPToolsPortfolioServiceDetails configures report tools portfolio service specifications
 type RPToolsPortfolioServiceDetails struct {
 }
 
+// ReportStorageDetails configures report storage specifications
 type ReportStorageDetails struct {
 	Storage Storage `json:"storage,omitempty"`
 }
 
+// OrganizationDetails configures organization details specifications
 type OrganizationDetails struct {
 	OrganizationProvisionOrganizationDescription string
 	OrganizationProvisionOrganizationName        string
@@ -247,6 +288,7 @@ type OrganizationDetails struct {
 	OrganizationProvisionRetentionEndDate        string
 }
 
+// Licenses configures license specifications
 type Licenses struct {
 	Coverity string
 }

@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"encoding/json"
+
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"fmt"
@@ -588,30 +589,31 @@ var createPolarisCmd = &cobra.Command{
 
 		var deployments []deploy
 
-		dbComponents, err := polaris.GetPolarisDBComponents(baseUrl, *polarisObj)
+		dbComponents, err := polaris.GetPolarisDBComponents(baseURL, *polarisObj)
 		if err != nil {
 			return err
 		}
 		deployments = append(deployments, deploy{name: "Polaris DB", obj: dbComponents})
 
-		polarisComponents, err := polaris.GetPolarisComponents(baseUrl, *polarisObj)
+		polarisComponents, err := polaris.GetPolarisComponents(baseURL, *polarisObj)
 		if err != nil {
 			return err
 		}
 		deployments = append(deployments, deploy{name: "Polaris Core", obj: polarisComponents})
 
 		if polarisObj.EnableReporting {
-			reportingComponents, err := polaris.GetPolarisReportingComponents(baseUrl, *polarisObj)
+			reportingComponents, err := polaris.GetPolarisReportingComponents(baseURL, *polarisObj)
 			if err != nil {
 				return err
 			}
 			deployments = append(deployments, deploy{name: "Polaris Reporting", obj: reportingComponents})
 		}
 
-		provisionComponents, err := polaris.GetPolarisProvisionComponents(baseUrl, *polarisObj)
+		provisionComponents, err := polaris.GetPolarisProvisionComponents(baseURL, *polarisObj)
 		if err != nil {
 			return err
 		}
+
 		deployments = append(deployments, deploy{name: "Polaris Organization Provision", obj: provisionComponents})
 
 		// Marshal Polaris
@@ -647,6 +649,7 @@ var createPolarisCmd = &cobra.Command{
 				}
 				content = append(content, polarisComponentsByte...)
 			}
+
 			out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
 			if err != nil {
 				kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
@@ -707,7 +710,7 @@ var createPolarisNativeCmd = &cobra.Command{
 			return err
 		}
 
-		components, err := polaris.GetComponents(baseUrl, *polarisObj)
+		components, err := polaris.GetComponents(baseURL, *polarisObj)
 		if err != nil {
 			return err
 		}
@@ -745,7 +748,7 @@ func init() {
 	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	createBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
-	createPolarisCobraHelper = polaris.NewPolarisCRSpecBuilderFromCobraFlags()
+	createPolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
 
 	rootCmd.AddCommand(createCmd)
 
@@ -788,12 +791,12 @@ func init() {
 	// Add Polaris commands
 	createPolarisCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	createPolarisCobraHelper.AddCRSpecFlagsToCommand(createPolarisCmd, true)
-	addBaseUrlFlag(createPolarisCmd)
+	addbaseURLFlag(createPolarisCmd)
 	createCmd.AddCommand(createPolarisCmd)
 
 	createPolarisCobraHelper.AddCRSpecFlagsToCommand(createPolarisNativeCmd, true)
 	addNativeFormatFlag(createPolarisNativeCmd)
-	addBaseUrlFlag(createPolarisNativeCmd)
+	addbaseURLFlag(createPolarisNativeCmd)
 	createPolarisCmd.AddCommand(createPolarisNativeCmd)
 
 }

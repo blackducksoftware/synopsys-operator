@@ -29,8 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func GetPolarisComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseUrl, "polaris", polaris.Version, "polaris_base.yaml")
+// GetPolarisComponents get Polaris components
+func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
+	content, err := GetBaseYaml(baseURL, "polaris", polaris.Version, "polaris_base.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -56,19 +57,19 @@ func GetPolarisComponents(baseUrl string, polaris Polaris) (map[string]runtime.O
 		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)
 	}
 
-	mapOfUniqueIdToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
-	mapOfUniqueIdToBaseRuntimeObject = removeTestManifests(mapOfUniqueIdToBaseRuntimeObject)
+	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
 	patcher := polarisPatcher{
 		polaris:                          polaris,
-		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
+		mapOfUniqueIDToBaseRuntimeObject: mapOfUniqueIDToBaseRuntimeObject,
 	}
 	return patcher.patch(), nil
 }
 
 type polarisPatcher struct {
 	polaris                          Polaris
-	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
+	mapOfUniqueIDToBaseRuntimeObject map[string]runtime.Object
 }
 
 func (p *polarisPatcher) patch() map[string]runtime.Object {
@@ -81,12 +82,12 @@ func (p *polarisPatcher) patch() map[string]runtime.Object {
 			fmt.Printf("%s\n", err)
 		}
 	}
-	return p.mapOfUniqueIdToBaseRuntimeObject
+	return p.mapOfUniqueIDToBaseRuntimeObject
 }
 
 func (p *polarisPatcher) patchNamespace() error {
 	accessor := meta.NewAccessor()
-	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+	for _, runtimeObject := range p.mapOfUniqueIDToBaseRuntimeObject {
 		accessor.SetNamespace(runtimeObject, p.polaris.Namespace)
 	}
 	return nil

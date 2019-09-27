@@ -19,9 +19,9 @@ func HTTPGet(url string) (content []byte, err error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		proxyUrl, _ := http.ProxyFromEnvironment(response.Request)
-		if proxyUrl != nil {
-			return nil, fmt.Errorf("failed to fetch %s using proxy %s | %s", response.Request.URL.String(), proxyUrl.String(), response.Status)
+		proxyURL, _ := http.ProxyFromEnvironment(response.Request)
+		if proxyURL != nil {
+			return nil, fmt.Errorf("failed to fetch %s using proxy %s | %s", response.Request.URL.String(), proxyURL.String(), response.Status)
 		}
 		return nil, fmt.Errorf("failed to fetch %s | %s", response.Request.URL.String(), response.Status)
 	}
@@ -49,6 +49,7 @@ func downloadAndConvertYamlToByteArray(url string) (string, error) {
 	return string(versionBaseYamlAsByteArray), nil
 }
 
+// EncodeStringToBase64 will return encoded string to base64
 func EncodeStringToBase64(str string) string {
 	return b64.StdEncoding.EncodeToString([]byte(str))
 }

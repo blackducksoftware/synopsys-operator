@@ -22,14 +22,18 @@
 package polaris
 
 import (
+	"fmt"
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"strings"
 )
 
-func GetPolarisProvisionComponents(baseUrl string, polarisConf Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseUrl, "polaris", polarisConf.Version, "organization-provision-job.yaml")
+// GetPolarisProvisionComponents get Polaris provision components
+func GetPolarisProvisionComponents(baseURL string, polarisConf Polaris) (map[string]runtime.Object, error) {
+	content, err := GetBaseYaml(baseURL, "polaris", polarisConf.Version, "organization-provision-job.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +59,9 @@ func GetPolarisProvisionComponents(baseUrl string, polarisConf Polaris) (map[str
 		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polarisConf.Repository)
 	}
 
-	mapOfUniqueIdToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 
-	mapOfUniqueIdToBaseRuntimeObject["Secret.coverity-license"] = &corev1.Secret{
+	mapOfUniqueIDToBaseRuntimeObject["Secret.coverity-license"] = &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
 			APIVersion: "v1",
@@ -75,5 +79,36 @@ func GetPolarisProvisionComponents(baseUrl string, polarisConf Polaris) (map[str
 		Type: corev1.SecretTypeOpaque,
 	}
 
-	return mapOfUniqueIdToBaseRuntimeObject, nil
+	patcher := polarisOrganizationJobPatcher{
+		polaris:                          polarisConf,
+		mapOfUniqueIDToBaseRuntimeObject: mapOfUniqueIDToBaseRuntimeObject,
+	}
+
+	return patcher.patch(), nil
+}
+
+type polarisOrganizationJobPatcher struct {
+	polaris                          Polaris
+	mapOfUniqueIDToBaseRuntimeObject map[string]runtime.Object
+}
+
+func (p *polarisOrganizationJobPatcher) patch() map[string]runtime.Object {
+	patches := []func() error{
+		p.patchNamespace,
+	}
+	for _, f := range patches {
+		err := f()
+		if err != nil {
+			fmt.Printf("%s\n", err)
+		}
+	}
+	return p.mapOfUniqueIDToBaseRuntimeObject
+}
+
+func (p *polarisOrganizationJobPatcher) patchNamespace() error {
+	accessor := meta.NewAccessor()
+	for _, runtimeObject := range p.mapOfUniqueIDToBaseRuntimeObject {
+		accessor.SetNamespace(runtimeObject, p.polaris.Namespace)
+	}
+	return nil
 }
