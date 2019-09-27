@@ -23,6 +23,7 @@ package polaris
 
 import (
 	"fmt"
+
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -33,14 +34,15 @@ import (
 	"strings"
 )
 
-func GetComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
+// GetComponents get all Polaris related components
+func GetComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
 	components := make(map[string]runtime.Object)
 
-	dbComponents, err := GetPolarisDBComponents(baseUrl, polaris)
+	dbComponents, err := GetPolarisDBComponents(baseURL, polaris)
 	if err != nil {
 		return nil, err
 	}
-	polarisComponents, err := GetPolarisComponents(baseUrl, polaris)
+	polarisComponents, err := GetPolarisComponents(baseURL, polaris)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +55,7 @@ func GetComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, 
 	}
 
 	if polaris.EnableReporting {
-		reportingComponents, err := GetPolarisReportingComponents(baseUrl, polaris)
+		reportingComponents, err := GetPolarisReportingComponents(baseURL, polaris)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +64,7 @@ func GetComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, 
 		}
 	}
 
-	provisionComponents, err := GetPolarisProvisionComponents(baseUrl, polaris)
+	provisionComponents, err := GetPolarisProvisionComponents(baseURL, polaris)
 	if err != nil {
 		return nil, err
 	}

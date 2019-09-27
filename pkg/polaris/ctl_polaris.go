@@ -39,7 +39,7 @@ import (
 // Usage: Use CRSpecBuilderFromCobraFlags to add flags to your Cobra Command for making an Polaris Spec.
 // When flags are used the correspoding value in this struct will by set. You can then
 // generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
-type PolarisCRSpecBuilderFromCobraFlags struct {
+type CRSpecBuilderFromCobraFlags struct {
 	spec             Polaris
 	Version          string
 	EnvironmentName  string
@@ -76,8 +76,8 @@ type PolarisCRSpecBuilderFromCobraFlags struct {
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
-func NewPolarisCRSpecBuilderFromCobraFlags() *PolarisCRSpecBuilderFromCobraFlags {
-	return &PolarisCRSpecBuilderFromCobraFlags{
+func NewCRSpecBuilderFromCobraFlags() *CRSpecBuilderFromCobraFlags {
+	return &CRSpecBuilderFromCobraFlags{
 		spec: Polaris{
 			PolarisDBSpec: &PolarisDBSpec{},
 			PolarisSpec:   &PolarisSpec{},
@@ -86,12 +86,12 @@ func NewPolarisCRSpecBuilderFromCobraFlags() *PolarisCRSpecBuilderFromCobraFlags
 }
 
 // GetCRSpec returns a pointer to the PolarisSpec as an interface{}
-func (ctl *PolarisCRSpecBuilderFromCobraFlags) GetCRSpec() interface{} {
+func (ctl *CRSpecBuilderFromCobraFlags) GetCRSpec() interface{} {
 	return ctl.spec
 }
 
 // SetCRSpec sets the PolarisSpec in the struct
-func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpec(spec interface{}) error {
+func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(Polaris)
 	if !ok {
 		return fmt.Errorf("error setting Polaris spec")
@@ -102,7 +102,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpec(spec interface{}) error
 }
 
 // SetPredefinedCRSpec sets the Spec to a predefined spec
-func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) error {
+func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) error {
 	ctl.spec = *GetPolarisDefault()
 	return nil
 }
@@ -110,7 +110,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType stri
 // AddCRSpecFlagsToCommand adds flags to a Cobra Command that are need for Spec.
 // The flags map to fields in the CRSpecBuilderFromCobraFlags struct.
 // master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
+func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris")
 	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "Environment DNS")
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
@@ -144,13 +144,13 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobr
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
 // used in the spec
-func (ctl *PolarisCRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
+func (ctl *CRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
 	return nil
 }
 
 // GenerateCRSpecFromFlags checks if a flag was changed and updates the spec with the value that's stored
 // in the corresponding struct field
-func (ctl *PolarisCRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *pflag.FlagSet) (interface{}, error) {
+func (ctl *CRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *pflag.FlagSet) (interface{}, error) {
 	err := ctl.CheckValuesFromFlags(flagset)
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *
 
 // SetCRSpecFieldByFlag updates a field in the spec if the flag was set by the user. It gets the
 // value from the corresponding struct field
-func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
+func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
@@ -230,7 +230,7 @@ func (ctl *PolarisCRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Fla
 	}
 }
 
-// GetPolarisDBDefault returns PolarisDB default configuration
+// GetPolarisDefault returns PolarisDB default configuration
 func GetPolarisDefault() *Polaris {
 	return &Polaris{
 		Licenses: &Licenses{},

@@ -36,8 +36,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func GetPolarisDBComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseUrl, "polaris", polaris.Version, "polarisdb_base.yaml")
+// GetPolarisDBComponents get Polaris DB components
+func GetPolarisDBComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
+	content, err := GetBaseYaml(baseURL, "polaris", polaris.Version, "polarisdb_base.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -82,12 +83,12 @@ func GetPolarisDBComponents(baseUrl string, polaris Polaris) (map[string]runtime
 		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)
 	}
 
-	mapOfUniqueIdToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
-	mapOfUniqueIdToBaseRuntimeObject = removeTestManifests(mapOfUniqueIdToBaseRuntimeObject)
+	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
 	patcher := polarisDBPatcher{
 		polaris:                          polaris,
-		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
+		mapOfUniqueIDToBaseRuntimeObject: mapOfUniqueIDToBaseRuntimeObject,
 	}
 	return patcher.patch(), nil
 }
@@ -107,7 +108,7 @@ func removeTestManifests(objects map[string]runtime.Object) map[string]runtime.O
 
 type polarisDBPatcher struct {
 	polaris                          Polaris
-	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
+	mapOfUniqueIDToBaseRuntimeObject map[string]runtime.Object
 }
 
 func (p *polarisDBPatcher) patch() map[string]runtime.Object {
@@ -125,12 +126,12 @@ func (p *polarisDBPatcher) patch() map[string]runtime.Object {
 			fmt.Printf("%s\n", err)
 		}
 	}
-	return p.mapOfUniqueIdToBaseRuntimeObject
+	return p.mapOfUniqueIDToBaseRuntimeObject
 }
 
 func (p *polarisDBPatcher) patchNamespace() error {
 	accessor := meta.NewAccessor()
-	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+	for _, runtimeObject := range p.mapOfUniqueIDToBaseRuntimeObject {
 		accessor.SetNamespace(runtimeObject, p.polaris.Namespace)
 	}
 	return nil
@@ -138,7 +139,7 @@ func (p *polarisDBPatcher) patchNamespace() error {
 
 func (p *polarisDBPatcher) patchSMTPSecretDetails() error {
 	SecretUniqueID := "Secret." + "smtp"
-	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
+	secretRuntimeObject, ok := p.mapOfUniqueIDToBaseRuntimeObject[SecretUniqueID]
 	if !ok {
 		return nil
 	}
@@ -152,7 +153,7 @@ func (p *polarisDBPatcher) patchSMTPSecretDetails() error {
 
 func (p *polarisDBPatcher) patchSMTPConfigMapDetails() error {
 	ConfigMapUniqueID := "ConfigMap." + "smtp"
-	configmapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
+	configmapRuntimeObject, ok := p.mapOfUniqueIDToBaseRuntimeObject[ConfigMapUniqueID]
 	if !ok {
 		return nil
 	}
@@ -166,7 +167,7 @@ func (p *polarisDBPatcher) patchSMTPConfigMapDetails() error {
 
 func (p *polarisDBPatcher) patchSMTPDetails() error {
 	SecretUniqueID := "Secret." + "smtp"
-	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
+	secretRuntimeObject, ok := p.mapOfUniqueIDToBaseRuntimeObject[SecretUniqueID]
 	if !ok {
 		return nil
 	}
@@ -183,7 +184,7 @@ func (p *polarisDBPatcher) patchSMTPDetails() error {
 func (p *polarisDBPatcher) patchPostgresDetails() error {
 	// patch postgresql-config secret
 	ConfigMapUniqueID := "ConfigMap." + "postgresql-config"
-	configmapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
+	configmapRuntimeObject, ok := p.mapOfUniqueIDToBaseRuntimeObject[ConfigMapUniqueID]
 	if !ok {
 		return nil
 	}
@@ -199,7 +200,7 @@ func (p *polarisDBPatcher) patchPostgresDetails() error {
 	if p.polaris.PolarisDBSpec.PostgresInstanceType == "internal" {
 		// patch storage
 		PostgresPVCUniqueID := "PersistentVolumeClaim." + "postgresql-pv-claim"
-		PostgresPVCRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[PostgresPVCUniqueID]
+		PostgresPVCRuntimeObject, ok := p.mapOfUniqueIDToBaseRuntimeObject[PostgresPVCUniqueID]
 		if !ok {
 			return nil
 		}
@@ -211,7 +212,7 @@ func (p *polarisDBPatcher) patchPostgresDetails() error {
 
 func (p *polarisDBPatcher) patchEventstoreDetails() error {
 	StatefulSetUniqueID := "StatefulSet." + "eventstore"
-	statefulSetRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[StatefulSetUniqueID]
+	statefulSetRuntimeObject, ok := p.mapOfUniqueIDToBaseRuntimeObject[StatefulSetUniqueID]
 	if !ok {
 		return nil
 	}
@@ -224,7 +225,7 @@ func (p *polarisDBPatcher) patchEventstoreDetails() error {
 
 func (p *polarisDBPatcher) patchUploadServerDetails() error {
 	UploadServerPVCUniqueID := "PersistentVolumeClaim." + "upload-server-pv-claim"
-	UploadServerPVCRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[UploadServerPVCUniqueID]
+	UploadServerPVCRuntimeObject, ok := p.mapOfUniqueIDToBaseRuntimeObject[UploadServerPVCUniqueID]
 	if !ok {
 		return nil
 	}

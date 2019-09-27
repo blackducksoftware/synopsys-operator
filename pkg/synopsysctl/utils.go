@@ -24,13 +24,14 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -201,6 +202,7 @@ func RunKubeCmd(restconfig *rest.Config, kubeClient *kubernetes.Clientset, args 
 	return string(stdoutErr), nil
 }
 
+// RunKubeCmdWithStdin is a simple wrapper to kubectl exec command with standard input
 func RunKubeCmdWithStdin(restconfig *rest.Config, kubeClient *kubernetes.Clientset, stdin string, args ...string) (string, error) {
 	cmd2, err := getKubeExecCmd(restconfig, kubeClient, args...)
 	if err != nil {
@@ -316,7 +318,7 @@ func getPolarisFromSecret() (*polaris.Polaris, error) {
 }
 
 func polarisToTmpComponentFile(polarisObj polaris.Polaris) (string, error) {
-	components, err := polaris.GetComponents(baseUrl, polarisObj)
+	components, err := polaris.GetComponents(baseURL, polarisObj)
 	if err != nil {
 		return "", err
 	}

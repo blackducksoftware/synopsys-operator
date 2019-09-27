@@ -39,7 +39,7 @@ const (
 
 var nativeClusterType = clusterTypeKubernetes
 
-var baseUrl = "https://raw.githubusercontent.com/blackducksoftware/releases/master"
+var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/master"
 
 func verifyClusterType(cType string) error {
 	if strings.EqualFold(strings.ToUpper(cType), clusterTypeKubernetes) || strings.EqualFold(strings.ToUpper(cType), clusterTypeOpenshift) {
@@ -53,8 +53,8 @@ func addNativeFormatFlag(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&nativeClusterType, "target", nativeClusterType, "Type of cluster to generate the resources for [KUBERNETES|OPENSHIFT]")
 }
 
-func addBaseUrlFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&baseUrl, "yaml-url", "", baseUrl, "Polaris base YAML server url")
+func addbaseURLFlag(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&baseURL, "yaml-url", "", baseURL, "Polaris base YAML server url")
 	cmd.Flags().MarkHidden("yaml-url")
 }
 

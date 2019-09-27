@@ -29,8 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func GetPolarisReportingComponents(baseUrl string, polaris Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseUrl, "polaris", polaris.Version, "reporting_base.yaml")
+// GetPolarisReportingComponents get Polaris reporting components
+func GetPolarisReportingComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
+	content, err := GetBaseYaml(baseURL, "polaris", polaris.Version, "reporting_base.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -43,18 +44,18 @@ func GetPolarisReportingComponents(baseUrl string, polaris Polaris) (map[string]
 
 	content = strings.ReplaceAll(content, "${REPORT_STORAGE_PV_SIZE}", polaris.ReportingSpec.ReportStorageDetails.Storage.StorageSize)
 
-	mapOfUniqueIdToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 
 	patcher := polarisReportingPatcher{
 		polaris:                          polaris,
-		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
+		mapOfUniqueIDToBaseRuntimeObject: mapOfUniqueIDToBaseRuntimeObject,
 	}
 	return patcher.patch(), nil
 }
 
 type polarisReportingPatcher struct {
 	polaris                          Polaris
-	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
+	mapOfUniqueIDToBaseRuntimeObject map[string]runtime.Object
 }
 
 func (p *polarisReportingPatcher) patch() map[string]runtime.Object {
@@ -67,12 +68,12 @@ func (p *polarisReportingPatcher) patch() map[string]runtime.Object {
 			fmt.Printf("%s\n", err)
 		}
 	}
-	return p.mapOfUniqueIdToBaseRuntimeObject
+	return p.mapOfUniqueIDToBaseRuntimeObject
 }
 
 func (p *polarisReportingPatcher) patchNamespace() error {
 	accessor := meta.NewAccessor()
-	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+	for _, runtimeObject := range p.mapOfUniqueIDToBaseRuntimeObject {
 		accessor.SetNamespace(runtimeObject, p.polaris.Namespace)
 	}
 	return nil

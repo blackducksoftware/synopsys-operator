@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+// UpdatePersistentVolumeClaim updates the size for pvc
 func UpdatePersistentVolumeClaim(pvc *corev1.PersistentVolumeClaim, size string) error {
 	if size, err := resource.ParseQuantity(size); err == nil {
 		pvc.Spec.Resources.Requests[corev1.ResourceStorage] = size

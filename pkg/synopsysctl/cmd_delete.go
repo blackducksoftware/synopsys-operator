@@ -24,8 +24,9 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	"time"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -155,7 +156,7 @@ var deletePolarisCmd = &cobra.Command{
 			return err
 		}
 
-		components, err := polaris.GetComponents(baseUrl, *p)
+		components, err := polaris.GetComponents(baseURL, *p)
 		if err != nil {
 			return err
 		}
@@ -219,6 +220,6 @@ func init() {
 
 	// Add Delete Polaris Command
 	deletePolarisCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	addBaseUrlFlag(deletePolarisCmd)
+	addbaseURLFlag(deletePolarisCmd)
 	deleteCmd.AddCommand(deletePolarisCmd)
 }
