@@ -23,7 +23,6 @@ package synopsysctl
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -44,7 +43,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -1254,53 +1252,9 @@ var updatePolarisCmd = &cobra.Command{
 			return err
 		}
 
-		components, err := polaris.GetComponents(baseURL, *newPolaris)
-		if err != nil {
+		if err := ensurePolaris(newPolaris, true); err != nil {
 			return err
 		}
-
-		var content []byte
-		for _, v := range components {
-			polarisComponentsByte, err := json.Marshal(v)
-			if err != nil {
-				return err
-			}
-			content = append(content, polarisComponentsByte...)
-		}
-
-		log.Info("Updating Polaris")
-		ch := make(chan struct{})
-		go printWaitingDots(time.Second*5, ch)
-
-		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
-		if err != nil {
-			close(ch)
-			return fmt.Errorf("couldn't update polaris |  %+v - %s", out, err)
-		}
-
-		// Marshal Polaris
-		polarisByte, err := json.Marshal(newPolaris)
-		if err != nil {
-			return err
-		}
-
-		polarisSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "polaris",
-				Namespace: namespace,
-			},
-			Data: map[string][]byte{
-				"polaris": polarisByte,
-			},
-		}
-
-		_, err = kubeClient.CoreV1().Secrets(namespace).Update(polarisSecret)
-		if err != nil {
-			close(ch)
-			return err
-		}
-		close(ch)
-		log.Info("Polaris has been successfully updated!")
 		return nil
 	},
 }
@@ -1392,5 +1346,6 @@ func init() {
 	// Polaris
 	updatePolarisCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	updatePolarisCobraHelper.AddCRSpecFlagsToCommand(updatePolarisCmd, false)
+	addbaseURLFlag(updatePolarisCmd)
 	updateCmd.AddCommand(updatePolarisCmd)
 }
