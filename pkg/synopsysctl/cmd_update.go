@@ -622,6 +622,10 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 2 arguments")
 		}
+
+		if len(args[0]) != 32 {
+			return fmt.Errorf("new seal key should be of length 32")
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
