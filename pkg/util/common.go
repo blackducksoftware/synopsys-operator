@@ -1390,7 +1390,7 @@ func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old 
 }
 
 // PatchReplicationController patch a replication controller
-func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.ReplicationController, new corev1.ReplicationController) error {
+func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.ReplicationController, new corev1.ReplicationController, isUpdateReplica bool) error {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return err
@@ -1411,6 +1411,13 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, IntToInt32(0))
 	if err != nil {
 		return err
+	}
+
+	if isUpdateReplica {
+		newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, new.Spec.Replicas)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
