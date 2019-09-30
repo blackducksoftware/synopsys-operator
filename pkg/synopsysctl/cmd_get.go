@@ -161,9 +161,9 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 
 		sealKey := string(secret.Data["SEAL_KEY"])
 		// Filter the upload cache pod to get the master key using the seal key
-		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache"))
+		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache"))
 		if err != nil {
-			return fmt.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", namespace, err)
+			return fmt.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", blackDuckNamespace, err)
 		}
 
 		// Create the exec into Kubernetes pod request
@@ -175,7 +175,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 
 		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://%s:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)), uploadCache)})
 		if err != nil {
-			return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", namespace, err)
+			return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", blackDuckNamespace, err)
 		}
 
 		fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
