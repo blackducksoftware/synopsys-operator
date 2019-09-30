@@ -1304,6 +1304,40 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 	return err
 }
 
+// EnsureFilterPodsByNamePrefixInNamespaceToZero filters the pods based on the prefix and make sure that it is zero
+func EnsureFilterPodsByNamePrefixInNamespaceToZero(clientset *kubernetes.Clientset, namespace string, prefix string) error {
+	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
+	timeout := time.NewTimer(120 * time.Second)
+	// ticker starts and execute the task for every n intervals
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	defer timeout.Stop()
+
+	for {
+		select {
+		case <-timeout.C:
+			pods, err := filterPodsByNamePrefixInNamespace(clientset, namespace, prefix)
+			if err != nil {
+				return err
+			}
+
+			if len(pods) == 0 {
+				return nil
+			}
+			return fmt.Errorf("[WARNING] timeout expired to scale down the pod for replication controller %s in namespace %s", prefix, namespace)
+		case <-ticker.C:
+			pods, err := filterPodsByNamePrefixInNamespace(clientset, namespace, prefix)
+			if err != nil {
+				return err
+			}
+
+			if len(pods) == 0 {
+				return nil
+			}
+		}
+	}
+}
+
 // filterPodsByNamePrefixInNamespace will filter the pod based on pod name prefix from a list a pods in a given namespace
 func filterPodsByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace string, prefix string) ([]*corev1.Pod, error) {
 	pods, err := ListPods(clientset, namespace)
@@ -1322,7 +1356,7 @@ func filterPodsByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespac
 func filterPodsByNamePrefix(pods *corev1.PodList, prefix string) []*corev1.Pod {
 	podsArr := make([]*corev1.Pod, 0)
 	for _, pod := range pods.Items {
-		if strings.HasPrefix(pod.Name, prefix) {
+		if strings.HasPrefix(pod.Name, prefix) && pod.Status.Phase != corev1.PodFailed && pod.Status.Phase != corev1.PodUnknown {
 			podsArr = append(podsArr, &pod)
 		}
 	}
@@ -1350,36 +1384,7 @@ func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old 
 		return nil, err
 	}
 
-	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
-	timeout := time.NewTimer(120 * time.Second)
-	// ticker starts and execute the task for every n intervals
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	defer timeout.Stop()
-
-	for {
-		select {
-		case <-timeout.C:
-			pods, err := filterPodsByNamePrefixInNamespace(clientset, new.Namespace, new.Name)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(pods) == Int32ToInt(replicas) {
-				return rc, nil
-			}
-			return rc, fmt.Errorf("[WARNING] timeout expired to scale down the pod for replication controller %s in namespace %s", new.Name, new.Namespace)
-		case <-ticker.C:
-			pods, err := filterPodsByNamePrefixInNamespace(clientset, new.Namespace, new.Name)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(pods) == Int32ToInt(replicas) {
-				return rc, nil
-			}
-		}
-	}
+	return rc, nil
 }
 
 // PatchReplicationController patch a replication controller
@@ -1406,10 +1411,6 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 		return err
 	}
 
-	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, new.Spec.Replicas)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

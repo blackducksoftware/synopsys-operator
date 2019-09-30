@@ -171,6 +171,17 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 
 	log.Debugf("ObjectUpdated: %s", bd.Name)
 
+	// Ensure the replication controller pods are zero for upgrade scenario
+	rcs, _ := util.ListReplicationControllers(h.kubeClient, bd.Spec.Namespace, "app=blackduck,component!=postgres")
+	for _, rc := range rcs.Items {
+		if rc.Spec.Replicas == util.IntToInt32(0) {
+			if err := util.EnsureFilterPodsByNamePrefixInNamespaceToZero(h.kubeClient, bd.Spec.Namespace, rc.Name); err != nil {
+				log.Error(err)
+				return
+			}
+		}
+	}
+
 	// Ensure
 	app := apps.NewApp(h.config, h.kubeConfig)
 	err = app.Blackduck().Ensure(bd)
