@@ -612,14 +612,19 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 // updateBlackDuckRootKeyCmd create new Black Duck root key for source code upload in the cluster
 var updateBlackDuckRootKeyCmd = &cobra.Command{
 	Use:           "masterkey NEW_SEAL_KEY DIRECTORY_PATH_OF_STORED_MASTER_KEY",
-	Example:       "synopsysctl update blackduck masterkey <new seal key> <directory path of the stored master key>",
-	Short:         "Update the master key to all Black Duck instances for source code upload functionality",
+	Example:       "synopsysctl update blackduck masterkey <new seal key> <directory path of the stored master keys> -n <synopsys-operator-namespace>",
+	Short:         "Update the master key for all Black Duck instances for source code upload functionality for the given synopsys operator instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
 			cmd.Help()
 			return fmt.Errorf("this command takes 2 arguments")
+		}
+
+		if len(namespace) == 0 {
+			cmd.Help()
+			return fmt.Errorf("synopsys operator namespace is required")
 		}
 
 		if len(args[0]) != 32 {
