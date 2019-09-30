@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"

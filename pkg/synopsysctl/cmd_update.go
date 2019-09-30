@@ -1251,12 +1251,12 @@ var updatePolarisCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		p, err := getPolarisFromSecret()
+		polarisObj, err := getPolarisFromSecret()
 		if err != nil {
 			return err
 		}
 
-		newPolaris, err := updatePolaris(*p, cmd.Flags())
+		newPolaris, err := updatePolaris(*polarisObj, cmd.Flags())
 		if err != nil {
 			return err
 		}
