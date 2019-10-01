@@ -130,13 +130,13 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 			return
 		}
 		if oldPolaris == nil { // create new Polaris
-			err = ensurePolaris(polarisObj, false)
+			err = ensurePolaris(polarisObj, false, false)
 			if err != nil {
 				log.Errorf("error ensuring Polaris: %s", err)
 				return
 			}
 		} else { // update Polaris
-			err = ensurePolaris(polarisObj, true)
+			err = ensurePolaris(polarisObj, true, false)
 			if err != nil {
 				log.Errorf("error ensuring Polaris: %s", err)
 				return

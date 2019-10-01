@@ -54,6 +54,8 @@ var updatePolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
 
 var updateMockFormat = "json"
 
+var createOrganization bool
+
 // updateCmd provides functionality to update/upgrade features of
 // Synopsys resources
 var updateCmd = &cobra.Command{
@@ -1234,6 +1236,9 @@ func updatePolaris(polarisObj polaris.Polaris, flagset *pflag.FlagSet) (*polaris
 	}
 	newSpec := spec.(polaris.Polaris)
 
+	if err := validatePolaris(newSpec); err != nil {
+		return nil, err
+	}
 	return &newSpec, nil
 }
 
@@ -1261,7 +1266,7 @@ var updatePolarisCmd = &cobra.Command{
 			return err
 		}
 
-		if err := ensurePolaris(newPolaris, true); err != nil {
+		if err := ensurePolaris(newPolaris, true, createOrganization); err != nil {
 			return err
 		}
 		return nil
@@ -1354,6 +1359,7 @@ func init() {
 
 	// Polaris
 	updatePolarisCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	updatePolarisCmd.PersistentFlags().BoolVarP(&createOrganization, "create-organization", "", createOrganization, "Create the organization")
 	updatePolarisCobraHelper.AddCRSpecFlagsToCommand(updatePolarisCmd, false)
 	addbaseURLFlag(updatePolarisCmd)
 	updateCmd.AddCommand(updatePolarisCmd)

@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
@@ -476,4 +477,14 @@ func cleanupByLabel(namespace, labelSelector string) error {
 	}
 
 	return nil
+}
+
+func validateEmail(email string) bool {
+	Re := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]+$`)
+	return Re.MatchString(email)
+}
+
+func validateFQDN(fqdn string) bool {
+	Re := regexp.MustCompile(`^[a-z0-9\-]+([.][a-z0-9\-]+)*\.[a-z]+$`)
+	return Re.MatchString(fqdn)
 }
