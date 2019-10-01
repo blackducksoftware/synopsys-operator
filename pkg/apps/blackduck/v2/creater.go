@@ -150,6 +150,20 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return fmt.Errorf("the cfssl pod is not ready: %v", err)
 		}
 
+		cfsslRcName := util.GetResourceName(blackduck.Name, util.BlackDuckName, "cfssl")
+		rc, err := util.GetReplicationController(hc.kubeClient, blackduck.Spec.Namespace, cfsslRcName)
+		if err != nil {
+			return fmt.Errorf("unable to find replication controller %s in namespace %s due to %+v", cfsslRcName, blackduck.Spec.Namespace, err)
+		}
+
+		if rc != nil && *rc.Spec.Replicas == 0 {
+			for _, replicationController := range cpList.ReplicationControllers {
+				if replicationController.GetName() != util.GetResourceName(blackduck.Name, util.BlackDuckName, "cfssl") {
+					replicationController.Spec.Replicas = util.IntToInt32(0)
+				}
+			}
+		}
+
 		// deploy non postgres and uploadcache component
 		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			cpList, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl,configmap,serviceAccount,uploadcache,route)", util.BlackDuckName, blackduck.Name), false)
