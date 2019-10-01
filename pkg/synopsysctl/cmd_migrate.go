@@ -919,30 +919,33 @@ var migrateCleanupCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		namespaceToMigrate := metav1.NamespaceAll
+		crdNamespace := metav1.NamespaceAll
 		if len(namespace) > 0 {
-			return cleanup(namespace)
-		}
-
-		// get operator namespace
-		isClusterScoped := util.GetClusterScope(apiExtensionClient)
-		if isClusterScoped {
-			namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
-			if err != nil {
-				return err
+			namespaceToMigrate = namespace
+			crdNamespace = namespace
+		} else {
+			isClusterScoped := util.GetClusterScope(apiExtensionClient)
+			if isClusterScoped {
+				namespaces, err := util.GetOperatorNamespace(kubeClient, namespaceToMigrate)
+				if err != nil {
+					return err
+				}
+				if len(namespaces) > 1 {
+					return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to migrate")
+				}
+				namespaceToMigrate = namespaces[0]
+			} else {
+				return fmt.Errorf("namespace of Synopsys Operator must be provided in namespace scoped mode")
 			}
-
-			if len(namespaces) > 1 {
-				return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to cleanup")
-			}
-			return cleanup(namespaces[0])
 		}
-		return fmt.Errorf("namespace of the Synopsys Operator need to be provided")
+		return cleanup(namespaceToMigrate, crdNamespace)
 	},
 }
 
 // cleanup will cleanup the resources
-func cleanup(namespace string) error {
-	blackDucks, err := util.ListBlackduck(blackDuckClient, namespace, metav1.ListOptions{})
+func cleanup(namespace string, crdNamespace string) error {
+	blackDucks, err := util.ListBlackduck(blackDuckClient, crdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list Black Duck instances in namespace '%s' due to %+v", namespace, err)
 	}
