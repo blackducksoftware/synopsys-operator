@@ -28,14 +28,15 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// ensurePolaris esnures the Polaris instance in the cluster (creates/updates it)
-// and esnures the Secret that stores the Polaris object specification/
+// ensurePolaris ensures the Polaris instance in the cluster (creates/updates it)
+// and ensures the Secret that stores the Polaris object specification/
 // This function requires that the global 'namespace' variable is set
-func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool) error {
+func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganization bool) error {
 	oldPolaris, err := getPolarisFromSecret()
 	if err != nil {
 		return err
@@ -43,21 +44,6 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool) error {
 
 	if !isUpdate && oldPolaris != nil {
 		return fmt.Errorf("the polaris instance already exist")
-	}
-
-	// Delete old polaris jobs
-	jobList, err := kubeClient.BatchV1().Jobs(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprint("polaris.synopsys.com/environment=", polarisObj.Namespace),
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, job := range jobList.Items {
-		log.Infof("Deleting job %s", job.Name)
-		if err := kubeClient.BatchV1().Jobs(namespace).Delete(job.Name, &metav1.DeleteOptions{}); err != nil {
-			return err
-		}
 	}
 
 	// Delete reporting components if it is being disabled
@@ -89,18 +75,21 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool) error {
 
 	var deployments []deploy
 
+	// Polaris DB
 	dbComponents, err := polaris.GetPolarisDBComponents(baseURL, *polarisObj)
 	if err != nil {
 		return err
 	}
 	deployments = append(deployments, deploy{name: "Polaris DB", obj: dbComponents})
 
+	// Polaris Core
 	polarisComponents, err := polaris.GetPolarisComponents(baseURL, *polarisObj)
 	if err != nil {
 		return err
 	}
 	deployments = append(deployments, deploy{name: "Polaris Core", obj: polarisComponents})
 
+	// Reporting
 	if polarisObj.EnableReporting {
 		reportingComponents, err := polaris.GetPolarisReportingComponents(baseURL, *polarisObj)
 		if err != nil {
@@ -109,12 +98,34 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool) error {
 		deployments = append(deployments, deploy{name: "Polaris Reporting", obj: reportingComponents})
 	}
 
-	provisionComponents, err := polaris.GetPolarisProvisionComponents(baseURL, *polarisObj)
+	// Organization provision
+	// Only deploy provision components during create operation. This job shouldn't run during update.
+	if createOrganization {
+		if err := kubeClient.BatchV1().Jobs(namespace).Delete("organization-provision-job", &metav1.DeleteOptions{}); err != nil && !apierrs.IsNotFound(err) {
+			return err
+		}
+		provisionComponents, err := polaris.GetPolarisProvisionComponents(baseURL, *polarisObj)
+		if err != nil {
+			return err
+		}
+
+		deployments = append(deployments, deploy{name: "Polaris Organization Provision", obj: provisionComponents})
+	}
+
+	// Jobs cannot be patched / updated
+	// Remove existing jobs from deployment components
+	jobList, err := kubeClient.BatchV1().Jobs(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprint("polaris.synopsys.com/environment=", polarisObj.Namespace),
+	})
 	if err != nil {
 		return err
 	}
 
-	deployments = append(deployments, deploy{name: "Polaris Organization Provision", obj: provisionComponents})
+	for _, job := range jobList.Items {
+		for _, d := range deployments {
+			delete(d.obj, fmt.Sprintf("Job.%s", job.Name))
+		}
+	}
 
 	// Marshal Polaris
 	polarisByte, err := json.Marshal(polarisObj)
@@ -167,11 +178,12 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool) error {
 	}
 
 	// Delete old resources if the version changed
-	if oldPolaris != nil && (oldPolaris.Version != polarisObj.Version) {
-		log.Info("Deleting old resources...")
-		if err := cleanupByLabel(namespace, fmt.Sprintf("polaris.synopsys.com/version=%s", oldPolaris.Version)); err != nil {
-			return err
-		}
-	}
+	// TODO we need to find a better solution
+	//if oldPolaris != nil && (oldPolaris.Version != polarisObj.Version) {
+	//	log.Info("Deleting old resources...")
+	//	if err := cleanupByLabel(namespace, fmt.Sprintf("polaris.synopsys.com/version=%s", oldPolaris.Version)); err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }

@@ -22,6 +22,7 @@ under the License.
 package synopsysctl
 
 import (
+	"errors"
 	"fmt"
 
 	"sort"
@@ -577,7 +578,13 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		if err := ensurePolaris(polarisObj, false); err != nil {
+		if len(polarisObj.ImagePullSecrets) > 0 {
+			if _, err := kubeClient.CoreV1().Secrets(namespace).Get(polarisObj.ImagePullSecrets, metav1.GetOptions{}); err != nil {
+				return err
+			}
+		}
+
+		if err := ensurePolaris(polarisObj, false, true); err != nil {
 			return err
 		}
 
@@ -663,7 +670,31 @@ func updatePolarisSpecWithFlags(cmd *cobra.Command, namespace string) (*polaris.
 	}
 	polarisSpec.Namespace = namespace
 
+	if err := validatePolaris(polarisSpec); err != nil {
+		return nil, err
+	}
 	return &polarisSpec, nil
+}
+
+func validatePolaris(polarisConf polaris.Polaris) error {
+	var errMessage string
+	if !validateEmail(polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail) {
+		errMessage += fmt.Sprintf("\n%s is not a valid email address", polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail)
+	}
+
+	if !validateEmail(polarisConf.PolarisDBSpec.SMTPDetails.SenderEmail) {
+		errMessage += fmt.Sprintf("\n%s is not a valid email address", polarisConf.PolarisDBSpec.SMTPDetails.SenderEmail)
+	}
+
+	if !validateFQDN(polarisConf.EnvironmentDNS) {
+		errMessage += fmt.Sprintf("\n%s is not a valid FQDN", polarisConf.EnvironmentDNS)
+	}
+
+	if len(errMessage) > 0 {
+		return errors.New(errMessage)
+	}
+
+	return nil
 }
 
 func init() {

@@ -25,9 +25,7 @@ import (
 	"fmt"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -60,24 +58,6 @@ func GetPolarisProvisionComponents(baseURL string, polarisConf Polaris) (map[str
 	}
 
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
-
-	mapOfUniqueIDToBaseRuntimeObject["Secret.coverity-license"] = &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "coverity-license",
-			Namespace: polarisConf.Namespace,
-			Labels: map[string]string{
-				"environment": polarisConf.Namespace,
-			},
-		},
-		Data: map[string][]byte{
-			"license": []byte(polarisConf.Licenses.Coverity),
-		},
-		Type: corev1.SecretTypeOpaque,
-	}
 
 	patcher := polarisOrganizationJobPatcher{
 		polaris:                          polarisConf,
