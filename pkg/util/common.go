@@ -1408,13 +1408,8 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 		return err
 	}
 
-	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, IntToInt32(0))
-	if err != nil {
-		return err
-	}
-
-	if isUpdateReplica {
-		newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, new.Spec.Replicas)
+	if !isUpdateReplica {
+		newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, IntToInt32(0))
 		if err != nil {
 			return err
 		}
