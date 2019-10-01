@@ -25,7 +25,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"reflect"
 	"strings"
@@ -42,6 +41,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -143,6 +143,20 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update cfssl component: %+v", errors)
+		}
+
+		cfsslRcName := util.GetResourceName(blackduck.Name, util.BlackDuckName, "cfssl")
+		rc, err := util.GetReplicationController(hc.kubeClient, blackduck.Spec.Namespace, cfsslRcName)
+		if err != nil {
+			return fmt.Errorf("unable to find replication controller %s in namespace %s due to %+v", cfsslRcName, blackduck.Spec.Namespace, err)
+		}
+
+		if rc != nil && *rc.Spec.Replicas == 0 {
+			for _, replicationController := range cpList.ReplicationControllers {
+				if replicationController.GetName() != util.GetResourceName(blackduck.Name, util.BlackDuckName, "cfssl") {
+					replicationController.Spec.Replicas = util.IntToInt32(0)
+				}
+			}
 		}
 
 		err = util.WaitUntilPodsAreReady(hc.kubeClient, blackduck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component=cfssl", util.BlackDuckName, blackduck.Name), hc.config.PodWaitTimeoutSeconds)
