@@ -569,6 +569,7 @@ var createPolarisCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-email")
 		cobra.MarkFlagRequired(cmd.Flags(), "coverity-license-path")
+		cobra.MarkFlagRequired(cmd.Flags(), "gcp-service-account-path")
 
 		return nil
 	},
@@ -631,6 +632,7 @@ var createPolarisNativeCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-email")
 		cobra.MarkFlagRequired(cmd.Flags(), "coverity-license-path")
+		cobra.MarkFlagRequired(cmd.Flags(), "gcp-service-account-path")
 
 		return nil
 	},
