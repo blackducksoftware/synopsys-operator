@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -211,6 +212,44 @@ var getOpsSightCmd = &cobra.Command{
 	},
 }
 
+// getPolarisCmd display the polaris instance
+var getPolarisCmd = &cobra.Command{
+	Use:           "polaris",
+	Example:       "synopsysctl get polaris -n <namespace>",
+	Short:         "Display polaris instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("this command takes 0 arguments")
+		}
+
+		if !cmd.Flags().Lookup("namespace").Changed {
+			return fmt.Errorf("a namespace must be specified using the --namespace flag")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		polarisObj, err := getPolarisFromSecret()
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Namespace: %s\n", polarisObj.Namespace)
+		fmt.Printf("Version: %s\n", polarisObj.Version)
+		if len(polarisObj.Repository) > 0 {
+			fmt.Printf("Repository: %s\n", polarisObj.Repository)
+		}
+		fmt.Printf("Reporting: %s\n", strconv.FormatBool(polarisObj.EnableReporting))
+		fmt.Printf("Image pull secret: %s\n", polarisObj.ImagePullSecrets)
+		fmt.Printf("Organization Name: %s\n", polarisObj.OrganizationDetails.OrganizationProvisionOrganizationName)
+		fmt.Printf("Organization Description: %s\n", polarisObj.OrganizationDetails.OrganizationProvisionOrganizationDescription)
+		fmt.Printf("Postgres type: %s\n", polarisObj.PolarisDBSpec.PostgresInstanceType)
+
+		return nil
+	},
+}
+
 func init() {
 	//(PassCmd) getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
 	rootCmd.AddCommand(getCmd)
@@ -236,4 +275,7 @@ func init() {
 	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getOpsSightCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
 	getCmd.AddCommand(getOpsSightCmd)
+
+	getPolarisCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	getCmd.AddCommand(getPolarisCmd)
 }
