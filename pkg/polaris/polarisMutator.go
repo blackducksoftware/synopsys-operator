@@ -22,6 +22,7 @@
 package polaris
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -62,6 +63,7 @@ func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.O
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
+	// Coverity license
 	mapOfUniqueIDToBaseRuntimeObject["Secret.coverity-license"] = &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
@@ -78,6 +80,67 @@ func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.O
 			"license": []byte(polaris.Licenses.Coverity),
 		},
 		Type: corev1.SecretTypeOpaque,
+	}
+
+	// Tool store sync service account
+	mapOfUniqueIDToBaseRuntimeObject["Secret.tools-store-sync"] = &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tools-store-sync",
+			Namespace: polaris.Namespace,
+			Labels: map[string]string{
+				"environment": polaris.Namespace,
+			},
+		},
+		Data: map[string][]byte{
+			"credentials.json": []byte(polaris.GCPServiceAccount),
+			"instance-name":    []byte("tools-store-sync"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	// Pull secret gcr-json-key
+	type dockerAuthConfig struct {
+		Username string
+		Password string
+		Email    string
+	}
+
+	dockerCfg := struct {
+		Auths map[string]dockerAuthConfig `json:"auths"`
+	}{
+		Auths: map[string]dockerAuthConfig{
+			"https://gcr.io": {
+				Username: "_json_key",
+				Password: polaris.GCPServiceAccount,
+			},
+		},
+	}
+
+	dockerCfgByte, err := json.Marshal(dockerCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	mapOfUniqueIDToBaseRuntimeObject["Secret.gcr-json-key"] = &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gcr-json-key",
+			Namespace: polaris.Namespace,
+			Labels: map[string]string{
+				"environment": polaris.Namespace,
+			},
+		},
+		Data: map[string][]byte{
+			".dockerconfigjson": dockerCfgByte,
+		},
+		Type: corev1.SecretTypeDockerConfigJson,
 	}
 
 	patcher := polarisPatcher{
