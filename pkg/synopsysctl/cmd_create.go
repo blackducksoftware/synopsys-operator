@@ -578,7 +578,7 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		if len(polarisObj.ImagePullSecrets) > 0 {
+		if len(polarisObj.ImagePullSecrets) > 0 && cmd.Flags().Lookup("pull-secret").Changed {
 			if _, err := kubeClient.CoreV1().Secrets(namespace).Get(polarisObj.ImagePullSecrets, metav1.GetOptions{}); err != nil {
 				return err
 			}
@@ -678,16 +678,26 @@ func updatePolarisSpecWithFlags(cmd *cobra.Command, namespace string) (*polaris.
 
 func validatePolaris(polarisConf polaris.Polaris) error {
 	var errMessage string
+
+	// Emails
 	if !validateEmail(polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail) {
 		errMessage += fmt.Sprintf("\n%s is not a valid email address", polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail)
 	}
-
 	if !validateEmail(polarisConf.PolarisDBSpec.SMTPDetails.SenderEmail) {
 		errMessage += fmt.Sprintf("\n%s is not a valid email address", polarisConf.PolarisDBSpec.SMTPDetails.SenderEmail)
 	}
 
+	// Hosts
 	if !validateFQDN(polarisConf.EnvironmentDNS) {
 		errMessage += fmt.Sprintf("\n%s is not a valid FQDN", polarisConf.EnvironmentDNS)
+	}
+	if !validateFQDN(polarisConf.PolarisDBSpec.SMTPDetails.Host) {
+		errMessage += fmt.Sprintf("\n%s is not a valid FQDN", polarisConf.PolarisDBSpec.SMTPDetails.Host)
+	}
+
+	// Ports
+	if polarisConf.PolarisDBSpec.SMTPDetails.Port < 1 || polarisConf.PolarisDBSpec.SMTPDetails.Port > 65535 {
+		errMessage += fmt.Sprintf("\n%d is not a valid port", polarisConf.PolarisDBSpec.SMTPDetails.Port)
 	}
 
 	if len(errMessage) > 0 {

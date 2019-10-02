@@ -40,12 +40,13 @@ import (
 // When flags are used the correspoding value in this struct will by set. You can then
 // generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
 type CRSpecBuilderFromCobraFlags struct {
-	spec             Polaris
-	Version          string
-	EnvironmentName  string
-	EnvironmentDNS   string
-	ImagePullSecrets string
-	StorageClass     string
+	spec              Polaris
+	Version           string
+	EnvironmentName   string
+	EnvironmentDNS    string
+	ImagePullSecrets  string
+	StorageClass      string
+	GCPServiceAccount string
 
 	PostgresHost     string
 	PostgresPort     int
@@ -116,6 +117,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
 	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", false, "Send this flag if you wish to enable ReportingPlatform")
+	cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Google Cloud Service account")
 	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
 	//cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
@@ -173,6 +175,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.spec.EnableReporting = ctl.EnableReporting
 		case "pull-secret":
 			ctl.spec.ImagePullSecrets = ctl.ImagePullSecrets
+		case "gcp-service-account-path":
+			data, err := util.ReadFileData(ctl.GCPServiceAccount)
+			if err != nil {
+				panic(err)
+			}
+			ctl.spec.GCPServiceAccount = data
 		case "postgres-host":
 			ctl.spec.PolarisDBSpec.PostgresDetails.Host = ctl.PostgresHost
 		case "postgres-port":
@@ -233,7 +241,8 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 // GetPolarisDefault returns PolarisDB default configuration
 func GetPolarisDefault() *Polaris {
 	return &Polaris{
-		Licenses: &Licenses{},
+		ImagePullSecrets: "gcr-json-key",
+		Licenses:         &Licenses{},
 		OrganizationDetails: &OrganizationDetails{
 			OrganizationProvisionLicenseSeatCount:   "100",
 			OrganizationProvisionLicenseType:        "PAID",
