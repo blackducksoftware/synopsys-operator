@@ -60,6 +60,8 @@ func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.O
 		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)
 	}
 
+	content = strings.ReplaceAll(content, "${SMTP_SENDER_EMAIL}", polaris.PolarisDBSpec.SMTPDetails.SenderEmail)
+
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
