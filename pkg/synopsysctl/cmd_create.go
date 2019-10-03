@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	"sort"
 	"strings"
@@ -697,6 +698,25 @@ func validatePolaris(polarisConf polaris.Polaris) error {
 	// Ports
 	if polarisConf.PolarisDBSpec.SMTPDetails.Port < 1 || polarisConf.PolarisDBSpec.SMTPDetails.Port > 65535 {
 		errMessage += fmt.Sprintf("\n%d is not a valid port", polarisConf.PolarisDBSpec.SMTPDetails.Port)
+	}
+
+	// Organization
+	Re := regexp.MustCompile(`^[A-Za-z0-9]{1,53}$`)
+	if !Re.MatchString(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationName) {
+		errMessage += fmt.Sprintf("\norganization name must be between 1 and 53 alphanumeric characters (no dashes)")
+	}
+	if len(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationDescription) > 512 && len(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationDescription) == 0 {
+		errMessage += fmt.Sprintf("\n organization description must be between 1 and 512 characters")
+	}
+
+	// User
+	Re = regexp.MustCompile(`^^[A-Za-z0-9_][A-Za-z0-9-_]{0,255}$`)
+	if !Re.MatchString(polarisConf.OrganizationDetails.OrganizationProvisionAdminUsername) {
+		errMessage += fmt.Sprintf("\n admin username cannot start with a - and its length must be between 1 and 256 characters. The username must only contain alphanumeric characters, underscores or dashes")
+	}
+
+	if len(polarisConf.OrganizationDetails.OrganizationProvisionAdminName) < 1 && len(polarisConf.OrganizationDetails.OrganizationProvisionAdminName) > 256 {
+		errMessage += fmt.Sprintf("\n admin name must be between 1 and 256 characters")
 	}
 
 	if len(errMessage) > 0 {
