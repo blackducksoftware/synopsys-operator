@@ -685,9 +685,6 @@ func validatePolaris(polarisConf polaris.Polaris) error {
 	if !validateEmail(polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail) {
 		errMessage += fmt.Sprintf("\n%s is not a valid email address", polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail)
 	}
-	if !validateEmail(polarisConf.PolarisDBSpec.SMTPDetails.SenderEmail) {
-		errMessage += fmt.Sprintf("\n%s is not a valid email address", polarisConf.PolarisDBSpec.SMTPDetails.SenderEmail)
-	}
 
 	// Hosts
 	if !validateFQDN(polarisConf.EnvironmentDNS) {

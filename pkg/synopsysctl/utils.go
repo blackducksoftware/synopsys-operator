@@ -480,7 +480,7 @@ func cleanupByLabel(namespace, labelSelector string) error {
 }
 
 func validateEmail(email string) bool {
-	Re := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]+$`)
+	Re := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]+$`)
 	return Re.MatchString(email)
 }
 
