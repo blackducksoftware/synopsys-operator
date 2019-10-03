@@ -56,10 +56,6 @@ func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.O
 		content = strings.ReplaceAll(content, "${REPORTING_URL}", "")
 	}
 
-	if len(polaris.Repository) != 0 {
-		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)
-	}
-
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
@@ -159,6 +155,7 @@ func (p *polarisPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
 		p.patchVersionLabel,
+		p.patchRegistry,
 	}
 	for _, f := range patches {
 		err := f()
@@ -167,6 +164,15 @@ func (p *polarisPatcher) patch() map[string]runtime.Object {
 		}
 	}
 	return p.mapOfUniqueIDToBaseRuntimeObject
+}
+
+func (p *polarisPatcher) patchRegistry() error {
+	if len(p.polaris.Registry) > 0 {
+		if _, err := updateRegistry(p.mapOfUniqueIDToBaseRuntimeObject, p.polaris.Registry); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *polarisPatcher) patchNamespace() error {

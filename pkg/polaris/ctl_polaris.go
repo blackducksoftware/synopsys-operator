@@ -47,6 +47,7 @@ type CRSpecBuilderFromCobraFlags struct {
 	ImagePullSecrets  string
 	StorageClass      string
 	GCPServiceAccount string
+	Registry          string
 
 	PostgresHost     string
 	PostgresPort     int
@@ -118,6 +119,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
 	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", false, "Send this flag if you wish to enable ReportingPlatform")
 	cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Google Cloud Service account")
+	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Docker registry e.g. docker.io/myuser")
 	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
 	//cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
@@ -181,6 +183,8 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				panic(err)
 			}
 			ctl.spec.GCPServiceAccount = data
+		case "registry":
+			ctl.spec.Registry = ctl.Registry
 		case "postgres-host":
 			ctl.spec.PolarisDBSpec.PostgresDetails.Host = ctl.PostgresHost
 		case "postgres-port":

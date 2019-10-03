@@ -62,6 +62,7 @@ func (p *polarisReportingPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
 		p.patchVersionLabel,
+		p.patchRegistry,
 	}
 	for _, f := range patches {
 		err := f()
@@ -70,6 +71,15 @@ func (p *polarisReportingPatcher) patch() map[string]runtime.Object {
 		}
 	}
 	return p.mapOfUniqueIDToBaseRuntimeObject
+}
+
+func (p *polarisReportingPatcher) patchRegistry() error {
+	if len(p.polaris.Registry) > 0 {
+		if _, err := updateRegistry(p.mapOfUniqueIDToBaseRuntimeObject, p.polaris.Registry); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *polarisReportingPatcher) patchNamespace() error {

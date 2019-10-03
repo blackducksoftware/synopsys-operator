@@ -79,10 +79,6 @@ func GetPolarisDBComponents(baseURL string, polaris Polaris) (map[string]runtime
 	content = strings.ReplaceAll(content, "${UPLOAD_SERVER_PV_SIZE}", polaris.PolarisDBSpec.UploadServerDetails.Storage.StorageSize)
 	content = strings.ReplaceAll(content, "${POSTGRES_PV_SIZE}", polaris.PolarisDBSpec.PostgresDetails.Storage.StorageSize)
 
-	if len(polaris.Repository) != 0 {
-		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)
-	}
-
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
@@ -120,6 +116,7 @@ func (p *polarisDBPatcher) patch() map[string]runtime.Object {
 		p.patchPostgresDetails,
 		p.patchEventstoreDetails,
 		p.patchUploadServerDetails,
+		p.patchRegistry,
 	}
 	for _, f := range patches {
 		err := f()
@@ -128,6 +125,15 @@ func (p *polarisDBPatcher) patch() map[string]runtime.Object {
 		}
 	}
 	return p.mapOfUniqueIDToBaseRuntimeObject
+}
+
+func (p *polarisDBPatcher) patchRegistry() error {
+	if len(p.polaris.Registry) > 0 {
+		if _, err := updateRegistry(p.mapOfUniqueIDToBaseRuntimeObject, p.polaris.Registry); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *polarisDBPatcher) patchNamespace() error {

@@ -53,10 +53,6 @@ func GetPolarisProvisionComponents(baseURL string, polarisConf Polaris) (map[str
 	content = strings.ReplaceAll(content, "${RETENTION_START_DATE}", polarisConf.OrganizationDetails.OrganizationProvisionRetentionStartDate)
 	content = strings.ReplaceAll(content, "${RETENTION_END_DATE}", polarisConf.OrganizationDetails.OrganizationProvisionRetentionEndDate)
 
-	if len(polarisConf.Repository) != 0 {
-		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polarisConf.Repository)
-	}
-
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 
 	patcher := polarisOrganizationJobPatcher{
@@ -76,6 +72,7 @@ func (p *polarisOrganizationJobPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
 		p.patchVersionLabel,
+		p.patchRegistry,
 	}
 	for _, f := range patches {
 		err := f()
@@ -84,6 +81,15 @@ func (p *polarisOrganizationJobPatcher) patch() map[string]runtime.Object {
 		}
 	}
 	return p.mapOfUniqueIDToBaseRuntimeObject
+}
+
+func (p *polarisOrganizationJobPatcher) patchRegistry() error {
+	if len(p.polaris.Registry) > 0 {
+		if _, err := updateRegistry(p.mapOfUniqueIDToBaseRuntimeObject, p.polaris.Registry); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *polarisOrganizationJobPatcher) patchNamespace() error {
