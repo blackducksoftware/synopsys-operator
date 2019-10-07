@@ -703,7 +703,7 @@ func validatePolaris(polarisConf polaris.Polaris) error {
 	// Organization
 	Re := regexp.MustCompile(`^[A-Za-z0-9]{1,53}$`)
 	if !Re.MatchString(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationName) {
-		errMessage += fmt.Sprintf("\norganization name must be between 1 and 53 alphanumeric characters (no dashes)")
+		errMessage += fmt.Sprintf("\norganization name must be between 1 and 53 alphanumeric characters (no punctuations)")
 	}
 	if len(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationDescription) > 512 && len(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationDescription) == 0 {
 		errMessage += fmt.Sprintf("\n organization description must be between 1 and 512 characters")

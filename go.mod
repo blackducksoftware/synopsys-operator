@@ -9,9 +9,12 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20190911111923-ecfe977594f1 // indirect
 	github.com/gin-gonic/gin v1.4.0
 	github.com/go-logr/logr v0.1.0
+	github.com/gobuffalo/packr v1.30.1
 	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/go-cmp v0.3.0
 	github.com/gophercloud/gophercloud v0.3.0 // indirect
+	github.com/gorilla/handlers v1.4.2
+	github.com/gorilla/mux v1.7.3
 	github.com/imdario/mergo v0.3.7
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
