@@ -305,7 +305,7 @@ func getPolarisFromSecret() (*polaris.Polaris, error) {
 	polarisSecret, err := kubeClient.CoreV1().Secrets(namespace).Get("polaris", metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, fmt.Errorf("%+v; either namespace does not exist or secret does not exist because this instance of polaris was not created via synopsysctl", err)
+			return nil, nil
 		}
 		return nil, err
 	}
