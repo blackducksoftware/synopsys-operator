@@ -1261,6 +1261,10 @@ var updatePolarisCmd = &cobra.Command{
 			return err
 		}
 
+		if polarisObj == nil {
+			return fmt.Errorf("either namespace does not exist or secret does not exist because this instance of polaris was not created via synopsysctl")
+		}
+
 		newPolaris, err := updatePolaris(*polarisObj, cmd.Flags())
 		if err != nil {
 			return err
