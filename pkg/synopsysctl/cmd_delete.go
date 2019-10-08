@@ -24,7 +24,8 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
-	"time"
+	v1 "k8s.io/api/core/v1"
+	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 
@@ -156,6 +157,10 @@ var deletePolarisCmd = &cobra.Command{
 			return err
 		}
 
+		if p == nil {
+			return fmt.Errorf("either namespace does not exist or secret does not exist because this instance of polaris was not created via synopsysctl")
+		}
+
 		components, err := polaris.GetComponents(baseURL, *p)
 		if err != nil {
 			return err
@@ -163,6 +168,11 @@ var deletePolarisCmd = &cobra.Command{
 
 		var content []byte
 		for _, v := range components {
+			// We skip it if it's a PVC
+			if _, ok := v.(*v1.PersistentVolumeClaim); ok {
+				continue
+			}
+
 			polarisComponentsByte, err := json.Marshal(v)
 			if err != nil {
 				return err
@@ -171,13 +181,10 @@ var deletePolarisCmd = &cobra.Command{
 		}
 
 		log.Info("Deleting Polaris")
-		ch := make(chan struct{})
-		go printWaitingDots(time.Second*5, ch)
 
 		// Delete components from the yaml file
 		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "delete", "-f", "-")
 		if err != nil {
-			close(ch)
 			return fmt.Errorf("couldn't delete polaris |  %+v - %s", out, err)
 		}
 
@@ -190,16 +197,55 @@ var deletePolarisCmd = &cobra.Command{
 			}
 		}
 
+		// Delete StatefulSet PVCs
+		if list, err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("environment=%s", p.Namespace)}); err == nil {
+			if len(list.Items) > 0 {
+				log.Warn("Do you want to to delete the following PVCs?")
+				for _, v := range list.Items {
+					log.Warn(v.Name)
+				}
+
+				deletePvc, err := askYesNo()
+				if err != nil {
+					return err
+				}
+
+				if deletePvc {
+					for _, v := range list.Items {
+						log.Warnf("deleting %s", v.Name)
+						if err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+							log.Warnf("Couldn't delete PVC %s in namespace %s", v.Name, namespace)
+						}
+					}
+				}
+			}
+		}
+
 		// Delete the polaris secret that contains the configuration
 		if err := kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{}); err != nil {
-			close(ch)
 			return err
 		}
-		close(ch)
 
 		log.Info("Polaris has been successfully Deleted!")
 		return nil
 	},
+}
+
+func askYesNo() (bool, error) {
+	var resp string
+	_, err := fmt.Scanln(&resp)
+	if err != nil {
+		return false, err
+	}
+
+	if strings.EqualFold("yes", strings.TrimSpace(resp)) {
+		return true, nil
+	} else if strings.EqualFold("no", strings.TrimSpace(resp)) {
+		return false, nil
+	} else {
+		fmt.Println("Invalid response. Please enter either yes or no: ")
+		return askYesNo()
+	}
 }
 
 func init() {

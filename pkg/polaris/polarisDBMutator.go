@@ -85,6 +85,8 @@ func GetPolarisDBComponents(baseURL string, polaris Polaris) (map[string]runtime
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
+	patchStorageClass(mapOfUniqueIDToBaseRuntimeObject, polaris.StorageClass)
+
 	patcher := polarisDBPatcher{
 		polaris:                          polaris,
 		mapOfUniqueIDToBaseRuntimeObject: mapOfUniqueIDToBaseRuntimeObject,

@@ -29,6 +29,7 @@ type Polaris struct {
 	Version             string               `json:"version"`
 	IngressClass        string               `json:"ingress_class"`
 	GCPServiceAccount   string               `json:"gcp_service_account"`
+	StorageClass        string               `json:"storageClass"`
 	EnableReporting     bool                 `json:"enable_reporting"`
 	PolarisDBSpec       *PolarisDBSpec       `json:"polaris_db_spec,omitempty"`
 	PolarisSpec         *PolarisSpec         `json:"polaris_spec,omitempty"`

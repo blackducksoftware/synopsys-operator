@@ -64,6 +64,8 @@ func GetPolarisProvisionComponents(baseURL string, polarisConf Polaris) (map[str
 		mapOfUniqueIDToBaseRuntimeObject: mapOfUniqueIDToBaseRuntimeObject,
 	}
 
+	patchStorageClass(mapOfUniqueIDToBaseRuntimeObject, polarisConf.StorageClass)
+
 	return patcher.patch(), nil
 }
 

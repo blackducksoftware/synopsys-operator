@@ -66,6 +66,8 @@ func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.O
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
+	patchStorageClass(mapOfUniqueIDToBaseRuntimeObject, polaris.StorageClass)
+
 	// Coverity license
 	mapOfUniqueIDToBaseRuntimeObject["Secret.coverity-license"] = &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
