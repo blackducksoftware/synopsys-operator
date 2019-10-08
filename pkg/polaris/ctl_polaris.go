@@ -47,6 +47,7 @@ type CRSpecBuilderFromCobraFlags struct {
 	ImagePullSecrets  string
 	StorageClass      string
 	GCPServiceAccount string
+	IngressClass      string
 
 	PostgresHost     string
 	PostgresPort     int
@@ -118,6 +119,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Storage class")
 	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", false, "Send this flag if you wish to enable ReportingPlatform")
 	cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Google Cloud Service account")
+	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", ctl.IngressClass, "The name of the ingress class to use. Default is nginx.")
 	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
 	//cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
@@ -175,6 +177,8 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.spec.EnableReporting = ctl.EnableReporting
 		case "pull-secret":
 			ctl.spec.ImagePullSecrets = ctl.ImagePullSecrets
+		case "ingress-class":
+			ctl.spec.IngressClass = ctl.IngressClass
 		case "gcp-service-account-path":
 			data, err := util.ReadFileData(ctl.GCPServiceAccount)
 			if err != nil {
@@ -242,6 +246,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 func GetPolarisDefault() *Polaris {
 	return &Polaris{
 		ImagePullSecrets: "gcr-json-key",
+		IngressClass:     "nginx",
 		Licenses:         &Licenses{},
 		OrganizationDetails: &OrganizationDetails{
 			OrganizationProvisionLicenseSeatCount:   "100",

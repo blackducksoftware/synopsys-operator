@@ -47,6 +47,7 @@ func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.O
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polaris.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polaris.ImagePullSecrets)
+	content = strings.ReplaceAll(content, "${INGRESS_CLASS}", polaris.IngressClass)
 
 	content = strings.ReplaceAll(content, "${DOWNLOAD_SERVER_PV_SIZE}", polaris.PolarisSpec.DownloadServerDetails.Storage.StorageSize)
 
