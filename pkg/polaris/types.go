@@ -27,6 +27,7 @@ type Polaris struct {
 	EnvironmentDNS      string               `json:"environment_address"`
 	ImagePullSecrets    string               `json:"image_pull_secrets"`
 	Version             string               `json:"version"`
+	IngressClass        string               `json:"ingress_class"`
 	GCPServiceAccount   string               `json:"gcp_service_account"`
 	StorageClass        string               `json:"storageClass"`
 	EnableReporting     bool                 `json:"enable_reporting"`
