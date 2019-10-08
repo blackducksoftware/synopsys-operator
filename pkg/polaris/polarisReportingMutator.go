@@ -46,6 +46,8 @@ func GetPolarisReportingComponents(baseURL string, polaris Polaris) (map[string]
 
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 
+	patchStorageClass(mapOfUniqueIDToBaseRuntimeObject, polaris.StorageClass)
+
 	patcher := polarisReportingPatcher{
 		polaris:                          polaris,
 		mapOfUniqueIDToBaseRuntimeObject: mapOfUniqueIDToBaseRuntimeObject,

@@ -28,6 +28,7 @@ type Polaris struct {
 	ImagePullSecrets    string               `json:"image_pull_secrets"`
 	Version             string               `json:"version"`
 	GCPServiceAccount   string               `json:"gcp_service_account"`
+	StorageClass        string               `json:"storageClass"`
 	EnableReporting     bool                 `json:"enable_reporting"`
 	PolarisDBSpec       *PolarisDBSpec       `json:"polaris_db_spec,omitempty"`
 	PolarisSpec         *PolarisSpec         `json:"polaris_spec,omitempty"`
