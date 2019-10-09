@@ -120,8 +120,13 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", false, "Send this flag if you wish to enable ReportingPlatform")
 	cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Google Cloud Service account")
 	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", ctl.IngressClass, "The name of the ingress class to use. Default is nginx.")
-	//cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
-	//cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
+
+	// Those flags need be hidden since external databases are not currently supported
+	cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
+	cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
+	cmd.Flags().MarkHidden("postgres-host")
+	cmd.Flags().MarkHidden("postgres-port")
+
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
 

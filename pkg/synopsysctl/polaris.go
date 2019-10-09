@@ -75,6 +75,13 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 
 	var deployments []deploy
 
+	//Polaris pull secret, license
+	mainSecretComponents, err := polaris.GetPolarisBaseSecrets(*polarisObj)
+	if err != nil {
+		return err
+	}
+	deployments = append(deployments, deploy{name: "Polaris Licences", obj: mainSecretComponents})
+
 	// Polaris DB
 	dbComponents, err := polaris.GetPolarisDBComponents(baseURL, *polarisObj)
 	if err != nil {
@@ -158,6 +165,11 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 
 	// Start deployment
 	for _, v := range deployments {
+		if len(v.obj) == 0 {
+			log.Infof("Skipping %s", v.name)
+			continue
+		}
+
 		log.Infof("Deploying %s", v.name)
 		var content []byte
 		for _, v := range v.obj {
