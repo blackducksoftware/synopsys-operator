@@ -1,0 +1,212 @@
+<div class="k-content k-grid__item k-grid__item--fluid k-grid k-grid--hor" id="k_content2">
+  {{#if this.receivedValidPolarisInstance}}
+    <form class="k-form k-form--label-right" id="polaris-options-form">
+      <div id="deployOptions"></div>
+
+      <div class="form-group">
+        <label for="version">POLARIS VERSION</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.version}} type="text" class="form-control" name="version"
+              id="version" required placeholder="Please the version of Polaris" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="polarisenvironmentDNS">ENVIRONMENT ADDRESS (DNS)</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.environmentDNS}} type="text" class="form-control"
+              name="polarisenvironmentDNS" id="polarisenvironmentDNS" required
+              placeholder="Please enter a desired url for polaris" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="storageClass">STORAGE CLASS</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.storageClass}} type="text" class="form-control" name="storageClass"
+              id="storageClass" required placeholder="Storage class to be used for Persistent Volumes" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="namespace">NAMESPACE</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.namespace}} type="text" class="form-control" name="namespace"
+              id="namespace" required placeholder="Namespace where polaris need to be deployed" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="googleServiceAccountPath">GOOGLE SERVICE ACCOUNT PATH</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.googleServiceAccountPath}} class="form-control"
+              name="googleServiceAccountPath" id="googleServiceAccountPath" required
+              placeholder="Provide the path to Google's service account" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="postgresDetails"><b>POSTGRES DETAILS</b></label>
+        <div class="row">
+          <div class="col-6">
+            <label for="postgresUsername">POSTGRES USERNAME</label>
+            <Input @value={{this.polarisConfig.postgresUsername}} type="text" class="form-control"
+                name="postgresUsername" id="postgresUsername" placeholder="Please enter postgres username" />
+          </div>
+          <div class="col-6">
+            <label for="postgresPassword">POSTGRES PASSWORD</label>
+            <Input @value={{this.polarisConfig.postgresPassword}} type="password" class="form-control"
+                name="postgresPassword" id="postgresPassword" placeholder="Please enter postgres password" />
+          </div>
+          <div class="col-6">
+            <label for="postgresSize">POSTGRES SIZE</label>
+            <Input @value={{this.polarisConfig.postgresSize}} type="text" class="form-control"
+                name="postgresSize" id="postgresSize" placeholder="Please enter postgres size" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="smtpDetails"><b>SMTP DETAILS</b></label>
+        <div class="row">
+          <div class="col-6">
+            <label for="smtpHost">SMTP HOST</label>
+            <Input @value={{this.polarisConfig.smtpHost}} type="text" class="form-control" name="smtpHost"
+                id="smtpHost" required placeholder="Please enter smtp host" />
+          </div>
+          <div class="col-6">
+            <label for="smtpPort">SMTP PORT</label>
+            <Input @value={{this.polarisConfig.smtpPort}} type="text" class="form-control" name="smtpPort"
+                id="smtpPort" required placeholder="Please enter smtp port" />
+          </div>
+          <div class="col-6">
+            <label for="smtpUsername">SMTP USERNAME</label>
+            <Input @value={{this.polarisConfig.smtpUsername}} type="text" class="form-control"
+                name="smtpUsername" id="smtpUsername" placeholder="Please enter smtp username" />
+          </div>
+          <div class="col-6">
+            <label for="postgresPassword">SMTP PASSWORD</label>
+            <Input @value={{this.polarisConfig.smtpPassword}} type="password" class="form-control"
+                name="smtpPassword" id="smtpPassword" placeholder="Please enter smtp password" />
+          </div>
+          <div class="col-6">
+            <label for="smtpSenderEmail">SMTP SENDER EMAIL</label>
+            <Input @value={{this.polarisConfig.smtpSenderEmail}} type="text" class="form-control"
+                name="smtpSenderEmail" id="smtpSenderEmail" placeholder="e.g. Polaris Platform <noreply@example.com>" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="uploadServerSize">UPLOAD SERVER SIZE</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.uploadServerSize}} type="text" class="form-control"
+              name="uploadServerSize" id="uploadServerSize" required placeholder="Upload server size" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="eventstoreSize">EVENTSTORE SIZE</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.eventstoreSize}} type="text" class="form-control"
+              name="eventstoreSize" id="eventstoreSize" required placeholder="Event store size" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="mongoDBSize">MONGO DB SIZE</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.mongoDBSize}} type="text" class="form-control" name="mongoDBSize"
+              id="mongoDBSize" required placeholder="MongoDB size" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="downloadServerSize">DOWNLOAD SERVER SIZE</label>
+        <div class="input-group">
+          <Input @value={{this.polarisConfig.downloadServerSize}} type="text" class="form-control"
+              name="downloadServerSize" id="downloadServerSize" required placeholder="Download server size" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="enableReporting">ENABLE REPORTING</label>
+        <div class="input-group">
+          <Input @type="checkbox" @checked={{this.polarisConfig.enableReporting}} />
+        </div>
+      </div>
+
+      {{#if this.polarisConfig.enableReporting}}
+        <div class="form-group">
+          <label for="reportStorageSize">REPORT STORAGE SIZE</label>
+          <div class="input-group">
+            <Input @value={{this.polarisConfig.reportStorageSize}} type="text" class="form-control"
+                name="reportStorageSize" id="reportStorageSize" required placeholder="Reporting Storage Size" />
+          </div>
+        </div>
+      {{/if}}
+
+      <div class="form-group">
+        <label for="organizationProvision"><b>ORGANIZATION PROVISION</b></label>
+        <div class="row">
+          <div class="col-6">
+            <label for="organizationDescription">ORGANIZATION DESCRIPTION</label>
+            <Input @value={{this.polarisConfig.organizationDescription}} type="text" class="form-control"
+                name="organizationDescription" id="organizationDescription" required
+                placeholder="Please enter Organization Description" />
+          </div>
+          <div class="col-6">
+            <label for="organizationName">ORGANIZATION NAME</label>
+            <Input @value={{this.polarisConfig.organizationName}} type="text" class="form-control"
+                name="organizationName" id="organizationName" required
+                placeholder="Please enter Organization Name" />
+          </div>
+          <div class="col-6">
+            <label for="organizationAdminName">ADMIN NAME</label>
+            <Input @value={{this.polarisConfig.organizationAdminName}} type="text" class="form-control"
+                name="organizationAdminName" id="organizationAdminName" placeholder="Please enter Admin Name" />
+          </div>
+          <div class="col-6">
+            <label for="organizationAdminUsername">ADMIN USERNAME</label>
+            <Input @value={{this.polarisConfig.organizationAdminUsername}} type="text" class="form-control"
+                name="organizationAdminUsername" id="organizationAdminUsername"
+                placeholder="Please enter Admin Username" />
+          </div>
+          <div class="col-6">
+            <label for="organizationAdminEmail">ADMIN EMAIL</label>
+            <Input @value={{this.polarisConfig.organizationAdminEmail}} type="text" class="form-control"
+                name="organizationAdminEmail" id="organizationAdminEmail"
+                placeholder="Please enter Admin Email" />
+          </div>
+          <div class="col-6">
+            <label for="coverityLicensePath">COVERITY LICENSE PATH</label>
+            <Input @value={{this.polarisConfig.coverityLicensePath}} class="form-control"
+                name="coverityLicensePath" id="coverityLicensePath" placeholder="Please enter License Type" />
+          </div>
+        </div>
+      </div>
+
+      <div id="ssl"></div>
+
+      <div class="form-group">
+        <button {{action "deployPolaris"}} class="btn btn-sm btn-primary">Submit</button>
+      </div>
+
+    </form>
+
+  {{else}}
+    <form class="k-form k-form--label-right" id="polaris-options-form">
+      <div class="form-group">
+        <label for="instanceNamespace">GET POLARIS INSTANCE TO UPDATE</label>
+        <div class="input-group">
+          <Input @value={{this.instanceNamespace}} type="text" class="form-control" name="instanceNamespace"
+              id="instanceNamespace" required placeholder="Enter the Namespace of the Polaris Instance" />
+        </div>
+      </div>
+      <div class="form-group">
+        <button {{action "getPolaris"}} class="btn btn-sm btn-primary">Go</button>
+      </div>
+    </form>
+  {{/if}}
+  {{yield}}
+</div>

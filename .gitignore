@@ -12,5 +12,6 @@ cmd/synopsysctl/*.key
 _output/*
 
 *node_modules/
-pkg/operator-ui-ember/
+pkg/operator-ui-ember/dist/*
+pkg/operator-ui-ember/node_modules/*
 

@@ -130,7 +130,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 			return
 		}
 		if oldPolaris == nil { // create new Polaris
-			err = ensurePolaris(polarisObj, false, false)
+			err = ensurePolaris(polarisObj, false, true)
 			if err != nil {
 				log.Errorf("error ensuring Polaris: %s", err)
 				return
@@ -476,12 +476,6 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 	if polarisUIRequestConfig.SMTPPort == "" {
 		return fmt.Errorf("field required: SMTPPort")
 	}
-	if polarisUIRequestConfig.SMTPUsername == "" {
-		return fmt.Errorf("field required: SMTPUsername")
-	}
-	if polarisUIRequestConfig.SMTPPassword == "" {
-		return fmt.Errorf("field required: SMTPPassword")
-	}
 	if polarisUIRequestConfig.SMTPSenderEmail == "" {
 		return fmt.Errorf("field required: SMTPSenderEmail")
 	}
@@ -519,10 +513,13 @@ func convertPolarisUIResponseToPolarisObject(polarisUIRequestConfig PolarisUIReq
 	}
 	polarisObj.Version = polarisUIRequestConfig.Version
 	polarisObj.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
-	polarisObj.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
+	data, err := util.ReadFileData(polarisUIRequestConfig.ImagePullSecrets)
+	if err != nil {
+		panic(err)
+	}
+	polarisObj.GCPServiceAccount = data
 	// TODO - Postgres host and port are not supported
 	// polarisObj.PolarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost
-	var err error
 	// var postPort int64
 	// if polarisUIRequestConfig.PostgresPort != "" {
 	// 	postPort, err = strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 64)
@@ -564,7 +561,7 @@ func convertPolarisUIResponseToPolarisObject(polarisUIRequestConfig PolarisUIReq
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminName = polarisUIRequestConfig.OrganizationAdminName
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminUsername = polarisUIRequestConfig.OrganizationAdminUsername
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminEmail = polarisUIRequestConfig.OrganizationAdminEmail
-	data, err := util.ReadFileData(polarisUIRequestConfig.CoverityLicensePath)
+	data, err = util.ReadFileData(polarisUIRequestConfig.CoverityLicensePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read coverity license from file: %+v", err)
 	}
