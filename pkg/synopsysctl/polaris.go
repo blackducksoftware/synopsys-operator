@@ -201,7 +201,6 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 			}
 			content = append(content, polarisComponentsByte...)
 		}
-
 		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
 		if err != nil {
 			if oldPolaris == nil {
