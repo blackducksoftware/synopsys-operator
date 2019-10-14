@@ -139,9 +139,9 @@ var deleteOpsSightCmd = &cobra.Command{
 
 // deletePolarisCmd deletes Polaris instances from the cluster
 var deletePolarisCmd = &cobra.Command{
-	Use:           "polaris NAME...",
-	Example:       "synopsysctl delete polaris <name>\nsynopsysctl delete polaris <name1> <name2> <name3>",
-	Short:         "Delete one or many polaris instances",
+	Use:           "polaris",
+	Example:       "synopsysctl delete polaris -n <namespace>",
+	Short:         "Delete a polaris instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
