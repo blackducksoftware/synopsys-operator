@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -127,6 +128,7 @@ type Patcher struct {
 
 func (p *Patcher) patch() (map[string]runtime.Object, error) {
 	patches := []func() error{
+		p.patchNamespace,
 		p.patchStorageClass,
 	}
 	for _, f := range patches {
@@ -136,6 +138,15 @@ func (p *Patcher) patch() (map[string]runtime.Object, error) {
 		}
 	}
 	return p.mapOfUniqueIDToBaseRuntimeObject, nil
+}
+
+// patchNamespace will change the resource namespace
+func (p *Patcher) patchNamespace() error {
+	accessor := meta.NewAccessor()
+	for _, runtimeObject := range p.mapOfUniqueIDToBaseRuntimeObject {
+		accessor.SetNamespace(runtimeObject, p.polaris.Namespace)
+	}
+	return nil
 }
 
 // patchStorageClass will iterate over the runtime objects and update the storage class
