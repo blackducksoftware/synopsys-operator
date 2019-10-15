@@ -172,8 +172,8 @@ func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, err
 	})
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	service.AddLabels(map[string]string{"component": "prometheus-exposed", "app": "opssight", "name": p.opssight.Name})
-	service.AddSelectors(map[string]string{"component": "prometheus-exposed", "app": "opssight", "name": p.opssight.Name})
+	service.AddLabels(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
+	service.AddSelectors(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
 
 	return service, err
 }
@@ -250,7 +250,7 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 // GetPrometheusOpenShiftRoute creates the OpenShift route component for the prometheus metrics
 func (p *SpecConfig) GetPrometheusOpenShiftRoute() *api.Route {
 	namespace := p.opssight.Spec.Namespace
-	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
+	if strings.ToUpper(p.opssight.Spec.Prometheus.Expose) == util.OPENSHIFT {
 		return &api.Route{
 			Name:               util.GetResourceName(p.opssight.Name, util.OpsSightName, fmt.Sprintf("%s-metrics", p.names["prometheus"])),
 			Namespace:          namespace,
