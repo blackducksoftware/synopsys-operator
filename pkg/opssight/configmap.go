@@ -36,10 +36,16 @@ type PerceiverConfig struct {
 	Port                      int
 	Pod                       *PodPerceiverConfig
 	Image                     *ImagePerceiverConfig
+	Artifactory               *ArtifactoryPerceiverConfig
 }
 
 // ImagePerceiverConfig stores the Image Perceiver configuration
 type ImagePerceiverConfig struct{}
+
+// ArtifactoryPerceiverConfig stores the Artifactory Perceiver configuration
+type ArtifactoryPerceiverConfig struct {
+	Dumper bool
+}
 
 // PodPerceiverConfig stores the Pod Perceiver configuration
 type PodPerceiverConfig struct {

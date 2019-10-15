@@ -63,6 +63,7 @@ func TestCheckValuesFromFlags(t *testing.T) {
 	opsSightCobraHelper := NewCRSpecBuilderFromCobraFlags()
 	opsSightCobraHelper.PerceptorExpose = util.NONE
 	opsSightCobraHelper.PrometheusExpose = util.NONE
+	opsSightCobraHelper.PerceiverArtifactoryExpose = util.NONE
 	cmd := &cobra.Command{}
 	specFlags := opsSightCobraHelper.CheckValuesFromFlags(cmd.Flags())
 	assert.Nil(specFlags)
@@ -74,20 +75,32 @@ func TestCheckValuesFromFlags(t *testing.T) {
 	}{
 		// invalid opssight core expose case
 		{input: &CRSpecBuilderFromCobraFlags{
-			opsSightSpec:     &opssightapi.OpsSightSpec{},
-			PerceptorExpose:  "",
-			PrometheusExpose: util.NONE,
+			opsSightSpec:               &opssightapi.OpsSightSpec{},
+			PerceptorExpose:            "",
+			PrometheusExpose:           util.NONE,
+			PerceiverArtifactoryExpose: util.NONE,
 		},
 			flagNameToTest: "opssight-core-expose",
 			flagValue:      "",
 		},
 		// invalid prometheus metrics expose case
 		{input: &CRSpecBuilderFromCobraFlags{
-			opsSightSpec:     &opssightapi.OpsSightSpec{},
-			PerceptorExpose:  util.NONE,
-			PrometheusExpose: "",
+			opsSightSpec:               &opssightapi.OpsSightSpec{},
+			PerceptorExpose:            util.NONE,
+			PerceiverArtifactoryExpose: util.NONE,
+			PrometheusExpose:           "",
 		},
 			flagNameToTest: "expose-metrics",
+			flagValue:      "",
+		},
+		// invalid artifactory metrics expose case
+		{input: &CRSpecBuilderFromCobraFlags{
+			opsSightSpec:               &opssightapi.OpsSightSpec{},
+			PerceptorExpose:            util.NONE,
+			PrometheusExpose:           util.NONE,
+			PerceiverArtifactoryExpose: "",
+		},
+			flagNameToTest: "expose-artifactory-processor",
 			flagValue:      "",
 		},
 	}
@@ -154,6 +167,10 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Containers for scanning")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in Scanner's pod where images are stored for scanning")
 	cmd.Flags().StringVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "If true, Image Processor discovers images for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverEnableArtifactoryPerceiver, "enable-artifactory-processor", ctl.PerceiverEnableArtifactoryPerceiver, "If true, Artifactory Processor discovers artifactory images for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverEnableQuayPerceiver, "enable-quay-processor", ctl.PerceiverEnableQuayPerceiver, "If true, Quay Processor discovers quay images for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverArtifactoryExpose, "expose-artifactory-processor", ctl.PerceiverArtifactoryExpose, "Type of service for Artifactory processor [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	cmd.Flags().StringVar(&ctl.PerceiverQuayExpose, "expose-quay-processor", ctl.PerceiverQuayExpose, "Type of service for Quay processor [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().StringVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
 	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processor-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
@@ -209,6 +226,16 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 			changedCtl: &CRSpecBuilderFromCobraFlags{
 				opsSightSpec:    &opssightapi.OpsSightSpec{},
 				PerceptorExpose: "changed",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{Expose: "changed"}},
+		},
+		// case
+		{
+			flagName:   "expose-artifactory-processor",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:               &opssightapi.OpsSightSpec{},
+				PerceiverArtifactoryExpose: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{Expose: "changed"}},
 		},

@@ -9,6 +9,7 @@ require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/gin-gonic/gin v1.4.0
+	github.com/google/go-cmp v0.3.0
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
@@ -16,6 +17,8 @@ require (
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
 	github.com/lib/pq v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c
+	github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/prometheus/client_golang v1.1.0
