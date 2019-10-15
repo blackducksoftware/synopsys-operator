@@ -157,8 +157,8 @@ func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
 		return nil, errors.Trace(err)
 	}
 
-	service.AddLabels(map[string]string{"component": name, "app": "opssight", "name": p.opssight.Name})
-	service.AddSelectors(map[string]string{"component": name, "app": "opssight", "name": p.opssight.Name})
+	service.AddLabels(map[string]string{"component": p.names["perceptor"], "app": "opssight", "name": p.opssight.Name})
+	service.AddSelectors(map[string]string{"component": p.names["perceptor"], "app": "opssight", "name": p.opssight.Name})
 
 	return service, nil
 }
@@ -182,8 +182,8 @@ func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error)
 		return nil, errors.Trace(err)
 	}
 
-	service.AddLabels(map[string]string{"component": name, "app": "opssight", "name": p.opssight.Name})
-	service.AddSelectors(map[string]string{"component": name, "app": "opssight", "name": p.opssight.Name})
+	service.AddLabels(map[string]string{"component": p.names["perceptor"], "app": "opssight", "name": p.opssight.Name})
+	service.AddSelectors(map[string]string{"component": p.names["perceptor"], "app": "opssight", "name": p.opssight.Name})
 
 	return service, nil
 }
