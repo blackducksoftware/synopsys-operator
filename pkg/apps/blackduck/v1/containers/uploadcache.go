@@ -28,7 +28,7 @@ import (
 )
 
 // GetUploadCacheDeployment will return the uploadCache deployment
-func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Deployment, error) {
+func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.ReplicationController, error) {
 	volumeMounts := c.getUploadCacheVolumeMounts()
 
 	uploadCacheContainerConfig := &util.Container{
@@ -71,8 +71,8 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Deploy
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"), Replicas: util.IntToInt32(1)},
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("uploadcache"))
 }
 

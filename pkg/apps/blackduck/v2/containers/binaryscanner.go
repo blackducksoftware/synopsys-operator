@@ -28,7 +28,7 @@ import (
 )
 
 // GetBinaryScannerDeployment will return the binary scanner deployment
-func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.Deployment, error) {
+func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.ReplicationController, error) {
 	binaryScannerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "binaryscanner", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.BinaryScannerMemoryLimit,
@@ -52,7 +52,7 @@ func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.Depl
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "binaryscanner"), Replicas: util.IntToInt32(1)},
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "binaryscanner"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("binaryscanner"))
 }

@@ -33,14 +33,14 @@ import (
 )
 
 // getAlertReplicationController returns a new replication controller for an Alert
-func (a *SpecConfig) getAlertReplicationController() (*components.Deployment, error) {
+func (a *SpecConfig) getAlertReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(1)
-	replicationController := components.NewDeployment(horizonapi.DeploymentConfig{
+	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
 		Namespace: a.alert.Spec.Namespace,
 	})
-	replicationController.AddMatchLabelsSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
+	replicationController.AddSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
 
 	pod, err := a.getAlertPod()
 	if err != nil {
