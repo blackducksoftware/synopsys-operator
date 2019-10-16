@@ -172,18 +172,22 @@ func (specConfig *SpecConfig) getOperatorService() []*horizoncomponents.Service 
 	})
 
 	synopsysOperatorService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
-	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-		Name:       "synopsys-operator-ui",
-		Port:       3000,
-		TargetPort: "3000",
-		Protocol:   horizonapi.ProtocolTCP,
-	})
-	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-		Name:       "synopsys-operator-ui-standard-port",
-		Port:       80,
-		TargetPort: "3000",
-		Protocol:   horizonapi.ProtocolTCP,
-	})
+
+	if specConfig.Expose != util.NONE && len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.BlackDuckCRDName) {
+		synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
+			Name:       "synopsys-operator-ui",
+			Port:       3000,
+			TargetPort: "3000",
+			Protocol:   horizonapi.ProtocolTCP,
+		})
+		synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
+			Name:       "synopsys-operator-ui-standard-port",
+			Port:       80,
+			TargetPort: "3000",
+			Protocol:   horizonapi.ProtocolTCP,
+		})
+	}
+
 	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
 		Name:       "synopsys-operator",
 		Port:       8080,
@@ -200,31 +204,33 @@ func (specConfig *SpecConfig) getOperatorService() []*horizoncomponents.Service 
 	synopsysOperatorService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	services = append(services, synopsysOperatorService)
 
-	if strings.EqualFold(specConfig.Expose, util.NODEPORT) || strings.EqualFold(specConfig.Expose, util.LOADBALANCER) {
+	if specConfig.Expose != util.NONE && len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.BlackDuckCRDName) {
+		if strings.EqualFold(specConfig.Expose, util.NODEPORT) || strings.EqualFold(specConfig.Expose, util.LOADBALANCER) {
 
-		var exposedServiceType horizonapi.ServiceType
-		if strings.EqualFold(specConfig.Expose, util.NODEPORT) {
-			exposedServiceType = horizonapi.ServiceTypeNodePort
-		} else {
-			exposedServiceType = horizonapi.ServiceTypeLoadBalancer
+			var exposedServiceType horizonapi.ServiceType
+			if strings.EqualFold(specConfig.Expose, util.NODEPORT) {
+				exposedServiceType = horizonapi.ServiceTypeNodePort
+			} else {
+				exposedServiceType = horizonapi.ServiceTypeLoadBalancer
+			}
+
+			// Synopsys Operator UI exposed service
+			synopsysOperatorExposedService := horizoncomponents.NewService(horizonapi.ServiceConfig{
+				APIVersion: "v1",
+				Name:       "synopsys-operator-exposed",
+				Namespace:  specConfig.Namespace,
+				Type:       exposedServiceType,
+			})
+			synopsysOperatorExposedService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
+			synopsysOperatorExposedService.AddPort(horizonapi.ServicePortConfig{
+				Name:       "synopsys-operator-ui",
+				Port:       80,
+				TargetPort: "3000",
+				Protocol:   horizonapi.ProtocolTCP,
+			})
+			synopsysOperatorExposedService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
+			services = append(services, synopsysOperatorExposedService)
 		}
-
-		// Synopsys Operator UI exposed service
-		synopsysOperatorExposedService := horizoncomponents.NewService(horizonapi.ServiceConfig{
-			APIVersion: "v1",
-			Name:       "synopsys-operator-exposed",
-			Namespace:  specConfig.Namespace,
-			Type:       exposedServiceType,
-		})
-		synopsysOperatorExposedService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
-		synopsysOperatorExposedService.AddPort(horizonapi.ServicePortConfig{
-			Name:       "synopsys-operator-ui",
-			Port:       80,
-			TargetPort: "3000",
-			Protocol:   horizonapi.ProtocolTCP,
-		})
-		synopsysOperatorExposedService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
-		services = append(services, synopsysOperatorExposedService)
 	}
 
 	return services
