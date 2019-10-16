@@ -22,8 +22,15 @@
 package synopsysctl
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	v1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/kubernetes/scheme"
+	//apijson "k8s.io/apimachinery/pkg/util/json"
+	"sigs.k8s.io/yaml"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	log "github.com/sirupsen/logrus"
@@ -31,6 +38,9 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ensurePolaris ensures the Polaris instance in the cluster (creates/updates it)
@@ -171,21 +181,8 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 		}
 
 		log.Infof("Deploying %s", v.name)
-		var content []byte
-		for _, v := range v.obj {
-			polarisComponentsByte, err := json.Marshal(v)
-			if err != nil {
-				return err
-			}
-			content = append(content, polarisComponentsByte...)
-		}
-
-		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
-		if err != nil {
-			if oldPolaris == nil {
-				kubeClient.CoreV1().Secrets(namespace).Delete("polaris", &metav1.DeleteOptions{})
-			}
-			return fmt.Errorf("couldn't deploy polaris |  %+v - %s", out, err)
+		if err := deployObj(v.obj); err != nil {
+			return err
 		}
 	}
 
@@ -197,5 +194,81 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 	//		return err
 	//	}
 	//}
+	return nil
+}
+
+func deployObj(objs map[string]runtime.Object) error {
+	cl, err := client.New(restconfig, client.Options{
+		Scheme: scheme.Scheme,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx := context.TODO()
+	accessor := meta.NewAccessor()
+	for _, v := range objs {
+		kind, _ := accessor.Kind(v)
+		name, _ := accessor.Name(v)
+		gvk := v.GetObjectKind().GroupVersionKind()
+
+		key, err := client.ObjectKeyFromObject(v)
+		if err != nil {
+			return err
+		}
+
+		currentRuntimeObject := v.DeepCopyObject()
+		if err := cl.Get(ctx, key, currentRuntimeObject); err != nil {
+			if !apierrs.IsNotFound(err) {
+				return err
+			}
+			log.Infof("\tDeploying %s %s", kind, name)
+			if err := cl.Create(ctx, v); err != nil {
+				return err
+			}
+		} else {
+			currentRuntimeObject.GetObjectKind().SetGroupVersionKind(gvk)
+			// Skip PVC updates
+			switch currentRuntimeObject.(type) {
+			case *corev1.PersistentVolumeClaim, *v1.Job:
+				continue
+			default:
+				if !equality.Semantic.DeepEqual(currentRuntimeObject, v) {
+					rawDesiredRuntimeObjectInBytes, _ := yaml.Marshal(v)
+					log.Infof("\tPatching %s %s", kind, name)
+					if err := cl.Patch(ctx, currentRuntimeObject, client.ConstantPatch(types.ApplyPatchType, rawDesiredRuntimeObjectInBytes)); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func deleteObjs(objs map[string]runtime.Object) error {
+	cl, err := client.New(restconfig, client.Options{
+		Scheme: scheme.Scheme,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx := context.TODO()
+	accessor := meta.NewAccessor()
+	for _, v := range objs {
+		kind, _ := accessor.Kind(v)
+		name, _ := accessor.Name(v)
+
+		if err := cl.Delete(ctx, v, client.PropagationPolicy(metav1.DeletePropagationForeground)); err != nil {
+			if !apierrs.IsNotFound(err) {
+				return err
+			}
+		} else {
+			log.Infof("Deleted %s %s", kind, name)
+		}
+	}
+
 	return nil
 }
