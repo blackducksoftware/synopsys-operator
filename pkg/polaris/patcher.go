@@ -72,8 +72,8 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	}
 
 	// Postgres
-	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", polaris.PolarisDBSpec.PostgresDetails.Username)
-	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", polaris.PolarisDBSpec.PostgresDetails.Password)
+	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Username))
+	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Password))
 	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", polaris.PolarisDBSpec.PostgresDetails.Host)
 	if polaris.PolarisDBSpec.PostgresDetails.Port != 5432 {
 		// TODO this needs to be a placeholder
