@@ -28,7 +28,7 @@ import (
 )
 
 // GetDocumentationDeployment will return the documentation deployment
-func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Deployment, error) {
+func (c *Creater) GetDocumentationDeployment(imageName string) (*components.ReplicationController, error) {
 	documentationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-documentation")
 	documentationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: imageName,
@@ -68,8 +68,8 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Depl
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "documentation"), Replicas: util.IntToInt32(1)},
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "documentation"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("documentation"))
 }
 

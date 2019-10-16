@@ -55,7 +55,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Alert Replication Controller: %s", err)
 	}
-	components.Deployments = append(components.Deployments, rc)
+	components.ReplicationControllers = append(components.ReplicationControllers, rc)
 
 	service := a.getAlertClusterService()
 	components.Services = append(components.Services, service)
@@ -99,7 +99,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Cfssl Replication Controller: %v", err)
 		}
-		components.Deployments = append(components.Deployments, rc)
+		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, a.getCfsslService())
 	}
 
