@@ -27,8 +27,10 @@ import (
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	log "github.com/sirupsen/logrus"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -119,21 +121,6 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 		deployments = append(deployments, deploy{name: "Polaris Organization Provision", obj: provisionComponents})
 	}
 
-	// Jobs cannot be patched / updated
-	// Remove existing jobs from deployment components
-	jobList, err := kubeClient.BatchV1().Jobs(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprint("polaris.synopsys.com/environment=", polarisObj.Namespace),
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, job := range jobList.Items {
-		for _, d := range deployments {
-			delete(d.obj, fmt.Sprintf("Job.%s", job.Name))
-		}
-	}
-
 	// Marshal Polaris
 	polarisByte, err := json.Marshal(polarisObj)
 	if err != nil {
@@ -163,6 +150,19 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 		}
 	}
 
+	// List PVCs
+	pvcList, err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	// Jobs cannot be patched / updated
+	jobList, err := kubeClient.BatchV1().Jobs(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	accessor := meta.NewAccessor()
 	// Start deployment
 	for _, v := range deployments {
 		if len(v.obj) == 0 {
@@ -172,7 +172,29 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 
 		log.Infof("Deploying %s", v.name)
 		var content []byte
+
+	OUTER:
 		for _, v := range v.obj {
+			// Skip PVCs / Jobs that already exist
+			switch v.(type) {
+			case *corev1.PersistentVolumeClaim:
+				for _, pvc := range pvcList.Items {
+					name, _ := accessor.Name(v)
+					if pvc.Name == name {
+						log.Debugf("PVC %s already exists", name)
+						continue OUTER
+					}
+				}
+			case *batchv1.Job:
+				for _, job := range jobList.Items {
+					name, _ := accessor.Name(v)
+					if job.Name == name {
+						log.Debugf("Job %s already exists", name)
+						continue OUTER
+					}
+				}
+			}
+
 			polarisComponentsByte, err := json.Marshal(v)
 			if err != nil {
 				return err
