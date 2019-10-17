@@ -118,9 +118,9 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "Environment DNS")
 	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
 	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Set the storage class to use for all the PVC")
-	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", false, "Send this flag if you wish to enable ReportingPlatform")
+	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", GetPolarisDefault().EnableReporting, "Send this flag if you wish to enable ReportingPlatform.")
 	cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Google Cloud Service account")
-	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", ctl.IngressClass, "The name of the ingress class to use. Default is nginx.")
+	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", GetPolarisDefault().IngressClass, "The name of the ingress class to use.")
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Docker registry e.g. docker.io/myuser")
 
 	// Those flags need be hidden since external databases are not currently supported
@@ -132,12 +132,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
 
-	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", ctl.PostgresSize, "PVC size to use for postgres. e.g. 100Gi")
-	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", ctl.UploadServerSize, "PVC size to use for uploadserver. e.g. 100Gi")
-	cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", ctl.EventstoreSize, "PVC size to use for eventstore. e.g. 100Gi")
-	cmd.Flags().StringVar(&ctl.MongoDBSize, "mongodb-size", ctl.MongoDBSize, "PVC size to use for mongodb. e.g.100Gi")
-	cmd.Flags().StringVar(&ctl.DownloadServerSize, "downloadserver-size", ctl.DownloadServerSize, "PVC size to use for downloadserver. e.g. 100Gi")
-	cmd.Flags().StringVar(&ctl.ReportStorageSize, "reportstorage-size", ctl.ReportStorageSize, "PVC size to use for reportstorage. e.g. 100Gi, applicable only if --enable-reporting is set to true.")
+	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Storage.StorageSize, "PVC size to use for postgres.")
+	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", GetPolarisDefault().PolarisDBSpec.UploadServerDetails.Storage.StorageSize, "PVC size to use for uploadserver.")
+	cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", GetPolarisDefault().PolarisDBSpec.EventstoreDetails.Storage.StorageSize, "PVC size to use for eventstore.")
+	cmd.Flags().StringVar(&ctl.MongoDBSize, "mongodb-size", GetPolarisDefault().PolarisDBSpec.MongoDBDetails.Storage.StorageSize, "PVC size to use for mongodb.")
+	cmd.Flags().StringVar(&ctl.DownloadServerSize, "downloadserver-size", GetPolarisDefault().PolarisSpec.DownloadServerDetails.Storage.StorageSize, "PVC size to use for downloadserver.")
+	cmd.Flags().StringVar(&ctl.ReportStorageSize, "reportstorage-size", GetPolarisDefault().ReportingSpec.ReportStorageDetails.Storage.StorageSize, "PVC size to use for reportstorage. Only applicable if --enable-reporting is set to true.")
 
 	cmd.Flags().StringVar(&ctl.SMTPHost, "smtp-host", ctl.SMTPHost, "SMTP host")
 	cmd.Flags().IntVar(&ctl.SMTPPort, "smtp-port", ctl.SMTPPort, "SMTP port")
@@ -149,7 +149,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationName, "organization-name", "", ctl.organizationProvisionOrganizationName, "Organization name")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminName, "organization-admin-name", "", ctl.organizationProvisionAdminName, "Organization admin name")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminUsername, "organization-admin-username", "", ctl.organizationProvisionAdminUsername, "Organization admin username")
-	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminEmail, "organization-admin-email", "", ctl.organizationProvisionAdminEmail, "Organization admin username")
+	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminEmail, "organization-admin-email", "", ctl.organizationProvisionAdminEmail, "Organization admin email")
 	cmd.Flags().StringVarP(&ctl.coverityLicensePath, "coverity-license-path", "", ctl.coverityLicensePath, "Path to the coverity license")
 }
 
