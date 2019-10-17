@@ -105,11 +105,6 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	content = strings.ReplaceAll(content, "${RETENTION_START_DATE}", polaris.OrganizationDetails.OrganizationProvisionRetentionStartDate)
 	content = strings.ReplaceAll(content, "${RETENTION_END_DATE}", polaris.OrganizationDetails.OrganizationProvisionRetentionEndDate)
 
-	// TODO https://github.com/blackducksoftware/synopsys-operator/issues/943
-	if len(polaris.Repository) != 0 {
-		content = strings.ReplaceAll(content, "gcr.io/snps-swip-staging", polaris.Repository)
-	}
-
 	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
@@ -130,6 +125,7 @@ func (p *Patcher) patch() (map[string]runtime.Object, error) {
 	patches := []func() error{
 		p.patchNamespace,
 		p.patchStorageClass,
+		p.patchRegistry,
 	}
 	for _, f := range patches {
 		err := f()
@@ -165,6 +161,16 @@ func (p *Patcher) patchStorageClass() error {
 			case *corev1.PersistentVolumeClaim:
 				p.mapOfUniqueIDToBaseRuntimeObject[k].(*corev1.PersistentVolumeClaim).Spec.StorageClassName = &p.polaris.StorageClass
 			}
+		}
+	}
+	return nil
+}
+
+// patchRegistry will update the image registry in the pod specs
+func (p *Patcher) patchRegistry() error {
+	if len(p.polaris.Registry) > 0 {
+		if _, err := updateRegistry(p.mapOfUniqueIDToBaseRuntimeObject, p.polaris.Registry); err != nil {
+			return err
 		}
 	}
 	return nil

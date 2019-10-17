@@ -237,8 +237,8 @@ var getPolarisCmd = &cobra.Command{
 
 		fmt.Printf("Namespace: %s\n", polarisObj.Namespace)
 		fmt.Printf("Version: %s\n", polarisObj.Version)
-		if len(polarisObj.Repository) > 0 {
-			fmt.Printf("Repository: %s\n", polarisObj.Repository)
+		if len(polarisObj.Registry) > 0 {
+			fmt.Printf("Registry: %s\n", polarisObj.Registry)
 		}
 		fmt.Printf("Reporting: %s\n", strconv.FormatBool(polarisObj.EnableReporting))
 		fmt.Printf("Image pull secret: %s\n", polarisObj.ImagePullSecrets)

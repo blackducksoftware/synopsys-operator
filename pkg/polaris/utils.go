@@ -5,9 +5,13 @@ import (
 	b64 "encoding/base64"
 	"fmt"
 	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
+	"regexp"
 )
 
 // HTTPGet returns the http response for the api
@@ -64,4 +68,84 @@ func Base64Encode(data []byte) string {
 func Base64Decode(data string) (string, error) {
 	uDec, err := base64.URLEncoding.DecodeString(data)
 	return string(uDec), err
+}
+
+func updateRegistry(obj map[string]runtime.Object, registry string) (map[string]runtime.Object, error) {
+	for _, v := range obj {
+		if podspec := findPodSpec(reflect.ValueOf(v)); podspec != nil {
+			if err := updateContainersImage(*podspec, registry); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return nil, nil
+}
+
+func findPodSpec(t reflect.Value) *corev1.PodSpec {
+	podSpecType := reflect.TypeOf(corev1.PodSpec{})
+
+	switch t.Kind() {
+	case reflect.Ptr:
+		return findPodSpec(t.Elem())
+	case reflect.Struct:
+		if t.Type() == podSpecType && t.CanInterface() {
+			podSpec, _ := t.Interface().(corev1.PodSpec)
+			return &podSpec
+		}
+		for i := 0; i < t.NumField(); i++ {
+			if podSpec := findPodSpec(t.Field(i)); podSpec != nil {
+				return podSpec
+			}
+		}
+	case reflect.Array, reflect.Slice:
+		for i := 0; i < t.Len(); i++ {
+			if podSpec := findPodSpec(t.Index(i)); podSpec != nil {
+				return podSpec
+			}
+		}
+	case reflect.Map:
+		for _, key := range t.MapKeys() {
+			if podSpec := findPodSpec(t.MapIndex(key)); podSpec != nil {
+				return podSpec
+			}
+		}
+	}
+
+	return nil
+}
+
+func updateContainersImage(podSpec corev1.PodSpec, registry string) error {
+	for containerIndex, container := range podSpec.Containers {
+		newImage, err := generateNewImage(container.Image, registry)
+		if err != nil {
+			return err
+		}
+		podSpec.Containers[containerIndex].Image = newImage
+	}
+
+	for initContainerIndex, initContainer := range podSpec.InitContainers {
+		newImage, err := generateNewImage(initContainer.Image, registry)
+		if err != nil {
+			return err
+		}
+		podSpec.InitContainers[initContainerIndex].Image = newImage
+	}
+	return nil
+}
+
+func generateNewImage(currentImage string, registry string) (string, error) {
+	imageTag, err := getImageAndTag(currentImage)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s", registry, imageTag), nil
+}
+
+func getImageAndTag(image string) (string, error) {
+	r := regexp.MustCompile(`^(|.*/)([a-zA-Z_0-9-.:]+)$`)
+	groups := r.FindStringSubmatch(image)
+	if len(groups) < 3 && len(groups[2]) == 0 {
+		return "", fmt.Errorf("couldn't find image and tags in [%s]", image)
+	}
+	return groups[2], nil
 }

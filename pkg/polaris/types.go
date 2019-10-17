@@ -34,7 +34,7 @@ type Polaris struct {
 	PolarisDBSpec       *PolarisDBSpec       `json:"polaris_db_spec,omitempty"`
 	PolarisSpec         *PolarisSpec         `json:"polaris_spec,omitempty"`
 	ReportingSpec       *ReportingSpec       `json:"reporting_spec,omitempty"`
-	Repository          string               `json:"repository,omitempty"`
+	Registry            string               `json:"registry,omitempty"`
 	OrganizationDetails *OrganizationDetails `json:"organization_details"`
 	Licenses            *Licenses            `json:"licenses"`
 }
