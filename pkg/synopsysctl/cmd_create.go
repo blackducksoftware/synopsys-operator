@@ -46,6 +46,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -310,15 +311,48 @@ var createBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
-		if err != nil {
-			return err
-		}
 
 		// If mock mode, return and don't create resources
 		if mockMode {
 			log.Debugf("generating CRD for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+			// Get Default CR Spec from the createBlackDuckCobraHelper
+			blackDuckSpecInterface := createBlackDuckCobraHelper.GetCRSpec()
+			blackDuckSpec, _ := blackDuckSpecInterface.(blackduckv1.BlackduckSpec)
+			// Add Default PVCs to the CR Spec
+			app, err := getDefaultApp(nativeClusterType)
+			if err != nil {
+				return err
+			}
+			defaultPvcComponentsList, err := app.Blackduck().GetComponents(&blackduckv1.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackDuckName, Namespace: blackDuckNamespace}, Spec: blackDuckSpec}, blackduckapp.PVCResources)
+			if err != nil {
+				return err
+			}
+			defaultPvcList := []blackduckv1.PVC{}
+			for _, defaultPvcComponent := range defaultPvcComponentsList.PersistentVolumeClaims {
+				defaultPvcComponentResourceQuantitySize := defaultPvcComponent.Spec.Resources.Requests[v1.ResourceStorage]
+				pvc := blackduckv1.PVC{
+					Name: defaultPvcComponent.Name,
+					Size: defaultPvcComponentResourceQuantitySize.String(),
+				}
+				defaultPvcList = append(defaultPvcList, pvc)
+			}
+			blackDuckSpec.PVC = defaultPvcList
+			// Put the CR Spec with Default PVCs back into the createBlackDuckCobraHelper
+			err = createBlackDuckCobraHelper.SetCRSpec(blackDuckSpec)
+			if err != nil {
+				return err
+			}
+			// Update the CR in createBlackDuckCobraHelper with user's flags
+			blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+			if err != nil {
+				return err
+			}
 			return PrintResource(*blackDuck, mockFormat, false)
+		}
+
+		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+		if err != nil {
+			return err
 		}
 
 		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)

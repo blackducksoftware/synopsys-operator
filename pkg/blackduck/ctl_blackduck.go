@@ -333,7 +333,19 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				log.Errorf("failed to unmarshal pvc structs: %+v", err)
 				return
 			}
-			ctl.blackDuckSpec.PVC = pvcs
+			for _, newPVC := range pvcs {
+				found := false
+				for i, currPVC := range ctl.blackDuckSpec.PVC {
+					if newPVC.Name == currPVC.Name {
+						ctl.blackDuckSpec.PVC[i] = newPVC
+						found = true
+						break
+					}
+				}
+				if !found {
+					ctl.blackDuckSpec.PVC = append(ctl.blackDuckSpec.PVC, newPVC)
+				}
+			}
 		case "node-affinity-file-path":
 			data, err := util.ReadFileData(ctl.NodeAffinityFilePath)
 			if err != nil {
