@@ -79,6 +79,7 @@ func TestCheckValuesFromFlags(t *testing.T) {
 			PerceptorExpose:            "",
 			PrometheusExpose:           util.NONE,
 			PerceiverArtifactoryExpose: util.NONE,
+			PerceiverQuayExpose:        util.NONE,
 		},
 			flagNameToTest: "opssight-core-expose",
 			flagValue:      "",
@@ -88,6 +89,7 @@ func TestCheckValuesFromFlags(t *testing.T) {
 			opsSightSpec:               &opssightapi.OpsSightSpec{},
 			PerceptorExpose:            util.NONE,
 			PerceiverArtifactoryExpose: util.NONE,
+			PerceiverQuayExpose:        util.NONE,
 			PrometheusExpose:           "",
 		},
 			flagNameToTest: "expose-metrics",
@@ -98,9 +100,21 @@ func TestCheckValuesFromFlags(t *testing.T) {
 			opsSightSpec:               &opssightapi.OpsSightSpec{},
 			PerceptorExpose:            util.NONE,
 			PrometheusExpose:           util.NONE,
+			PerceiverQuayExpose:        util.NONE,
 			PerceiverArtifactoryExpose: "",
 		},
 			flagNameToTest: "expose-artifactory-processor",
+			flagValue:      "",
+		},
+		// invalid quay metrics expose case
+		{input: &CRSpecBuilderFromCobraFlags{
+			opsSightSpec:               &opssightapi.OpsSightSpec{},
+			PerceptorExpose:            util.NONE,
+			PrometheusExpose:           util.NONE,
+			PerceiverQuayExpose:        "",
+			PerceiverArtifactoryExpose: util.NONE,
+		},
+			flagNameToTest: "expose-quay-processor",
 			flagValue:      "",
 		},
 	}
@@ -238,7 +252,17 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				opsSightSpec:               &opssightapi.OpsSightSpec{},
 				PerceiverArtifactoryExpose: "changed",
 			},
-			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{Expose: "changed"}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{Expose: "changed"}},
+		},
+		// case
+		{
+			flagName:   "expose-quay-processor",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:        &opssightapi.OpsSightSpec{},
+				PerceiverQuayExpose: "changed",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{Expose: "changed"}},
 		},
 		// case
 		{
