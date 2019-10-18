@@ -170,7 +170,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "If true, Image Processor discovers images for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverEnableArtifactoryPerceiver, "enable-artifactory-processor", ctl.PerceiverEnableArtifactoryPerceiver, "If true, Artifactory Processor discovers artifactory images for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverEnableArtifactoryPerceiverDumper, "enable-artifactory-processor-dumper", ctl.PerceiverEnableArtifactoryPerceiverDumper, "If true, Artifactory Processor dumps all docker images in an artifactory instance for scanning [true|false]")
-	cmd.Flags().StringVar(&ctl.PerceiverEnableQuayPerceiver, "enable-quay-processor", ctl.PerceiverEnableQuayPerceiver, "If true, Quay Processor discovers artifactory images for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverEnableQuayPerceiver, "enable-quay-processor", ctl.PerceiverEnableQuayPerceiver, "If true, Quay Processor discovers quay images for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning [true|false]")
 	if master {
 		cmd.Flags().StringVar(&ctl.PerceiverArtifactoryExpose, "expose-artifactory-processor", util.NONE, "Type of service for Artifactory processor [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
