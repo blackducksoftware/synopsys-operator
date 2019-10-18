@@ -65,8 +65,8 @@ func (p *SpecConfig) ImagePerceiverReplicationController() (*components.Replicat
 
 // ArtifactoryPerceiverReplicationController creates a replication controller for the artifactory perceiver
 func (p *SpecConfig) ArtifactoryPerceiverReplicationController() (*components.ReplicationController, error) {
-	name := fmt.Sprintf("artifactory-processor")
-	image := fmt.Sprintf("docker.io/gautambaghel/art:test")
+	name := fmt.Sprintf("artifactory-perceiver")
+	image := fmt.Sprintf("artifactory-perceiver")
 
 	rc := p.perceiverReplicationController(name, 1)
 
@@ -80,8 +80,8 @@ func (p *SpecConfig) ArtifactoryPerceiverReplicationController() (*components.Re
 
 // QuayPerceiverReplicationController creates a replication controller for the quay perceiver
 func (p *SpecConfig) QuayPerceiverReplicationController() (*components.ReplicationController, error) {
-	name := fmt.Sprintf("quay-processor")
-	image := fmt.Sprintf("docker.io/gautambaghel/quay:test")
+	name := fmt.Sprintf("quay-perceiver")
+	image := fmt.Sprintf("quay-perceiver")
 
 	rc := p.perceiverReplicationController(name, 1)
 
