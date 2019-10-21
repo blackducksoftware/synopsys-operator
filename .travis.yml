@@ -30,12 +30,12 @@ git:
 before_install:
   - export GOPROXY=https://proxy.golang.org
 
-before_script:
+  # [TODO (ybhutwala): replace scripts with either golangci-lint or use go fmt and go vet]
+  # - go install github.com/golangci/golangci-lint/cmd/golangci-lint
+
   - hack/verify-gofmt.sh
   - hack/verify-golint.sh
   - hack/verify-govet.sh
-  # [TODO (ybhutwala): replace scripts with either golangci-lint or use go fmt and go vet]
-  # - go install github.com/golangci/golangci-lint/cmd/golangci-lint
 
   # Download and install KinD
   # - go get sigs.k8s.io/kind@v0.5.1
@@ -47,34 +47,33 @@ before_script:
   # Download and install kubectl
   - curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
-  # Create a new Kubernetes cluster using KinD
-  # TODO: [ybhutwala] create clusters going back to Kubernetes 1.11
-  - kind create cluster --image=kindest/node:v1.15.3
-
-  # Set KUBECONFIG environment variable
-  - cp "$(kind get kubeconfig-path)" /home/travis/.kube/config
-  # - export KUBECONFIG="$(kind get kubeconfig-path)"
+  # Download and install kubeval
+  - wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz && tar xf kubeval-linux-amd64.tar.gz && sudo mv kubeval /usr/local/bin/
 
   # set up env variables for polaris
   - pwd
   - touch gcp_service_acount_path_file.json
   - touch covery_license_path_file.xml
-  - export NAMESPACE="onprem" && export POLARIS_VERSION="0.0.373" && export GCP_SERVICE_ACCOUNT_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/gcp_service_acount_path_file.json" && export COVERITY_LICENSE_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/covery_license_path_file.xml" && export ADMIN_EMAIL="bhutwala@synopsys.com"
-
-script:
-  # [TODO: (ybhutwala)]
-  # - golangci-lint run
-  # - go build -v ./cmd/... ./pkg/... && go test -v -race ./cmd/... ./pkg/...
-  - pwd
+  - export NAMESPACE="onprem" && export POLARIS_VERSION="latest" && export GCP_SERVICE_ACCOUNT_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/gcp_service_acount_path_file.json" && export COVERITY_LICENSE_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/covery_license_path_file.xml"
   - cd cmd/synopsysctl && go build -v .
-  - echo "Going to try and create polaris"
-  - kubectl version
-  - kubectl create ns $NAMESPACE
-  - pwd
-  - sleep 5
-  - /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl/synopsysctl create polaris --namespace $NAMESPACE --version $POLARIS_VERSION --environment-dns "travis-onprem-polaris.com" --smtp-host "smtp.sendgrid.net" --smtp-port "3000" --smtp-username "example-username" --smtp-password "example-password" --smtp-sender-email "noreply@synopsys.com" --postgres-username "polaris" --postgres-password "polaris" --organization-admin-email $ADMIN_EMAIL --organization-admin-name "Polaris Test" --organization-admin-username "test123" --organization-description "Cloud Native Eng" --organization-name "Polaris" --gcp-service-account-path $GCP_SERVICE_ACCOUNT_PATH --coverity-license-path $COVERITY_LICENSE_PATH --yaml-url "https://raw.githubusercontent.com/blackducksoftware/releases/Development"
-  - sleep 5
-  - kind delete cluster
+  - sudo mv /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl/synopsysctl /usr/local/bin/
+  - which -a synopsysctl
+
+jobs:
+  include:
+    # default stage name "test", can only 5 in parallel
+    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/test_synopsysctl_native.sh
+#    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.16.2 kind-v1.16.2
+    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.15.3 kind-v1.15.3
+    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.14.6 kind-v1.14.6
+#    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.13.10 kind-v1.13.10
+#    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.12.10 kind-v1.12.10
+#    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.11.10 kind-v1.11.10
+    # [TODO: (ybhutwala)]
+#    - stage: lint
+#      script:
+#        - golangci-lint run
+#        - go build -v ./cmd/... ./pkg/... && go test -v -race ./cmd/... ./pkg/...
 
 # [TODO (ybhutwala)]: integrate kubeval (also conftest)
 
