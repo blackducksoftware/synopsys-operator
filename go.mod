@@ -1,6 +1,6 @@
 module github.com/blackducksoftware/synopsys-operator
 
-go 1.12
+go 1.13
 
 require (
 	github.com/Azure/go-autorest/autorest v0.8.0 // indirect
