@@ -130,7 +130,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 			return
 		}
 		if oldPolaris == nil { // create new Polaris
-			err = ensurePolaris(polarisObj, false, false)
+			err = ensurePolaris(polarisObj, false, true)
 			if err != nil {
 				log.Errorf("error ensuring Polaris: %s", err)
 				return
@@ -286,11 +286,11 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // PolarisUIRequestResponse represents the format that
 // the front-end and back-end can communicate Polaris data
 type PolarisUIRequestResponse struct {
-	Version          string `json:"version"`
-	EnvironmentDNS   string `json:"environmentDNS"`
-	ImagePullSecrets string `json:"imagePullSecrets"`
-	StorageClass     string `json:"storageClass"`
-	Namespace        string `json:"namespace"`
+	Version               string `json:"version"`
+	EnvironmentDNS        string `json:"environmentDNS"`
+	GCPServiceAccountPath string `json:"GCPServiceAccountPath"`
+	StorageClass          string `json:"storageClass"`
+	Namespace             string `json:"namespace"`
 
 	PostgresHost     string `json:"postgresHost"`
 	PostgresPort     string `json:"postgresPort"`
@@ -476,12 +476,6 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 	if polarisUIRequestConfig.SMTPPort == "" {
 		return fmt.Errorf("field required: SMTPPort")
 	}
-	if polarisUIRequestConfig.SMTPUsername == "" {
-		return fmt.Errorf("field required: SMTPUsername")
-	}
-	if polarisUIRequestConfig.SMTPPassword == "" {
-		return fmt.Errorf("field required: SMTPPassword")
-	}
 	if polarisUIRequestConfig.SMTPSenderEmail == "" {
 		return fmt.Errorf("field required: SMTPSenderEmail")
 	}
@@ -519,10 +513,13 @@ func convertPolarisUIResponseToPolarisObject(polarisUIRequestConfig PolarisUIReq
 	}
 	polarisObj.Version = polarisUIRequestConfig.Version
 	polarisObj.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
-	polarisObj.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
+	GCPServiceAccount, err := util.ReadFileData(polarisUIRequestConfig.GCPServiceAccountPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read GCP Service Account from file: %s", err)
+	}
+	polarisObj.GCPServiceAccount = GCPServiceAccount
 	// TODO - Postgres host and port are not supported
 	// polarisObj.PolarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost
-	var err error
 	// var postPort int64
 	// if polarisUIRequestConfig.PostgresPort != "" {
 	// 	postPort, err = strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 64)
@@ -564,12 +561,12 @@ func convertPolarisUIResponseToPolarisObject(polarisUIRequestConfig PolarisUIReq
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminName = polarisUIRequestConfig.OrganizationAdminName
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminUsername = polarisUIRequestConfig.OrganizationAdminUsername
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminEmail = polarisUIRequestConfig.OrganizationAdminEmail
-	data, err := util.ReadFileData(polarisUIRequestConfig.CoverityLicensePath)
+	CoverityLicense, err := util.ReadFileData(polarisUIRequestConfig.CoverityLicensePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read coverity license from file: %+v", err)
 	}
 	// TODO - add validating file format
-	polarisObj.Licenses.Coverity = data
+	polarisObj.Licenses.Coverity = CoverityLicense
 
 	return &polarisObj, nil
 }
@@ -583,7 +580,7 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 
 	polarisUIRequestConfig.Version = polarisObj.Version
 	polarisUIRequestConfig.EnvironmentDNS = polarisObj.EnvironmentDNS
-	polarisUIRequestConfig.ImagePullSecrets = polarisObj.ImagePullSecrets
+	polarisUIRequestConfig.GCPServiceAccountPath = "" // TODO - User needs to provide License Path every time, change to not require on Updates (may involve front end)
 	// TODO - Postgres host and port are not supported
 	// polarisUIRequestConfig.PostgresHost = polarisObj.PolarisDBSpec.PostgresDetails.Host
 	// polarisUIRequestConfig.PostgresPort  = strconv.FormatInt(polarisObj.PolarisDBSpec.PostgresDetails.Port)
