@@ -23,18 +23,12 @@ package polaris
 
 import (
 	"encoding/json"
-	"fmt"
 
-	routev1 "github.com/openshift/api/route/v1"
-	securityv1 "github.com/openshift/api/security/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-
-	"strings"
 )
 
 // GetComponents get all Polaris related components
@@ -85,42 +79,7 @@ func GetComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, 
 	return components, nil
 }
 
-// ConvertYamlFileToRuntimeObjects converts the yaml file string to map of runtime object
-func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Object {
-	routev1.AddToScheme(scheme.Scheme)
-	securityv1.AddToScheme(scheme.Scheme)
-
-	listOfSingleK8sResourceYaml := strings.Split(stringContent, "---")
-	mapOfUniqueIDToDesiredRuntimeObject := make(map[string]runtime.Object, 0)
-
-	for _, singleYaml := range listOfSingleK8sResourceYaml {
-		if singleYaml == "\n" || singleYaml == "" {
-			// ignore empty cases
-			//log.V(1).Info("Got empty", "here", singleYaml)
-			continue
-		}
-
-		decode := scheme.Codecs.UniversalDeserializer().Decode
-		runtimeObject, groupVersionKind, err := decode([]byte(singleYaml), nil, nil)
-		if err != nil {
-			//log.V(1).Info("unable to decode a single yaml object, skipping", "singleYaml", singleYaml, "error", err)
-			continue
-		}
-
-		accessor := meta.NewAccessor()
-		runtimeObjectKind := groupVersionKind.Kind
-		runtimeObjectName, err := accessor.Name(runtimeObject)
-		if err != nil {
-			//log.V(1).Info("Failed to get runtimeObject's name", "err", err)
-			continue
-		}
-		uniqueID := fmt.Sprintf("%s.%s", runtimeObjectKind, runtimeObjectName)
-		//log.V(1).Info("creating runtime object label", "uniqueId", uniqueID)
-		mapOfUniqueIDToDesiredRuntimeObject[uniqueID] = runtimeObject
-	}
-	return mapOfUniqueIDToDesiredRuntimeObject
-}
-
+// GetPolarisBaseSecrets get polaris base secrets
 func GetPolarisBaseSecrets(polaris Polaris) (map[string]runtime.Object, error) {
 	mapOfUniqueIDToBaseRuntimeObject := make(map[string]runtime.Object, 0)
 
@@ -209,7 +168,7 @@ func GetPolarisBaseSecrets(polaris Polaris) (map[string]runtime.Object, error) {
 
 // GetPolarisReportingComponents get Polaris reporting components
 func GetPolarisReportingComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseURL, "polaris", polaris.Version, "reporting_base.yaml")
+	content, err := util.GetBaseYaml(baseURL, "polaris", polaris.Version, "reporting_base.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +178,7 @@ func GetPolarisReportingComponents(baseURL string, polaris Polaris) (map[string]
 
 // GetPolarisDBComponents get Polaris DB components
 func GetPolarisDBComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseURL, "polaris", polaris.Version, "polarisdb_base.yaml")
+	content, err := util.GetBaseYaml(baseURL, "polaris", polaris.Version, "polarisdb_base.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +188,7 @@ func GetPolarisDBComponents(baseURL string, polaris Polaris) (map[string]runtime
 
 // GetPolarisComponents get Polaris components
 func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseURL, "polaris", polaris.Version, "polaris_base.yaml")
+	content, err := util.GetBaseYaml(baseURL, "polaris", polaris.Version, "polaris_base.yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +198,7 @@ func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.O
 
 // GetPolarisProvisionComponents get Polaris provision components
 func GetPolarisProvisionComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
-	content, err := GetBaseYaml(baseURL, "polaris", polaris.Version, "organization-provision-job.yaml")
+	content, err := util.GetBaseYaml(baseURL, "polaris", polaris.Version, "organization-provision-job.yaml")
 	if err != nil {
 		return nil, err
 	}

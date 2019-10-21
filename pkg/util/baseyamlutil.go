@@ -1,17 +1,22 @@
-package polaris
+package util
 
 import (
 	"encoding/base64"
-	b64 "encoding/base64"
 	"fmt"
 	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"net/url"
 	"path"
 	"reflect"
 	"regexp"
+	"strings"
+
+	routev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 // HTTPGet returns the http response for the api
@@ -30,6 +35,42 @@ func HTTPGet(url string) (content []byte, err error) {
 		return nil, fmt.Errorf("failed to fetch %s | %s", response.Request.URL.String(), response.Status)
 	}
 	return ioutil.ReadAll(response.Body)
+}
+
+// ConvertYamlFileToRuntimeObjects converts the yaml file string to map of runtime object
+func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Object {
+	routev1.AddToScheme(scheme.Scheme)
+	securityv1.AddToScheme(scheme.Scheme)
+
+	listOfSingleK8sResourceYaml := strings.Split(stringContent, "---")
+	mapOfUniqueIDToDesiredRuntimeObject := make(map[string]runtime.Object, 0)
+
+	for _, singleYaml := range listOfSingleK8sResourceYaml {
+		if singleYaml == "\n" || singleYaml == "" {
+			// ignore empty cases
+			//log.V(1).Info("Got empty", "here", singleYaml)
+			continue
+		}
+
+		decode := scheme.Codecs.UniversalDeserializer().Decode
+		runtimeObject, groupVersionKind, err := decode([]byte(singleYaml), nil, nil)
+		if err != nil {
+			//log.V(1).Info("unable to decode a single yaml object, skipping", "singleYaml", singleYaml, "error", err)
+			continue
+		}
+
+		accessor := meta.NewAccessor()
+		runtimeObjectKind := groupVersionKind.Kind
+		runtimeObjectName, err := accessor.Name(runtimeObject)
+		if err != nil {
+			//log.V(1).Info("Failed to get runtimeObject's name", "err", err)
+			continue
+		}
+		uniqueID := fmt.Sprintf("%s.%s", runtimeObjectKind, runtimeObjectName)
+		//log.V(1).Info("creating runtime object label", "uniqueId", uniqueID)
+		mapOfUniqueIDToDesiredRuntimeObject[uniqueID] = runtimeObject
+	}
+	return mapOfUniqueIDToDesiredRuntimeObject
 }
 
 // GetBaseYaml returns the base yaml as string for the given app and version
@@ -55,22 +96,11 @@ func downloadAndConvertYamlToByteArray(url string) (string, error) {
 
 // EncodeStringToBase64 will return encoded string to base64
 func EncodeStringToBase64(str string) string {
-	return b64.StdEncoding.EncodeToString([]byte(str))
+	return base64.StdEncoding.EncodeToString([]byte(str))
 }
 
-// Base64Encode will return an encoded string using a URL-compatible base64 format
-func Base64Encode(data []byte) string {
-	return base64.URLEncoding.EncodeToString(data)
-}
-
-// Base64Decode will return a decoded string using a URL-compatible base64 format;
-// decoding may return an error, which you can check if you don’t already know the input to be well-formed.
-func Base64Decode(data string) (string, error) {
-	uDec, err := base64.URLEncoding.DecodeString(data)
-	return string(uDec), err
-}
-
-func updateRegistry(obj map[string]runtime.Object, registry string) (map[string]runtime.Object, error) {
+// UpdateRegistry updates the registry for all runtime objects containers
+func UpdateRegistry(obj map[string]runtime.Object, registry string) (map[string]runtime.Object, error) {
 	for _, v := range obj {
 		if podspec := findPodSpec(reflect.ValueOf(v)); podspec != nil {
 			if err := updateContainersImage(*podspec, registry); err != nil {

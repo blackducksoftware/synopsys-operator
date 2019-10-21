@@ -26,12 +26,13 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
 	appsv1 "k8s.io/api/apps/v1"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error) {
@@ -61,19 +62,19 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 		content = strings.ReplaceAll(content, "2525", strconv.Itoa(polaris.PolarisDBSpec.SMTPDetails.Port))
 	}
 	if len(polaris.PolarisDBSpec.SMTPDetails.Username) != 0 {
-		content = strings.ReplaceAll(content, "${SMTP_USERNAME}", EncodeStringToBase64(polaris.PolarisDBSpec.SMTPDetails.Username))
+		content = strings.ReplaceAll(content, "${SMTP_USERNAME}", util.EncodeStringToBase64(polaris.PolarisDBSpec.SMTPDetails.Username))
 	} else {
 		content = strings.ReplaceAll(content, "${SMTP_USERNAME}", "Cg==")
 	}
 	if len(polaris.PolarisDBSpec.SMTPDetails.Password) != 0 {
-		content = strings.ReplaceAll(content, "${SMTP_PASSWORD}", fmt.Sprintf("\"%s\"", EncodeStringToBase64(polaris.PolarisDBSpec.SMTPDetails.Password)))
+		content = strings.ReplaceAll(content, "${SMTP_PASSWORD}", fmt.Sprintf("\"%s\"", util.EncodeStringToBase64(polaris.PolarisDBSpec.SMTPDetails.Password)))
 	} else {
 		content = strings.ReplaceAll(content, "${SMTP_PASSWORD}", "Cg==")
 	}
 
 	// Postgres
-	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Username))
-	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Password))
+	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", util.EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Username))
+	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", util.EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Password))
 	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", polaris.PolarisDBSpec.PostgresDetails.Host)
 	if polaris.PolarisDBSpec.PostgresDetails.Port != 5432 {
 		// TODO this needs to be a placeholder
@@ -105,7 +106,7 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	content = strings.ReplaceAll(content, "${RETENTION_START_DATE}", polaris.OrganizationDetails.OrganizationProvisionRetentionStartDate)
 	content = strings.ReplaceAll(content, "${RETENTION_END_DATE}", polaris.OrganizationDetails.OrganizationProvisionRetentionEndDate)
 
-	mapOfUniqueIDToBaseRuntimeObject := ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIDToBaseRuntimeObject := util.ConvertYamlFileToRuntimeObjects(content)
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
 	patcher := Patcher{
@@ -116,6 +117,7 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	return patcher.patch()
 }
 
+// Patcher holds the Polaris run time objects and it is having methods to patch it
 type Patcher struct {
 	polaris                          Polaris
 	mapOfUniqueIDToBaseRuntimeObject map[string]runtime.Object
@@ -169,7 +171,7 @@ func (p *Patcher) patchStorageClass() error {
 // patchRegistry will update the image registry in the pod specs
 func (p *Patcher) patchRegistry() error {
 	if len(p.polaris.Registry) > 0 {
-		if _, err := updateRegistry(p.mapOfUniqueIDToBaseRuntimeObject, p.polaris.Registry); err != nil {
+		if _, err := util.UpdateRegistry(p.mapOfUniqueIDToBaseRuntimeObject, p.polaris.Registry); err != nil {
 			return err
 		}
 	}
