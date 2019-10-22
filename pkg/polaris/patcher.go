@@ -38,6 +38,7 @@ import (
 func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error) {
 	// Basic
 	content = strings.ReplaceAll(content, "${NAMESPACE}", polaris.Namespace)
+	content = strings.ReplaceAll(content, "${VERSION}", polaris.Version)
 	content = strings.ReplaceAll(content, "$(JAEGER_NAMESPACE)", polaris.Namespace)
 	content = strings.ReplaceAll(content, "$(EVENT_STORE_NAMESPACE)", polaris.Namespace)
 	content = strings.ReplaceAll(content, "$(LEADER_ELECTOR_NAMESPACE)", polaris.Namespace)
