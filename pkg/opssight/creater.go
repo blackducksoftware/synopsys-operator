@@ -92,7 +92,7 @@ func (ac *Creater) DeleteOpsSight(name string) error {
 		namespace = values[0]
 	}
 
-	// delete the Black Duck instance
+	// delete the OpsSight instance
 	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, namespace, "",
 		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.OpsSightName, name), true)
 	_, crudErrors := commonConfig.CRUDComponents()
