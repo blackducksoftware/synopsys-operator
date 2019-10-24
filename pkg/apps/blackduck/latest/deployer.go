@@ -24,6 +24,7 @@ package blackduck
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
@@ -246,7 +247,14 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 
 	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Binary Scanner
-		imageName := containerCreater.GetImageTag("appcheck-worker")
+		var imageName string
+		// If the Black Duck version is greater than or equal to 2019.10.0, use docker.io/sigsynopsys else use docker.io/blackducksoftware
+		if isVersionGreaterThanOrEqualTo, _ := util.IsVersionGreaterThanOrEqualTo(blackduck.Spec.Version, 2019, time.October, 0); isVersionGreaterThanOrEqualTo {
+			imageName = containerCreater.GetImageTag("appcheck-worker", "docker.io/sigsynopsys")
+		} else {
+			imageName = containerCreater.GetImageTag("appcheck-worker")
+		}
+
 		if len(imageName) > 0 {
 			binaryScannerRc, err := containerCreater.GetBinaryScannerDeployment(imageName)
 			if err != nil {
