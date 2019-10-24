@@ -72,7 +72,19 @@ var imageTags = map[string]map[string]string{
 }
 
 // GetImageTag returns the image tag of the given container
-func (c *Creater) GetImageTag(name string) string {
+func (c *Creater) GetImageTag(inputs ...string) string {
+	var name string
+	defaultRegistry := "docker.io/blackducksoftware"
+	switch len(inputs) {
+	case 1:
+		name = inputs[0]
+	case 2:
+		name = inputs[0]
+		defaultRegistry = inputs[1]
+	default:
+		return ""
+	}
+
 	if _, ok := imageTags[c.blackDuck.Spec.Version][name]; ok {
 		confImageTag := c.GetFullContainerNameFromImageRegistryConf(name)
 		if len(confImageTag) > 0 {
@@ -82,7 +94,7 @@ func (c *Creater) GetImageTag(name string) string {
 		if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.Registry) > 0 {
 			return fmt.Sprintf("%s/%s:%s", c.blackDuck.Spec.RegistryConfiguration.Registry, name, imageTags[c.blackDuck.Spec.Version][name])
 		}
-		return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[c.blackDuck.Spec.Version][name])
+		return fmt.Sprintf("%s/%s:%s", defaultRegistry, name, imageTags[c.blackDuck.Spec.Version][name])
 	}
 	return ""
 }
