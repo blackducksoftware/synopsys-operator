@@ -5,11 +5,9 @@ go 1.12
 require (
 	cloud.google.com/go v0.46.3 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
-	github.com/Azure/go-autorest/autorest v0.9.1 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20190924175740-1bbbc06349fb
+	github.com/blackducksoftware/synopsys-operator v0.0.0-20191024152743-3cf1cfb418ca
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
@@ -33,12 +31,9 @@ require (
 	github.com/gobuffalo/suite v2.8.1+incompatible
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/google/pprof v0.0.0-20190908185732-236ed259b199 // indirect
-	github.com/googleapis/gnostic v0.3.1 // indirect
-	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.11.2 // indirect
-	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
 	github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2 // indirect
@@ -62,7 +57,6 @@ require (
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/unrolled/secure v1.0.1
 	go.etcd.io/bbolt v1.3.3 // indirect
 	go.opencensus.io v0.22.1 // indirect
@@ -83,14 +77,9 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	honnef.co/go/tools v0.0.1-2019.2.3 // indirect
-	k8s.io/api v0.0.0-20190923155552-eac758366a00 // indirect
-	k8s.io/apiextensions-apiserver v0.0.0-20190924000657-5e326ec13027 // indirect
 	k8s.io/apimachinery v0.0.0-20190923155427-ec87dd743e08
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/gengo v0.0.0-20190907103519-ebc107f98eab // indirect
-	k8s.io/klog v1.0.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d // indirect
-	k8s.io/utils v0.0.0-20190923111123-69764acb6e8e // indirect
 	sigs.k8s.io/structured-merge-diff v0.0.0-20190920212726-9db5fb9387fd // indirect
 )
 
@@ -98,7 +87,7 @@ replace (
 	cloud.google.com/go => cloud.google.com/go v0.44.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent => contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	github.com/NYTimes/gziphandler => github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190924175740-1bbbc06349fb
+	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20191024152743-3cf1cfb418ca
 	github.com/cockroachdb/cockroach-go => github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt => github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.13+incompatible // indirect
