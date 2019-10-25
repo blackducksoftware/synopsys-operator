@@ -238,6 +238,7 @@ type ExternalHostStructs struct {
 
 // SetCRSpecFieldByFlag updates a field in the opsSightSpec if the flag was set by the user. It gets the
 // value from the corresponding struct field
+// Note: It should only handle values with a 1 to 1 mapping - struct-field to spec
 func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
