@@ -263,15 +263,57 @@ func (ctl *CRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *pflag.F
 		return nil, err
 	}
 	flagset.VisitAll(ctl.SetCRSpecFieldByFlag)
+	err = ctl.addEnvironsFlagValues(flagset)
+	if err != nil {
+		return nil, err
+	}
 	return *ctl.blackDuckSpec, nil
 }
 
+// addEnvironsFlagValues handles adding environs from the flags to spec.Environs
+// - Values from flags are given priority over values already in the spec.Environs
+// - Values from additional environs flags are given priority over values from --environs flag
+func (ctl *CRSpecBuilderFromCobraFlags) addEnvironsFlagValues(flagset *pflag.FlagSet) error {
+	// Get flag-environs values from the --environs flag
+	valuesFromEnvironsFlag, err := flagset.GetStringSlice("environs")
+	if err != nil {
+		return err
+	}
+
+	// Overwrite the flag-environs values with extra environ flags (extra environ flags take priority)
+	valuesFromExtraEnvirons := []string{}
+	if changed := flagset.Changed("enable-binary-analysis"); changed {
+		if ctl.EnableBinaryAnalysis {
+			valuesFromExtraEnvirons = append(valuesFromExtraEnvirons, "USE_BINARY_UPLOADS:1")
+		} else {
+			valuesFromExtraEnvirons = append(valuesFromExtraEnvirons, "USE_BINARY_UPLOADS:0")
+		}
+	}
+	if changed := flagset.Changed("enable-source-code-upload"); changed {
+		if ctl.EnableSourceCodeUpload {
+			valuesFromExtraEnvirons = append(valuesFromExtraEnvirons, "ENABLE_SOURCE_UPLOADS:true")
+		} else {
+			valuesFromExtraEnvirons = append(valuesFromExtraEnvirons, "ENABLE_SOURCE_UPLOADS:false")
+		}
+	}
+	finalValuesFromFlags := util.MergeEnvSlices(valuesFromExtraEnvirons, valuesFromEnvironsFlag)
+
+	// Overwrite any environs in the current spec with the new environ values from the flags (flag values take priority)
+	finalEnvironValues := util.MergeEnvSlices(finalValuesFromFlags, ctl.blackDuckSpec.Environs)
+	if len(finalEnvironValues) > 0 { // only initialize the field if values are found
+		ctl.blackDuckSpec.Environs = finalEnvironValues
+	}
+	return nil
+}
+
 // SetCRSpecFieldByFlag updates a field in the blackDuckSpec if the flag was set by the user. It gets the
-// value from the corresponding struct field
+// value from the corresponding struct field.
+// Note: It should only handle values with a 1 to 1 mapping - struct-field to spec
 func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
+		// case "enable-binary-analysis", "enable-source-code-upload", "environs": - these are handled in addEnvironsFlagValues()
 		case "size":
 			ctl.blackDuckSpec.Size = ctl.Size
 		case "version":
@@ -405,8 +447,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			if ctl.MigrationMode {
 				ctl.blackDuckSpec.DesiredState = "DbMigrate"
 			}
-		case "environs":
-			ctl.blackDuckSpec.Environs = ctl.Environs
 		case "image-registries":
 			ctl.blackDuckSpec.ImageRegistries = ctl.ImageRegistries
 		case "license-key":
@@ -417,18 +457,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.blackDuckSpec.PostgresPassword = util.Base64Encode([]byte(ctl.PostgresPassword))
 		case "user-password":
 			ctl.blackDuckSpec.UserPassword = util.Base64Encode([]byte(ctl.UserPassword))
-		case "enable-binary-analysis":
-			if ctl.EnableBinaryAnalysis {
-				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:1"}, ctl.blackDuckSpec.Environs)
-			} else {
-				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:0"}, ctl.blackDuckSpec.Environs)
-			}
-		case "enable-source-code-upload":
-			if ctl.EnableSourceCodeUpload {
-				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:true"}, ctl.blackDuckSpec.Environs)
-			} else {
-				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:false"}, ctl.blackDuckSpec.Environs)
-			}
 		case "registry":
 			if ctl.blackDuckSpec.RegistryConfiguration == nil {
 				ctl.blackDuckSpec.RegistryConfiguration = &api.RegistryConfiguration{}

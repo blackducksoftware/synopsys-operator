@@ -205,6 +205,138 @@ func TestGenerateCRSpecFromFlags(t *testing.T) {
 
 }
 
+func TestAddEnvironsFlagValues(t *testing.T) {
+	// enable-binary-analysis  - USE_BINARY_UPLOADS:0
+	// enable-source-code-upload - ENABLE_SOURCE_UPLOADS:false
+	assert := assert.New(t)
+
+	var tests = []struct {
+		enableBinaryAnalysisFlagChanged   bool
+		enableBinaryAnalysisFlagValue     string
+		enableSourceCodeUploadFlagChanged bool
+		enableSourceCodeUploadFlagValue   string
+		environsFlagValue                 string
+		environsInitiallyInSpec           []string
+		expectedEnvirons                  []string
+	}{
+		{ // case : setting binary analysis to true
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "true",
+			enableSourceCodeUploadFlagChanged: false,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"USE_BINARY_UPLOADS:1"},
+		},
+		{ // case : setting binary analysis to false
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: false,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"USE_BINARY_UPLOADS:0"},
+		},
+		{ // case : setting source code upload to true
+			enableBinaryAnalysisFlagChanged:   false,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "true",
+			environsFlagValue:                 "",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"ENABLE_SOURCE_UPLOADS:true"},
+		},
+		{ // case : setting source code upload to false
+			enableBinaryAnalysisFlagChanged:   false,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"ENABLE_SOURCE_UPLOADS:false"},
+		},
+		{ // case : adding environs
+			enableBinaryAnalysisFlagChanged:   false,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: false,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "a:a,z:z",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"a:a", "z:z"},
+		},
+		{ // case : adding environs and additional environ flags
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "true",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "a:a,z:z",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"a:a", "USE_BINARY_UPLOADS:1", "ENABLE_SOURCE_UPLOADS:false", "z:z"},
+		},
+		{ // case : adding environs and additional environ flags, to flags already in the spec
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "true",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "a:a",
+			environsInitiallyInSpec:           []string{"z:z"},
+			expectedEnvirons:                  []string{"a:a", "USE_BINARY_UPLOADS:1", "ENABLE_SOURCE_UPLOADS:false", "z:z"},
+		},
+		{ // case : additional environ flags take priority over --enirons flag
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: false,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "USE_BINARY_UPLOADS:1",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"USE_BINARY_UPLOADS:0"},
+		},
+		{ // case : flags take priority over values already in the spec
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "true",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "true",
+			environsFlagValue:                 "a:z",
+			environsInitiallyInSpec:           []string{"a:a", "USE_BINARY_UPLOADS:0", "ENABLE_SOURCE_UPLOADS:false"},
+			expectedEnvirons:                  []string{"a:z", "USE_BINARY_UPLOADS:1", "ENABLE_SOURCE_UPLOADS:true"},
+		},
+	}
+
+	for _, test := range tests {
+		CRSpecBuilder := NewCRSpecBuilderFromCobraFlags()
+
+		// Get a flagset
+		cmd := &cobra.Command{}
+		CRSpecBuilder.AddCRSpecFlagsToCommand(cmd, true)
+		flagset := cmd.Flags()
+
+		// Set the flagset values based on the test
+		if test.enableBinaryAnalysisFlagChanged {
+			flagset.Set("enable-binary-analysis", test.enableBinaryAnalysisFlagValue)
+		}
+		if test.enableSourceCodeUploadFlagChanged {
+			flagset.Set("enable-source-code-upload", test.enableSourceCodeUploadFlagValue)
+		}
+		if test.environsFlagValue != "" {
+			flagset.Set("environs", test.environsFlagValue)
+		}
+
+		// Set the initial values in the CRSpecBuilder's BlackDuck Spec
+		if len(test.environsInitiallyInSpec) > 0 {
+			CRSpecBuilder.blackDuckSpec.Environs = test.environsInitiallyInSpec
+		}
+
+		// Run the command being tested
+		CRSpecBuilder.addEnvironsFlagValues(flagset)
+
+		// Verify the test passed
+		sort.Strings(CRSpecBuilder.blackDuckSpec.Environs)
+		sort.Strings(test.expectedEnvirons)
+		assert.Equal(CRSpecBuilder.blackDuckSpec.Environs, test.expectedEnvirons)
+
+	}
+}
+
 func TestSetCRSpecFieldByFlag(t *testing.T) {
 	assert := assert.New(t)
 
@@ -542,17 +674,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 		},
 		// case
 		{
-			// TODO: add a check in environs for correct input string format
-			flagName:   "environs",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec: &blackduckapi.BlackduckSpec{},
-				Environs:      []string{"changed"},
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"changed"}},
-		},
-		// case
-		{
 			// TODO: add a check for name:Val
 			flagName:   "image-registries",
 			initialCtl: NewCRSpecBuilderFromCobraFlags(),
@@ -571,46 +692,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				LicenseKey:    "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{LicenseKey: "changed"},
-		},
-		// case : set binary analysis to enabled
-		{
-			flagName:   "enable-binary-analysis",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:        &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
-				EnableBinaryAnalysis: true,
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
-		},
-		// case : set binary analysis to disabled
-		{
-			flagName:   "enable-binary-analysis",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:        &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
-				EnableBinaryAnalysis: false,
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
-		},
-		// case : set source code upload to enabled
-		{
-			flagName:   "enable-source-code-upload",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:          &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
-				EnableSourceCodeUpload: true,
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
-		},
-		// case : set source code upload to disabled
-		{
-			flagName:   "enable-source-code-upload",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:          &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
-				EnableSourceCodeUpload: false,
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
 		},
 	}
 
