@@ -171,14 +171,14 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Black Duck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Black Duck")
 	cmd.Flags().BoolVar(&ctl.MigrationMode, "migration-mode", ctl.MigrationMode, "Create Black Duck in the database-migration state")
-	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
+	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of environment variables (NAME:VALUE,NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 	cmd.Flags().StringVar(&ctl.AdminPassword, "admin-password", ctl.AdminPassword, "'admin' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "'postgres' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.UserPassword, "user-password", ctl.UserPassword, "'user' password of Postgres database")
-	cmd.Flags().BoolVar(&ctl.EnableBinaryAnalysis, "enable-binary-analysis", ctl.EnableBinaryAnalysis, "If true, enable binary analysis")
-	cmd.Flags().BoolVar(&ctl.EnableSourceCodeUpload, "enable-source-code-upload", ctl.EnableSourceCodeUpload, "If true, enable source code upload")
+	cmd.Flags().BoolVar(&ctl.EnableBinaryAnalysis, "enable-binary-analysis", ctl.EnableBinaryAnalysis, "If true, enable binary analysis by setting the environment variable (this takes priority over environs flag values)")
+	cmd.Flags().BoolVar(&ctl.EnableSourceCodeUpload, "enable-source-code-upload", ctl.EnableSourceCodeUpload, "If true, enable source code upload by setting the environment variable (this takes priority over environs flag values)")
 	cmd.Flags().StringVar(&ctl.NodeAffinityFilePath, "node-affinity-file-path", ctl.NodeAffinityFilePath, "Absolute path to a file containing a list of node affinities")
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
@@ -203,6 +203,138 @@ func TestGenerateCRSpecFromFlags(t *testing.T) {
 
 	assert.Equal(expCtl.blackDuckSpec, actualCtl.blackDuckSpec)
 
+}
+
+func TestAddEnvironsFlagValues(t *testing.T) {
+	// enable-binary-analysis  - USE_BINARY_UPLOADS:0
+	// enable-source-code-upload - ENABLE_SOURCE_UPLOADS:false
+	assert := assert.New(t)
+
+	var tests = []struct {
+		enableBinaryAnalysisFlagChanged   bool
+		enableBinaryAnalysisFlagValue     string
+		enableSourceCodeUploadFlagChanged bool
+		enableSourceCodeUploadFlagValue   string
+		environsFlagValue                 string
+		environsInitiallyInSpec           []string
+		expectedEnvirons                  []string
+	}{
+		{ // case : setting binary analysis to true
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "true",
+			enableSourceCodeUploadFlagChanged: false,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"USE_BINARY_UPLOADS:1"},
+		},
+		{ // case : setting binary analysis to false
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: false,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"USE_BINARY_UPLOADS:0"},
+		},
+		{ // case : setting source code upload to true
+			enableBinaryAnalysisFlagChanged:   false,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "true",
+			environsFlagValue:                 "",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"ENABLE_SOURCE_UPLOADS:true"},
+		},
+		{ // case : setting source code upload to false
+			enableBinaryAnalysisFlagChanged:   false,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"ENABLE_SOURCE_UPLOADS:false"},
+		},
+		{ // case : adding environs
+			enableBinaryAnalysisFlagChanged:   false,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: false,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "a:a,z:z",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"a:a", "z:z"},
+		},
+		{ // case : adding environs and additional environ flags
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "true",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "a:a,z:z",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"a:a", "USE_BINARY_UPLOADS:1", "ENABLE_SOURCE_UPLOADS:false", "z:z"},
+		},
+		{ // case : adding environs and additional environ flags, to flags already in the spec
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "true",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "a:a",
+			environsInitiallyInSpec:           []string{"z:z"},
+			expectedEnvirons:                  []string{"a:a", "USE_BINARY_UPLOADS:1", "ENABLE_SOURCE_UPLOADS:false", "z:z"},
+		},
+		{ // case : additional environ flags take priority over --enirons flag
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "false",
+			enableSourceCodeUploadFlagChanged: false,
+			enableSourceCodeUploadFlagValue:   "false",
+			environsFlagValue:                 "USE_BINARY_UPLOADS:1",
+			environsInitiallyInSpec:           []string{},
+			expectedEnvirons:                  []string{"USE_BINARY_UPLOADS:0"},
+		},
+		{ // case : flags take priority over values already in the spec
+			enableBinaryAnalysisFlagChanged:   true,
+			enableBinaryAnalysisFlagValue:     "true",
+			enableSourceCodeUploadFlagChanged: true,
+			enableSourceCodeUploadFlagValue:   "true",
+			environsFlagValue:                 "a:z",
+			environsInitiallyInSpec:           []string{"a:a", "USE_BINARY_UPLOADS:0", "ENABLE_SOURCE_UPLOADS:false"},
+			expectedEnvirons:                  []string{"a:z", "USE_BINARY_UPLOADS:1", "ENABLE_SOURCE_UPLOADS:true"},
+		},
+	}
+
+	for _, test := range tests {
+		CRSpecBuilder := NewCRSpecBuilderFromCobraFlags()
+
+		// Get a flagset
+		cmd := &cobra.Command{}
+		CRSpecBuilder.AddCRSpecFlagsToCommand(cmd, true)
+		flagset := cmd.Flags()
+
+		// Set the flagset values based on the test
+		if test.enableBinaryAnalysisFlagChanged {
+			flagset.Set("enable-binary-analysis", test.enableBinaryAnalysisFlagValue)
+		}
+		if test.enableSourceCodeUploadFlagChanged {
+			flagset.Set("enable-source-code-upload", test.enableSourceCodeUploadFlagValue)
+		}
+		if test.environsFlagValue != "" {
+			flagset.Set("environs", test.environsFlagValue)
+		}
+
+		// Set the initial values in the CRSpecBuilder's BlackDuck Spec
+		if len(test.environsInitiallyInSpec) > 0 {
+			CRSpecBuilder.blackDuckSpec.Environs = test.environsInitiallyInSpec
+		}
+
+		// Run the command being tested
+		CRSpecBuilder.addEnvironsFlagValues(flagset)
+
+		// Verify the test passed
+		sort.Strings(CRSpecBuilder.blackDuckSpec.Environs)
+		sort.Strings(test.expectedEnvirons)
+		assert.Equal(CRSpecBuilder.blackDuckSpec.Environs, test.expectedEnvirons)
+
+	}
 }
 
 func TestSetCRSpecFieldByFlag(t *testing.T) {
@@ -542,17 +674,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 		},
 		// case
 		{
-			// TODO: add a check in environs for correct input string format
-			flagName:   "environs",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec: &blackduckapi.BlackduckSpec{},
-				Environs:      []string{"changed"},
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"changed"}},
-		},
-		// case
-		{
 			// TODO: add a check for name:Val
 			flagName:   "image-registries",
 			initialCtl: NewCRSpecBuilderFromCobraFlags(),
@@ -571,46 +692,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				LicenseKey:    "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{LicenseKey: "changed"},
-		},
-		// case : set binary analysis to enabled
-		{
-			flagName:   "enable-binary-analysis",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:        &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
-				EnableBinaryAnalysis: true,
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
-		},
-		// case : set binary analysis to disabled
-		{
-			flagName:   "enable-binary-analysis",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:        &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
-				EnableBinaryAnalysis: false,
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
-		},
-		// case : set source code upload to enabled
-		{
-			flagName:   "enable-source-code-upload",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:          &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
-				EnableSourceCodeUpload: true,
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
-		},
-		// case : set source code upload to disabled
-		{
-			flagName:   "enable-source-code-upload",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:          &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
-				EnableSourceCodeUpload: false,
-			},
-			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
 		},
 	}
 
