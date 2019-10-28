@@ -34,33 +34,61 @@ import (
 
 // Root Command Options and Defaults
 var cfgFile string
-var kubeconfig = ""
+var kubeConfigPath = ""
 var insecureSkipTLSVerify = false
 var logLevelCtl = "info"
 
 // synopsysctlVersion is the current version of the synopsysctl utility
 var synopsysctlVersion string
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd is the base command of synopsyctl that all other commands are added to
 var rootCmd = &cobra.Command{
 	Use:   "synopsysctl",
 	Short: "synopsysctl is a command line tool for managing Synopsys resources",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
+	// This function is run before every subcommand
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		mockModeFlagExists := cmd.Flags().Lookup("mock")
+		if err := setSynopsysctlLogLevel(); err != nil {
+			return err
+		}
+
+		// Determine if synopsysctl is running in mock mode
 		mockMode := false
+		mockModeFlagExists := cmd.Flags().Lookup("mock")
 		if mockModeFlagExists != nil && mockModeFlagExists.Changed {
 			mockMode = true
 		}
+
+		// Determine if synopsysctl is running in native command
 		nativeMode := strings.Contains(cmd.CommandPath(), "native")
+
+		// Determine if synopsysctl is 'updating' a resource
 		updatingResource := strings.Contains(cmd.CommandPath(), "update")
-		// only set resource clients if we are not in mock mode and we are not in native mode
+
+		// Don't set cluster resources if we are in mock mode or native mode (aka the command doesn't need access the cluster)
+		// This allows users to use native/mock when not connected to a cluster
+		// Note: If you are updating a resource you can run mock mode and still need access to the cluster
 		if updatingResource || (!mockMode && !nativeMode) {
-			callSetResourceClients()
+			if err := setGlobalKubeConfigPath(cmd); err != nil {
+				log.Error(err)
+				os.Exit(1)
+			}
+			if err := setGlobalRestConfig(); err != nil {
+				log.Error(err)
+				os.Exit(1)
+			}
+			if err := setGlobalKubeClient(); err != nil {
+				log.Error(err)
+				os.Exit(1)
+			}
+			if err := setGlobalResourceClients(); err != nil {
+				log.Error(err)
+				os.Exit(1)
+			}
 		}
-		return parseLogLevelAndKubeConfig(cmd)
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("must specify sub-command")
@@ -83,7 +111,7 @@ func init() {
 	//(PassCmd) rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
 
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "Path to the kubeconfig file to use for CLI requests")
+	rootCmd.PersistentFlags().StringVar(&kubeConfigPath, "kubeconfig", kubeConfigPath, "Path to a kubeconfig file with the context set to a cluster for synopsysctl to access")
 	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "Server's certificate won't be validated. HTTPS will be less secure")
 	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "Log level for synopsysctl [trace|debug|info|warn|error|fatal|panic]")
 }
