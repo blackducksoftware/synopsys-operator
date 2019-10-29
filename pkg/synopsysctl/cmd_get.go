@@ -244,7 +244,7 @@ var getPolarisCmd = &cobra.Command{
 		fmt.Printf("Image pull secret: %s\n", polarisObj.ImagePullSecrets)
 		fmt.Printf("Organization Name: %s\n", polarisObj.OrganizationDetails.OrganizationProvisionOrganizationName)
 		fmt.Printf("Organization Description: %s\n", polarisObj.OrganizationDetails.OrganizationProvisionOrganizationDescription)
-		fmt.Printf("Postgres type: %s\n", polarisObj.PolarisDBSpec.PostgresInstanceType)
+		fmt.Printf("Postgres Internal: %s\n", strconv.FormatBool(polarisObj.PolarisDBSpec.PostgresDetails.IsInternal))
 
 		return nil
 	},

@@ -84,6 +84,15 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 	}
 	deployments = append(deployments, deploy{name: "Polaris Licences", obj: mainSecretComponents})
 
+	// Polaris postgres
+	if polarisObj.PolarisDBSpec.PostgresDetails.IsInternal {
+		postgresComponents, err := polaris.GetPolarisPostgresComponents(baseURL, *polarisObj)
+		if err != nil {
+			return err
+		}
+		deployments = append(deployments, deploy{name: "Polaris Postgres", obj: postgresComponents})
+	}
+
 	// Polaris DB
 	dbComponents, err := polaris.GetPolarisDBComponents(baseURL, *polarisObj)
 	if err != nil {

@@ -55,6 +55,8 @@ type CRSpecBuilderFromCobraFlags struct {
 	PostgresUsername string
 	PostgresPassword string
 	PostgresSize     string
+	PostgresSSLMode  string
+	PostgresInternal bool
 
 	SMTPHost        string
 	SMTPPort        int
@@ -124,13 +126,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Docker registry e.g. docker.io/myuser")
 
 	// Those flags need be hidden since external databases are not currently supported
-	cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "")
-	cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "")
-	cmd.Flags().MarkHidden("postgres-host")
-	cmd.Flags().MarkHidden("postgres-port")
-
+	cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Host, "Postgres Host")
+	cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Port, "PostgresPort")
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
+	cmd.Flags().StringVar(&ctl.PostgresSSLMode, "postgres-ssl-mode", string(GetPolarisDefault().PolarisDBSpec.PostgresDetails.SSLMode), "Postgres ssl mode [disable|require]")
+	cmd.Flags().BoolVar(&ctl.PostgresInternal, "postgres-container", GetPolarisDefault().PolarisDBSpec.PostgresDetails.IsInternal, "Not recommended. Use a PostgreSQL container")
 
 	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Storage.StorageSize, "PVC size to use for postgres.")
 	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", GetPolarisDefault().PolarisDBSpec.UploadServerDetails.Storage.StorageSize, "PVC size to use for uploadserver.")
@@ -206,6 +207,22 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.spec.PolarisDBSpec.PostgresDetails.Password = ctl.PostgresPassword
 		case "postgres-size":
 			ctl.spec.PolarisDBSpec.PostgresDetails.Storage.StorageSize = ctl.PostgresSize
+		case "postgres-container":
+			ctl.spec.PolarisDBSpec.PostgresDetails.IsInternal = ctl.PostgresInternal
+			ctl.spec.PolarisDBSpec.PostgresDetails.SSLMode = PostgresSSLModeDisable
+		case "postgres-ssl-mode":
+			switch PostgresSSLMode(ctl.PostgresSSLMode) {
+			case PostgresSSLModeDisable:
+				ctl.spec.PolarisDBSpec.PostgresDetails.SSLMode = PostgresSSLModeDisable
+			//case PostgresSSLModeAllow:
+			//	ctl.spec.PolarisDBSpec.PostgresDetails.SSLMode = PostgresSSLModeAllow
+			//case PostgresSSLModePrefer:
+			//	ctl.spec.PolarisDBSpec.PostgresDetails.SSLMode = PostgresSSLModePrefer
+			case PostgresSSLModeRequire:
+				ctl.spec.PolarisDBSpec.PostgresDetails.SSLMode = PostgresSSLModeRequire
+			default:
+				log.Fatalf("%s is an invalid value", ctl.PostgresSSLMode)
+			}
 		case "uploadserver-size":
 			ctl.spec.PolarisDBSpec.UploadServerDetails.Storage.StorageSize = ctl.UploadServerSize
 		case "eventstore-size":
@@ -283,11 +300,13 @@ func GetPolarisDefault() *Polaris {
 			},
 		},
 		PolarisDBSpec: &PolarisDBSpec{
-			SMTPDetails:          SMTPDetails{},
-			PostgresInstanceType: "internal",
+			SMTPDetails: SMTPDetails{},
 			PostgresDetails: PostgresDetails{
-				Host: "postgresql",
-				Port: 5432,
+				Host:       "postgresql",
+				Username:   "postgres",
+				Port:       5432,
+				IsInternal: false,
+				SSLMode:    PostgresSSLModeRequire,
 				Storage: Storage{
 					StorageSize: POSTGRES_PV_SIZE,
 				},
