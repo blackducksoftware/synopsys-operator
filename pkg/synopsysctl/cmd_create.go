@@ -579,6 +579,9 @@ var createPolarisCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 0 argument")
 		}
+		if err := polarisPostgresCheck(cmd.Flags()); err != nil {
+			return err
+		}
 		return nil
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -589,7 +592,6 @@ var createPolarisCmd = &cobra.Command{
 		}
 		cobra.MarkFlagRequired(cmd.Flags(), "version")
 		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
-		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
 
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
@@ -642,6 +644,9 @@ var createPolarisNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 0 arguments")
 		}
+		if err := polarisPostgresCheck(cmd.Flags()); err != nil {
+			return err
+		}
 		return nil
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -652,7 +657,6 @@ var createPolarisNativeCmd = &cobra.Command{
 		}
 		cobra.MarkFlagRequired(cmd.Flags(), "version")
 		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
-		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
 
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
@@ -711,6 +715,28 @@ func updatePolarisSpecWithFlags(cmd *cobra.Command, namespace string) (*polaris.
 		return nil, err
 	}
 	return &polarisSpec, nil
+}
+
+func polarisPostgresCheck(flagset *pflag.FlagSet) error {
+	if flagset.Lookup("postgres-container").Changed {
+		if flagset.Lookup("postgres-host").Changed || flagset.Lookup("postgres-port").Changed || flagset.Lookup("postgres-username").Changed {
+			return fmt.Errorf("cannot change the host, port and username when using the postgres container")
+		}
+		if flagset.Lookup("postgres-ssl-mode").Changed {
+			return fmt.Errorf("cannot enable SSL when using postgres container")
+		}
+	} else {
+		// External DB. Host, port and username are mandatory
+		cobra.MarkFlagRequired(flagset, "postgres-host")
+		cobra.MarkFlagRequired(flagset, "postgres-port")
+		cobra.MarkFlagRequired(flagset, "postgres-username")
+	}
+
+	if flagset.Lookup("reportstorage-size").Changed && !flagset.Lookup("enable-reporting").Changed {
+		return fmt.Errorf("reporting pvc size is configured but the reporting module is not enabled (--enable-reporting)")
+	}
+
+	return nil
 }
 
 func validatePolaris(polarisConf polaris.Polaris) error {

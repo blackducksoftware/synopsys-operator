@@ -76,12 +76,15 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	// Postgres
 	content = strings.ReplaceAll(content, "${POSTGRES_USERNAME}", util.EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Username))
 	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", util.EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Password))
+	content = strings.ReplaceAll(content, "${POSTGRES_SSL_MODE}", string(polaris.PolarisDBSpec.PostgresDetails.SSLMode))
 	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", polaris.PolarisDBSpec.PostgresDetails.Host)
 	if polaris.PolarisDBSpec.PostgresDetails.Port != 5432 {
 		// TODO this needs to be a placeholder
 		content = strings.ReplaceAll(content, "5432", strconv.Itoa(polaris.PolarisDBSpec.PostgresDetails.Port))
 	}
-	if polaris.PolarisDBSpec.PostgresInstanceType == "internal" {
+
+	// TODO Do we really need this?
+	if polaris.PolarisDBSpec.PostgresDetails.IsInternal {
 		content = strings.ReplaceAll(content, "${POSTGRES_TYPE}", "internal")
 	} else {
 		content = strings.ReplaceAll(content, "${POSTGRES_TYPE}", "external")
