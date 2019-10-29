@@ -58,6 +58,17 @@ func GetComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, 
 		components[k] = v
 	}
 
+	if polaris.PolarisDBSpec.PostgresDetails.IsInternal {
+		postgresComponents, err := GetPolarisPostgresComponents(baseURL, polaris)
+		if err != nil {
+			return nil, err
+		}
+
+		for k, v := range postgresComponents {
+			components[k] = v
+		}
+	}
+
 	if polaris.EnableReporting {
 		reportingComponents, err := GetPolarisReportingComponents(baseURL, polaris)
 		if err != nil {
@@ -199,6 +210,16 @@ func GetPolarisComponents(baseURL string, polaris Polaris) (map[string]runtime.O
 // GetPolarisProvisionComponents get Polaris provision components
 func GetPolarisProvisionComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
 	content, err := util.GetBaseYaml(baseURL, "polaris", polaris.Version, "organization-provision-job.yaml")
+	if err != nil {
+		return nil, err
+	}
+
+	return fromYaml(content, polaris)
+}
+
+// GetPolarisPostgresComponents get Polaris postgres components
+func GetPolarisPostgresComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, error) {
+	content, err := util.GetBaseYaml(baseURL, "polaris", polaris.Version, "postgres_base.yaml")
 	if err != nil {
 		return nil, err
 	}

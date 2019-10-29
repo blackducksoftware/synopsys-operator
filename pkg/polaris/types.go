@@ -41,12 +41,11 @@ type Polaris struct {
 
 // PolarisDBSpec configures Polaris DB specifications
 type PolarisDBSpec struct {
-	SMTPDetails          SMTPDetails         `json:"smtp_details"`
-	PostgresInstanceType string              `json:"postgres_instance_type"`
-	PostgresDetails      PostgresDetails     `json:"postgres_details"`
-	EventstoreDetails    EventstoreDetails   `json:"eventstore_details,omitempty"`
-	UploadServerDetails  UploadServerDetails `json:"upload_server_details,omitempty"`
-	MongoDBDetails       MongoDBDetails      `json:"mongodb_details,omitempty"`
+	SMTPDetails         SMTPDetails         `json:"smtp_details"`
+	PostgresDetails     PostgresDetails     `json:"postgres_details"`
+	EventstoreDetails   EventstoreDetails   `json:"eventstore_details,omitempty"`
+	UploadServerDetails UploadServerDetails `json:"upload_server_details,omitempty"`
+	MongoDBDetails      MongoDBDetails      `json:"mongodb_details,omitempty"`
 }
 
 // PolarisSpec configure Polaris Specifications
@@ -140,13 +139,29 @@ type SMTPDetails struct {
 	SenderEmail string `json:"sender_email,omitempty"`
 }
 
+type PostgresSSLMode string
+
+const (
+	PostgresSSLModeDisable PostgresSSLMode = "disable"
+	//PostgresSSLModeAllow   PostgresSSLMode = "allow"
+	// Not supported???
+	//PostgresSSLModePrefer  PostgresSSLMode = "prefer"
+	PostgresSSLModeRequire PostgresSSLMode = "require"
+
+	// Not supported on-prem yet
+	//PostgresSSLModeVerifyCA PostgresSSLMode = "verify-ca"
+	//PostgresSSLModeVerifyFull PostgresSSLMode = "verify-full"
+)
+
 // PostgresDetails configures postgres details specifications
 type PostgresDetails struct {
-	Host     string  `json:"host"`
-	Port     int     `json:"port"`
-	Username string  `json:"username"`
-	Password string  `json:"password"`
-	Storage  Storage `json:"storage,omitempty"`
+	Host       string          `json:"host"`
+	Port       int             `json:"port"`
+	Username   string          `json:"username"`
+	Password   string          `json:"password"`
+	IsInternal bool            `json:"isInternal"`
+	SSLMode    PostgresSSLMode `json:"sslMode"`
+	Storage    Storage         `json:"storage,omitempty"`
 }
 
 // UploadServerDetails configures upload server specifications
