@@ -726,6 +726,9 @@ func polarisPostgresCheck(flagset *pflag.FlagSet) error {
 			return fmt.Errorf("cannot enable SSL when using postgres container")
 		}
 	} else {
+		if flagset.Lookup("postgres-size").Changed {
+			return fmt.Errorf("cannot configure the postgresql size when using an external database")
+		}
 		// External DB. Host, port and username are mandatory
 		cobra.MarkFlagRequired(flagset, "postgres-host")
 		cobra.MarkFlagRequired(flagset, "postgres-port")
