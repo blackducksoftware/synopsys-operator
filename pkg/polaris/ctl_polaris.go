@@ -131,7 +131,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
 	cmd.Flags().StringVar(&ctl.PostgresSSLMode, "postgres-ssl-mode", string(GetPolarisDefault().PolarisDBSpec.PostgresDetails.SSLMode), "Postgres ssl mode [disable|require]")
-	cmd.Flags().BoolVar(&ctl.PostgresInternal, "postgres-container", GetPolarisDefault().PolarisDBSpec.PostgresDetails.IsInternal, "Not recommended. Use a PostgreSQL container")
+	cmd.Flags().BoolVar(&ctl.PostgresInternal, "postgres-container", GetPolarisDefault().PolarisDBSpec.PostgresDetails.IsInternal, "Use in-cluster postgres in a container (Not recommended)")
 
 	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Storage.StorageSize, "PVC size to use for postgres.")
 	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", GetPolarisDefault().PolarisDBSpec.UploadServerDetails.Storage.StorageSize, "PVC size to use for uploadserver.")
