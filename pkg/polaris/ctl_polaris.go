@@ -208,7 +208,9 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.spec.PolarisDBSpec.PostgresDetails.Storage.StorageSize = ctl.PostgresSize
 		case "postgres-container":
 			ctl.spec.PolarisDBSpec.PostgresDetails.IsInternal = ctl.PostgresInternal
-			ctl.spec.PolarisDBSpec.PostgresDetails.SSLMode = PostgresSSLModeDisable
+			if ctl.PostgresInternal {
+				ctl.spec.PolarisDBSpec.PostgresDetails.SSLMode = PostgresSSLModeDisable
+			}
 		case "postgres-ssl-mode":
 			switch PostgresSSLMode(ctl.PostgresSSLMode) {
 			case PostgresSSLModeDisable:
