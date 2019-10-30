@@ -102,43 +102,64 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Fatal(err)
+			errMsg := fmt.Sprintf("%s", err)
+			http.Error(w, errMsg, 404)
 		}
 
 		pConfig := PolarisUIRequestResponse{}
 		err = json.Unmarshal(reqBody, &pConfig)
 		if err != nil {
-			log.Errorf("failed to unmarshal Polaris request: %s", err)
-			return
-		}
-		err = checkRequiredPolarisRequestFields(pConfig)
-		if err != nil {
-			log.Errorf("missing data to ensure Polaris: %s", err)
+			errMsg := fmt.Sprintf("failed to unmarshal Polaris request: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 400)
 			return
 		}
 
-		polarisObj, err := convertPolarisUIResponseToPolarisObject(pConfig)
-		if err != nil {
-			log.Errorf("failed to convert Request data to Polaris Object: %s", err)
-			return
+		// Check Secret to see if polaris already exists so a new instance needs to be made
+		if pConfig.Namespace == "" {
+			pConfig.Namespace = "default"
 		}
-
-		// Check Secret to see if polaris already exists
-		namespace = polarisObj.Namespace // set global namespace value for getPolarisFromSecret and ensurePolaris
+		namespace = pConfig.Namespace // set global namespace value for getPolarisFromSecret and ensurePolaris
 		oldPolaris, err := getPolarisFromSecret()
 		if err != nil {
-			log.Errorf("failed to get Secret for Polaris: %s", err)
+			errMsg := fmt.Sprintf("failed to get Secret for Polaris: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 404)
 			return
 		}
-		if oldPolaris == nil { // create new Polaris
+		requestIsUpdatingPolaris := oldPolaris != nil
+
+		defaultPolarisObj := polaris.GetPolarisDefault()
+		polarisObj, err := convertPolarisUIResponseToPolarisObject(defaultPolarisObj, pConfig, requestIsUpdatingPolaris)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to convert Request data to Polaris Object: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 422)
+			return
+		}
+
+		err = checkRequiredPolarisRequestFields(pConfig, !requestIsUpdatingPolaris)
+		if err != nil {
+			errMsg := fmt.Sprintf("missing data to ensure Polaris: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 422)
+			return
+		}
+
+		if !requestIsUpdatingPolaris {
 			err = ensurePolaris(polarisObj, false, true)
 			if err != nil {
-				log.Errorf("error ensuring Polaris: %s", err)
+				errMsg := fmt.Sprintf("error ensuring Polaris: %s", err)
+				log.Errorf(errMsg)
+				http.Error(w, errMsg, 500)
 				return
 			}
-		} else { // update Polaris
+		} else {
 			err = ensurePolaris(polarisObj, true, false)
 			if err != nil {
-				log.Errorf("error ensuring Polaris: %s", err)
+				errMsg := fmt.Sprintf("error ensuring Polaris: %s", err)
+				log.Errorf(errMsg)
+				http.Error(w, errMsg, 500)
 				return
 			}
 		}
@@ -151,7 +172,9 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 		log.Infof("handling request: %q\n", html.EscapeString(r.URL.Path))
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			log.Errorf("failed to read request body: %+v", err)
+			errMsg := fmt.Sprintf("failed to read request body: %+v", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 400)
 			return
 		}
 
@@ -159,24 +182,30 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 		namespace = string(reqBody)
 		polarisObj, err := getPolarisFromSecret()
 		if err != nil {
-			log.Errorf("error getting Polaris: %s", err)
-			emptyResonse, _ := json.Marshal(PolarisUIRequestResponse{})
-			w.Write(emptyResonse)
-			return // TODO - return a 404 and handle on the front end side
+			errMsg := fmt.Sprintf("error getting Polaris: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 500)
+			return
+		}
+		if polarisObj == nil {
+			errMsg := fmt.Sprintf("there is no Secret data for a Polaris instance in namespace '%s'", namespace)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 404)
+			return
 		}
 		response, err := convertPolarisObjToUIResponse(*polarisObj)
 		if err != nil {
-			log.Errorf("error converting PolarisObj to Response: %s", err)
-			emptyResonse, _ := json.Marshal(PolarisUIRequestResponse{})
-			w.Write(emptyResonse)
-			return // TODO - return a 404 and handle on the front end side
+			errMsg := fmt.Sprintf("error converting PolarisObj to Response: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 500)
+			return
 		}
 		responseByte, err := json.Marshal(response)
 		if err != nil {
-			log.Errorf("error converting Polaris to bytes: %s", err)
-			emptyResonse, _ := json.Marshal(PolarisUIRequestResponse{})
-			w.Write(emptyResonse)
-			return // TODO - return a 404 and handle on the front end side
+			errMsg := fmt.Sprintf("error converting Polaris to bytes: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 500)
+			return
 		}
 		w.Write(responseByte)
 	})
@@ -287,16 +316,21 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // the front-end and back-end can communicate Polaris data
 type PolarisUIRequestResponse struct {
 	Version               string `json:"version"`
+	Namespace             string `json:"namespace"`
 	EnvironmentDNS        string `json:"environmentDNS"`
 	GCPServiceAccountPath string `json:"GCPServiceAccountPath"`
+	ImagePullSecrets      string `json:"imagePullSecrets"`
+	Registry              string `json:"registry"`
 	StorageClass          string `json:"storageClass"`
-	Namespace             string `json:"namespace"`
+	IngressClass          string `json:"ingressClass"`
 
-	PostgresHost     string `json:"postgresHost"`
-	PostgresPort     string `json:"postgresPort"`
-	PostgresUsername string `json:"postgresUsername"`
-	PostgresPassword string `json:"postgresPassword"`
-	PostgresSize     string `json:"postgresSize"`
+	PostgresHost      string `json:"postgresHost"`
+	PostgresPort      string `json:"postgresPort"`
+	PostgresUsername  string `json:"postgresUsername"`
+	PostgresPassword  string `json:"postgresPassword"`
+	PostgresSize      string `json:"postgresSize"`
+	PostgresContainer bool   `json:"postgresContainer"`
+	PostgresSSLMode   string `json:"postgresSSLMode"`
 
 	SMTPHost        string `json:"smtpHost"`
 	SMTPPort        string `json:"smtpPort"`
@@ -455,7 +489,7 @@ type PolarisUIRequestResponse struct {
 
 // checkRequiredPolarisRequestFields returns an error if a required field is missing from
 // a request from the front end UI
-func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestResponse) error {
+func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestResponse, updating bool) error {
 	// Check required UI request fields
 	if polarisUIRequestConfig.Version == "" {
 		return fmt.Errorf("field required: Version")
@@ -463,18 +497,18 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 	if polarisUIRequestConfig.EnvironmentDNS == "" {
 		return fmt.Errorf("field required: EnvironmentDNS")
 	}
-	if polarisUIRequestConfig.PostgresUsername == "" {
-		return fmt.Errorf("field required: PostgresUsername")
-	}
-	if polarisUIRequestConfig.PostgresPassword == "" {
-		return fmt.Errorf("field required: PostgresPassword")
-	}
 
 	if polarisUIRequestConfig.SMTPHost == "" {
 		return fmt.Errorf("field required: SMTPHost")
 	}
 	if polarisUIRequestConfig.SMTPPort == "" {
 		return fmt.Errorf("field required: SMTPPort")
+	}
+	if polarisUIRequestConfig.SMTPUsername == "" {
+		return fmt.Errorf("field required: SMTPUsername")
+	}
+	if polarisUIRequestConfig.SMTPPassword == "" {
+		return fmt.Errorf("field required: SMTPPassword")
 	}
 	if polarisUIRequestConfig.SMTPSenderEmail == "" {
 		return fmt.Errorf("field required: SMTPSenderEmail")
@@ -495,46 +529,126 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 	if polarisUIRequestConfig.OrganizationAdminEmail == "" {
 		return fmt.Errorf("field required: OrganizationAdminEmail")
 	}
-	if polarisUIRequestConfig.CoverityLicensePath == "" {
-		return fmt.Errorf("field required: CoverityLicensePath")
+	if !updating { // not required if updating a polaris instance
+		if polarisUIRequestConfig.Namespace == "" {
+			return fmt.Errorf("field required: Namespace")
+		}
+		if polarisUIRequestConfig.CoverityLicensePath == "" {
+			return fmt.Errorf("field required: CoverityLicensePath")
+		}
+		if polarisUIRequestConfig.GCPServiceAccountPath == "" {
+			return fmt.Errorf("field required: GCPServiceAccountPath")
+		}
 	}
+
+	if !polarisUIRequestConfig.PostgresContainer {
+		if polarisUIRequestConfig.PostgresHost == "" {
+			return fmt.Errorf("field required when using an external Postgres database: PostgresHost")
+		}
+		if polarisUIRequestConfig.PostgresPort == "" {
+			return fmt.Errorf("field required when using an external Postgres database: PostgresPort")
+		}
+		if polarisUIRequestConfig.PostgresUsername == "" {
+			return fmt.Errorf("field required when using an external Postgres database: PostgresUsername")
+		}
+	}
+	if polarisUIRequestConfig.PostgresPassword == "" {
+		return fmt.Errorf("field required: PostgresPassword")
+	}
+
 	return nil
 }
 
-// convertPolarisUIResponseToPolarisObject takes the fields in polarisUIRequestConfig and maps
-// them into the Polaris Object Specification needed to create Polaris
-func convertPolarisUIResponseToPolarisObject(polarisUIRequestConfig PolarisUIRequestResponse) (*polaris.Polaris, error) {
-	// Populate Polaris Config Fields
-	polarisObj := *polaris.GetPolarisDefault()
+// convertPolarisUIResponseToPolarisObject maps the values in a PolarisUIRequestResponse to values
+// in a Polaris Spec for deployment. It handles the values for updating and creating a Polaris instance.
+// - polarisObj: the default Polaris Spec or the Polaris Spec being updated
+// - polarisUIRequestConfig: the values received from the UI
+// - updating: if true then updating; if false then creating
+//   - updating: some values should be overwritten if the value provided is empty (ex: turning off a value)
+//   - creating: default values should not be overwritten if non-required values are empty
+func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polarisUIRequestConfig PolarisUIRequestResponse, updating bool) (*polaris.Polaris, error) {
+	// Set the Namespace to default if one is not provided
 	if polarisUIRequestConfig.Namespace == "" {
 		polarisObj.Namespace = "default"
 	} else {
 		polarisObj.Namespace = polarisUIRequestConfig.Namespace
 	}
+
 	polarisObj.Version = polarisUIRequestConfig.Version
 	polarisObj.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
-	GCPServiceAccount, err := util.ReadFileData(polarisUIRequestConfig.GCPServiceAccountPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read GCP Service Account from file: %s", err)
+
+	// If the user is not updating (aka creating) then the path is required so it is set here
+	// If the user is updating then only overwrite the old value if the user provides a path
+	// - Note: synopsysctl does not save the path information so it isn't given to the User in the UI, thus
+	//   if this field is empty during an update it means they want the pervious value
+	if !updating || polarisUIRequestConfig.GCPServiceAccountPath != "" {
+		GCPServiceAccount, err := util.ReadFileData(polarisUIRequestConfig.GCPServiceAccountPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read GCP Service Account from file: %s", err)
+		}
+		polarisObj.GCPServiceAccount = GCPServiceAccount
 	}
-	polarisObj.GCPServiceAccount = GCPServiceAccount
-	// TODO - Postgres host and port are not supported
-	// polarisObj.PolarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost
-	// var postPort int64
-	// if polarisUIRequestConfig.PostgresPort != "" {
-	// 	postPort, err = strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 64)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("falied to convert postgres port to an int: %s", polarisUIRequestConfig.PostgresPort)
-	// 	}
-	// }
-	// polarisObj.PolarisDBSpec.PostgresDetails.Port = int(postPort)
+	if !updating || polarisUIRequestConfig.CoverityLicensePath != "" {
+		CoverityLicense, err := util.ReadFileData(polarisUIRequestConfig.CoverityLicensePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read coverity license from file: %+v", err)
+		}
+		polarisObj.Licenses.Coverity = CoverityLicense
+	}
 
-	polarisObj.PolarisDBSpec.PostgresDetails.Username = polarisUIRequestConfig.PostgresUsername
+	// If the user is updating then overwrite the old values even if these fields are empty
+	// If the user is creating then only overwrite the default value if the new value is not empty
+	if updating || polarisUIRequestConfig.ImagePullSecrets != "" {
+		polarisObj.ImagePullSecrets = polarisUIRequestConfig.ImagePullSecrets
+	}
+	if updating || polarisUIRequestConfig.Registry != "" {
+		polarisObj.Registry = polarisUIRequestConfig.Registry
+	}
+	if updating || polarisUIRequestConfig.StorageClass != "" {
+		polarisObj.StorageClass = polarisUIRequestConfig.StorageClass
+	}
+	if updating || polarisUIRequestConfig.IngressClass != "" {
+		polarisObj.IngressClass = polarisUIRequestConfig.IngressClass
+	}
+
+	// CONFIGURE POSTGRES
+	polarisObj.PolarisDBSpec.PostgresDetails.IsInternal = polarisUIRequestConfig.PostgresContainer
+	if polarisUIRequestConfig.PostgresContainer { // Using the Postgres provided by synopsysctl (internal)
+		polarisObj.PolarisDBSpec.PostgresDetails.SSLMode = polaris.PostgresSSLModeDisable
+		if polarisUIRequestConfig.PostgresSize != "" {
+			polarisObj.PolarisDBSpec.PostgresDetails.Storage.StorageSize = polarisUIRequestConfig.PostgresSize
+		}
+	} else { // Using the Postgres provided by the user (external)
+		polarisObj.PolarisDBSpec.PostgresDetails.Host = polarisUIRequestConfig.PostgresHost
+		var postPort int64
+		var err error
+		if polarisUIRequestConfig.PostgresPort != "" {
+			postPort, err = strconv.ParseInt(polarisUIRequestConfig.PostgresPort, 0, 64)
+			if err != nil {
+				return nil, fmt.Errorf("falied to convert postgres port to an int: %s", polarisUIRequestConfig.PostgresPort)
+			}
+		}
+		polarisObj.PolarisDBSpec.PostgresDetails.Port = int(postPort)
+		polarisObj.PolarisDBSpec.PostgresDetails.Username = polarisUIRequestConfig.PostgresUsername
+		switch polaris.PostgresSSLMode(polarisUIRequestConfig.PostgresSSLMode) {
+		case polaris.PostgresSSLModeDisable:
+			polarisObj.PolarisDBSpec.PostgresDetails.SSLMode = polaris.PostgresSSLModeDisable
+		//case polaris.PostgresSSLModeAllow:
+		//	polarisObj.PolarisDBSpec.PostgresDetails.SSLMode = polaris.PostgresSSLModeAllow
+		//case polaris.PostgresSSLModePrefer:
+		//	polarisObj.PolarisDBSpec.PostgresDetails.SSLMode = polaris.PostgresSSLModePrefer
+		case polaris.PostgresSSLModeRequire:
+			polarisObj.PolarisDBSpec.PostgresDetails.SSLMode = polaris.PostgresSSLModeRequire
+		default:
+			return nil, fmt.Errorf("%s is an invalid value", polarisUIRequestConfig.PostgresSSLMode)
+		}
+	}
 	polarisObj.PolarisDBSpec.PostgresDetails.Password = polarisUIRequestConfig.PostgresPassword
-	polarisObj.PolarisDBSpec.PostgresDetails.Storage.StorageSize = polarisUIRequestConfig.PostgresSize
 
+	// CONFIGURE SMTP - these fields are always required
 	polarisObj.PolarisDBSpec.SMTPDetails.Host = polarisUIRequestConfig.SMTPHost
 	var sPort int64
+	var err error
 	if polarisUIRequestConfig.SMTPPort != "" {
 		sPort, err = strconv.ParseInt(polarisUIRequestConfig.SMTPPort, 0, 64)
 		if err != nil {
@@ -546,68 +660,91 @@ func convertPolarisUIResponseToPolarisObject(polarisUIRequestConfig PolarisUIReq
 	polarisObj.PolarisDBSpec.SMTPDetails.Password = polarisUIRequestConfig.SMTPPassword
 	polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail = polarisUIRequestConfig.SMTPSenderEmail
 
-	polarisObj.PolarisDBSpec.UploadServerDetails.Storage.StorageSize = polarisUIRequestConfig.UploadServerSize
-	polarisObj.PolarisDBSpec.EventstoreDetails.Storage.StorageSize = polarisUIRequestConfig.EventstoreSize
-	polarisObj.PolarisDBSpec.MongoDBDetails.Storage.StorageSize = polarisUIRequestConfig.MongoDBSize
-	polarisObj.PolarisSpec.DownloadServerDetails.Storage.StorageSize = polarisUIRequestConfig.DownloadServerSize
-
-	polarisObj.EnableReporting = polarisUIRequestConfig.EnableReporting
-	if polarisUIRequestConfig.EnableReporting {
-		polarisObj.ReportingSpec.ReportStorageDetails.Storage.StorageSize = polarisUIRequestConfig.ReportStorageSize
+	// CONFIGURE STORAGE
+	// use defaults/previous values if they aren't provided
+	if polarisUIRequestConfig.UploadServerSize != "" {
+		polarisObj.PolarisDBSpec.UploadServerDetails.Storage.StorageSize = polarisUIRequestConfig.UploadServerSize
+	}
+	if polarisUIRequestConfig.EventstoreSize != "" {
+		polarisObj.PolarisDBSpec.EventstoreDetails.Storage.StorageSize = polarisUIRequestConfig.EventstoreSize
+	}
+	if polarisUIRequestConfig.MongoDBSize != "" {
+		polarisObj.PolarisDBSpec.MongoDBDetails.Storage.StorageSize = polarisUIRequestConfig.MongoDBSize
+	}
+	if polarisUIRequestConfig.DownloadServerSize != "" {
+		polarisObj.PolarisSpec.DownloadServerDetails.Storage.StorageSize = polarisUIRequestConfig.DownloadServerSize
 	}
 
+	// CONFIGURE REPORTING
+	polarisObj.EnableReporting = polarisUIRequestConfig.EnableReporting
+	if polarisUIRequestConfig.EnableReporting {
+		// use default/precious value if it isn't provided
+		if polarisUIRequestConfig.ReportStorageSize != "" {
+			polarisObj.ReportingSpec.ReportStorageDetails.Storage.StorageSize = polarisUIRequestConfig.ReportStorageSize
+		}
+	}
+
+	// CONFIGURE ORGANIZATION - these fields are always required
 	polarisObj.OrganizationDetails.OrganizationProvisionOrganizationDescription = polarisUIRequestConfig.OrganizationDescription
 	polarisObj.OrganizationDetails.OrganizationProvisionOrganizationName = polarisUIRequestConfig.OrganizationName
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminName = polarisUIRequestConfig.OrganizationAdminName
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminUsername = polarisUIRequestConfig.OrganizationAdminUsername
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminEmail = polarisUIRequestConfig.OrganizationAdminEmail
-	CoverityLicense, err := util.ReadFileData(polarisUIRequestConfig.CoverityLicensePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read coverity license from file: %+v", err)
-	}
-	// TODO - add validating file format
-	polarisObj.Licenses.Coverity = CoverityLicense
 
-	return &polarisObj, nil
+	return polarisObj, nil
 }
 
 // convertPolarisObjToUIResponse converts the Polaris Object Specification into the Response format
 // that can be sent to the User Interface
 func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIRequestResponse, error) {
-	// Populate Polaris Config Fields
 	polarisUIRequestConfig := &PolarisUIRequestResponse{}
-	polarisUIRequestConfig.Namespace = polarisObj.Namespace
 
+	// Populate Polaris Config Fields
+	polarisUIRequestConfig.Namespace = polarisObj.Namespace
 	polarisUIRequestConfig.Version = polarisObj.Version
 	polarisUIRequestConfig.EnvironmentDNS = polarisObj.EnvironmentDNS
-	polarisUIRequestConfig.GCPServiceAccountPath = "" // TODO - User needs to provide License Path every time, change to not require on Updates (may involve front end)
-	// TODO - Postgres host and port are not supported
-	// polarisUIRequestConfig.PostgresHost = polarisObj.PolarisDBSpec.PostgresDetails.Host
-	// polarisUIRequestConfig.PostgresPort  = strconv.FormatInt(polarisObj.PolarisDBSpec.PostgresDetails.Port)
+
+	// synopsysctl does not save the file paths so the data - the data is not sent to the UI
+	polarisUIRequestConfig.GCPServiceAccountPath = ""
+	polarisUIRequestConfig.CoverityLicensePath = ""
+
+	polarisUIRequestConfig.ImagePullSecrets = polarisObj.ImagePullSecrets
+	polarisUIRequestConfig.Registry = polarisObj.Registry
+	polarisUIRequestConfig.StorageClass = polarisObj.StorageClass
+	polarisUIRequestConfig.IngressClass = polarisObj.IngressClass
+
+	// POSTGRES
+	polarisUIRequestConfig.PostgresHost = polarisObj.PolarisDBSpec.PostgresDetails.Host
+	polarisUIRequestConfig.PostgresPort = strconv.FormatInt(int64(polarisObj.PolarisDBSpec.PostgresDetails.Port), 10)
 	polarisUIRequestConfig.PostgresUsername = polarisObj.PolarisDBSpec.PostgresDetails.Username
 	polarisUIRequestConfig.PostgresPassword = polarisObj.PolarisDBSpec.PostgresDetails.Password
 	polarisUIRequestConfig.PostgresSize = polarisObj.PolarisDBSpec.PostgresDetails.Storage.StorageSize
+	polarisUIRequestConfig.PostgresContainer = polarisObj.PolarisDBSpec.PostgresDetails.IsInternal
+	polarisUIRequestConfig.PostgresSSLMode = string(polarisObj.PolarisDBSpec.PostgresDetails.SSLMode)
 
+	// SMTP
 	polarisUIRequestConfig.SMTPHost = polarisObj.PolarisDBSpec.SMTPDetails.Host
 	polarisUIRequestConfig.SMTPPort = strconv.FormatInt(int64(polarisObj.PolarisDBSpec.SMTPDetails.Port), 10)
 	polarisUIRequestConfig.SMTPUsername = polarisObj.PolarisDBSpec.SMTPDetails.Username
 	polarisUIRequestConfig.SMTPPassword = polarisObj.PolarisDBSpec.SMTPDetails.Password
 	polarisUIRequestConfig.SMTPSenderEmail = polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail
 
+	// STORAGE
 	polarisUIRequestConfig.UploadServerSize = polarisObj.PolarisDBSpec.UploadServerDetails.Storage.StorageSize
 	polarisUIRequestConfig.EventstoreSize = polarisObj.PolarisDBSpec.EventstoreDetails.Storage.StorageSize
 	polarisUIRequestConfig.MongoDBSize = polarisObj.PolarisDBSpec.MongoDBDetails.Storage.StorageSize
 	polarisUIRequestConfig.DownloadServerSize = polarisObj.PolarisSpec.DownloadServerDetails.Storage.StorageSize
 
+	// REPORTING
 	polarisUIRequestConfig.EnableReporting = polarisObj.EnableReporting
 	polarisUIRequestConfig.ReportStorageSize = polarisObj.ReportingSpec.ReportStorageDetails.Storage.StorageSize
 
+	// ORGANIZATIONS
 	polarisUIRequestConfig.OrganizationDescription = polarisObj.OrganizationDetails.OrganizationProvisionOrganizationDescription
 	polarisUIRequestConfig.OrganizationName = polarisObj.OrganizationDetails.OrganizationProvisionOrganizationName
 	polarisUIRequestConfig.OrganizationAdminName = polarisObj.OrganizationDetails.OrganizationProvisionAdminName
 	polarisUIRequestConfig.OrganizationAdminUsername = polarisObj.OrganizationDetails.OrganizationProvisionAdminUsername
 	polarisUIRequestConfig.OrganizationAdminEmail = polarisObj.OrganizationDetails.OrganizationProvisionAdminEmail
-	polarisUIRequestConfig.CoverityLicensePath = "" // TODO - User needs to provide License Path every time, change to not require on Updates (may involve front end)
 
 	return polarisUIRequestConfig, nil
 }
