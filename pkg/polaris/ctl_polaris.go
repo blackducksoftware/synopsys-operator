@@ -125,9 +125,8 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", GetPolarisDefault().IngressClass, "The name of the ingress class to use.")
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Docker registry e.g. docker.io/myuser")
 
-	// Those flags need be hidden since external databases are not currently supported
-	cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Host, "Postgres Host")
-	cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Port, "PostgresPort")
+	cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "Postgres Host")
+	cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "PostgresPort")
 	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
 	cmd.Flags().StringVar(&ctl.PostgresSSLMode, "postgres-ssl-mode", string(GetPolarisDefault().PolarisDBSpec.PostgresDetails.SSLMode), "Postgres ssl mode [disable|require]")
