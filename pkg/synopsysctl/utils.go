@@ -49,7 +49,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// These vars set by setResourceClients() in root command's init()
 var restconfig *rest.Config
 var kubeClient *kubernetes.Clientset
 var apiExtensionClient *apiextensionsclient.Clientset
@@ -57,43 +56,60 @@ var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
 var opsSightClient *opssightclientset.Clientset
 
-func parseLogLevelAndKubeConfig(cmd *cobra.Command) error {
-	// Set the Log Level
+// setSynopsysctlLogLevel sets the binary's log level to the value stored in logLevelCtl
+func setSynopsysctlLogLevel() error {
 	lvl, err := log.ParseLevel(logLevelCtl)
 	if err != nil {
 		log.Errorf("ctl-log-Level '%s' is not a valid level: %s", logLevelCtl, err)
 		return err
 	}
 	log.SetLevel(lvl)
-	if !cmd.Flags().Lookup("kubeconfig").Changed { // if kubeconfig wasn't set, check the environ
+	return nil
+}
+
+// setGlobalKubeConfigPath sets the global variable 'kubeConfigPath' with points to a kubeconfig file for accessing a cluster
+// If the kubeconfig flag was set then kubeConfigPath should already have the path.
+// If the kubeconfig flag was not set then it will check the environ 'KUBECONFIG' for a path
+func setGlobalKubeConfigPath(cmd *cobra.Command) error {
+	if !cmd.Flags().Lookup("kubeconfig").Changed { // if --kubeconfig flag wasn't set, check the environ
 		if kubeconfigEnvVal, exists := os.LookupEnv("KUBECONFIG"); exists { // set kubeconfig if environ is set
-			kubeconfig = kubeconfigEnvVal
+			kubeConfigPath = kubeconfigEnvVal
+		}
+	}
+	// if the kubeConfigPath was set, verify that the file exists
+	if kubeConfigPath != "" {
+		if _, err := os.Stat(kubeConfigPath); os.IsNotExist(err) {
+			return fmt.Errorf("the kubeconfig path '%s' does not point to a file", kubeConfigPath)
 		}
 	}
 	return nil
 }
 
-func callSetResourceClients() {
-	// Sets kubeconfig and initializes resource client libraries
-	if err := setResourceClients(); err != nil {
-		log.Error(err)
-		os.Exit(1)
-	}
-}
-
-// setResourceClients sets the global variables for the Kuberentes rest config
-// and the resource clients
-func setResourceClients() error {
+// setGlobalRestConfig sets the global variable 'restconfig' for other commands to use
+func setGlobalRestConfig() error {
 	var err error
-	restconfig, err = protoform.GetKubeClientFromOutsideCluster(kubeconfig, insecureSkipTLSVerify)
+	restconfig, err = protoform.GetKubeClientFromOutsideCluster(kubeConfigPath, insecureSkipTLSVerify)
 	log.Debugf("rest config: %+v", restconfig)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// setGlobalKubeClient sets the global variable 'kubeClient' for other commands to use
+func setGlobalKubeClient() error {
+	var err error
 	kubeClient, err = getKubeClient(restconfig)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// setGlobalResourceClients sets the global variables for the Kuberentes rest config
+// and the resource clients
+func setGlobalResourceClients() error {
+	var err error
 	apiExtensionClient, err = apiextensionsclient.NewForConfig(restconfig)
 	if err != nil {
 		return err
@@ -177,8 +193,8 @@ func getKubeExecCmd(restconfig *rest.Config, kubeClient *kubernetes.Clientset, a
 	if insecureSkipTLSVerify == true {
 		args = append([]string{fmt.Sprintf("--insecure-skip-tls-verify=%t", insecureSkipTLSVerify)}, args...)
 	}
-	if kubeconfig != "" {
-		args = append([]string{fmt.Sprintf("--kubeconfig=%s", kubeconfig)}, args...)
+	if kubeConfigPath != "" {
+		args = append([]string{fmt.Sprintf("--kubeconfig=%s", kubeConfigPath)}, args...)
 	}
 	if openshift {
 		return exec.Command("oc", args...), nil
@@ -244,8 +260,8 @@ func RunKubeEditorCmd(restConfig *rest.Config, kubeClient *kubernetes.Clientset,
 	if insecureSkipTLSVerify == true {
 		args = append([]string{fmt.Sprintf("--insecure-skip-tls-verify=%t", insecureSkipTLSVerify)}, args...)
 	}
-	if kubeconfig != "" {
-		args = append([]string{fmt.Sprintf("--kubeconfig=%s", kubeconfig)}, args...)
+	if kubeConfigPath != "" {
+		args = append([]string{fmt.Sprintf("--kubeconfig=%s", kubeConfigPath)}, args...)
 	}
 	if openshift {
 		cmd = exec.Command("oc", args...)
