@@ -1,35 +1,33 @@
-FROM blackducksoftware/synopsys-operator:2019.4.0 as builder
+# Run: "docker run --rm -i hadolint/hadolint < Dockerfile" to ensure best practices!
 
-FROM golang:1.11 as operatorbuilder
+# [STAGE: BUILD OPERATOR]
+FROM golang:1.13-alpine as operatorbuilder
 
 # Set the environment
-ENV GO111MODULE=on
 ENV BP=$GOPATH/src/github.com/blackducksoftware/synopsys-operator
 
 # Add the whole directory
-ADD . $BP
-
-### BUILD THE BINARIES...
-WORKDIR $BP
+COPY . ${BP}
 
 # Container catalog requirements
-COPY ./LICENSE /bin/LICENSE 
+COPY ./LICENSE /bin/LICENSE
 COPY ./help.1 /bin/help.1
 
-# RUN cd cmd/blackduckctl && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/blackduckctl
-RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/operator
+WORKDIR ${BP}/cmd/operator
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/operator
 
+
+# [FINAL STAGE]
 FROM scratch
 
-MAINTAINER Synopsys Cloud Native Team
+LABEL maintainer="Synopsys Cloud Native Team"
 
 ARG VERSION
 ARG BUILDTIME
 ARG LASTCOMMIT
 
-COPY --from=builder ./go/src/github.com/blackducksoftware/synopsys-operator/cmd/operator-ui/app . 
-COPY --from=operatorbuilder /bin/operator . 
-COPY --from=operatorbuilder /bin/LICENSE /licenses/ 
+COPY --from=operatorbuilder /bin/operator .
+COPY --from=operatorbuilder /bin/LICENSE /licenses/
 COPY --from=operatorbuilder /bin/help.1 /help.1
 
 LABEL name="Synopsys Operator" \
@@ -43,4 +41,4 @@ LABEL name="Synopsys Operator" \
       release="$VERSION" \
       version="$VERSION"
 
-CMD ./app
+CMD ["./operator"]
