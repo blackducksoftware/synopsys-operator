@@ -116,6 +116,8 @@ func (v BlackducksResource) New(c buffalo.Context) error {
 	blackduckSpec := util.GetBlackDuckDefaultPersistentStorageLatest()
 	blackduck := &blackduckapi.Blackduck{}
 	blackduck.Spec = *blackduckSpec
+	// TODO: fix the sort logic for Black Duck version
+	blackduck.Spec.Version = "2019.10.0"
 	if v.config.IsClusterScoped {
 		blackduck.Spec.Namespace = ""
 	} else {
