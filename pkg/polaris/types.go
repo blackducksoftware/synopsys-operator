@@ -130,13 +130,25 @@ type MongoDBDetails struct {
 	Storage Storage `json:"storage,omitempty"`
 }
 
+type SMTPTLSMode string
+
+const (
+	SMTPTLSModeDisable         SMTPTLSMode = "disable"
+	SMTPTLSModeTryStartTLS     SMTPTLSMode = "try-starttls"
+	SMTPTLSModeRequireStartTLS SMTPTLSMode = "require-starttls"
+	SMTPTLSModeRequireTLS      SMTPTLSMode = "require-tls"
+)
+
 // SMTPDetails configures SMTP specifications
 type SMTPDetails struct {
-	Host        string `json:"host"`
-	Port        int    `json:"port"`
-	Username    string `json:"username,omitempty"`
-	Password    string `json:"password,omitempty"`
-	SenderEmail string `json:"sender_email,omitempty"`
+	Host                   string      `json:"host"`
+	Port                   int         `json:"port"`
+	Username               string      `json:"username,omitempty"`
+	Password               string      `json:"password,omitempty"`
+	SenderEmail            string      `json:"sender_email,omitempty"`
+	TLSMode                SMTPTLSMode `json:"tlsMode"`
+	TLSCheckServerIdentity bool        `json:"tlsCheckServerIdentity"`
+	TLSTrustedHosts        string      `json:"tlsTrustedHosts"`
 }
 
 type PostgresSSLMode string
