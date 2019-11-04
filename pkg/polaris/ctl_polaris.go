@@ -58,11 +58,14 @@ type CRSpecBuilderFromCobraFlags struct {
 	PostgresSSLMode  string
 	PostgresInternal bool
 
-	SMTPHost        string
-	SMTPPort        int
-	SMTPUsername    string
-	SMTPPassword    string
-	SMTPSenderEmail string
+	SMTPHost                 string
+	SMTPPort                 int
+	SMTPUsername             string
+	SMTPPassword             string
+	SMTPSenderEmail          string
+	SMTPTlsMode              string
+	SMTPTlsIgnoreInvalidCert bool
+	SMTPTlsTrustedHosts      string
 
 	UploadServerSize   string
 	EventstoreSize     string
@@ -144,6 +147,9 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.SMTPUsername, "smtp-username", ctl.SMTPUsername, "SMTP username")
 	cmd.Flags().StringVar(&ctl.SMTPPassword, "smtp-password", ctl.SMTPPassword, "SMTP password")
 	cmd.Flags().StringVar(&ctl.SMTPSenderEmail, "smtp-sender-email", ctl.SMTPSenderEmail, "SMTP sender email")
+	cmd.Flags().StringVar(&ctl.SMTPTlsMode, "smtp-tls-mode", string(GetPolarisDefault().PolarisDBSpec.SMTPDetails.TLSMode), "SMTP TLS mode [disable|try-starttls|require-starttls|require-tls]")
+	cmd.Flags().StringVar(&ctl.SMTPTlsTrustedHosts, "smtp-trusted-hosts", ctl.SMTPTlsTrustedHosts, "Whitespace separated list of trusted hosts")
+	cmd.Flags().BoolVar(&ctl.SMTPTlsIgnoreInvalidCert, "smtp-tls-insecure", false, "Accept invalid certificates")
 
 	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationDescription, "organization-description", "", ctl.organizationProvisionOrganizationDescription, "Organization description")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationName, "organization-name", "", ctl.organizationProvisionOrganizationName, "Organization name")
@@ -244,6 +250,23 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.spec.PolarisDBSpec.SMTPDetails.Password = ctl.SMTPPassword
 		case "smtp-sender-email":
 			ctl.spec.PolarisDBSpec.SMTPDetails.SenderEmail = ctl.SMTPSenderEmail
+		case "smtp-tls-mode":
+			switch SMTPTLSMode(ctl.SMTPTlsMode) {
+			case SMTPTLSModeDisable:
+				ctl.spec.PolarisDBSpec.SMTPDetails.TLSMode = SMTPTLSModeDisable
+			case SMTPTLSModeTryStartTLS:
+				ctl.spec.PolarisDBSpec.SMTPDetails.TLSMode = SMTPTLSModeTryStartTLS
+			case SMTPTLSModeRequireStartTLS:
+				ctl.spec.PolarisDBSpec.SMTPDetails.TLSMode = SMTPTLSModeRequireStartTLS
+			case SMTPTLSModeRequireTLS:
+				ctl.spec.PolarisDBSpec.SMTPDetails.TLSMode = SMTPTLSModeRequireTLS
+			default:
+				log.Fatalf("%s is an invalid value", ctl.SMTPTlsMode)
+			}
+		case "smtp-trusted-hosts":
+			ctl.spec.PolarisDBSpec.SMTPDetails.TLSTrustedHosts = ctl.SMTPTlsTrustedHosts
+		case "smtp-tls-insecure":
+			ctl.spec.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity = !ctl.SMTPTlsIgnoreInvalidCert
 		case "organization-description":
 			ctl.spec.OrganizationDetails.OrganizationProvisionOrganizationDescription = ctl.organizationProvisionOrganizationDescription
 		case "organization-name":
@@ -299,7 +322,10 @@ func GetPolarisDefault() *Polaris {
 			},
 		},
 		PolarisDBSpec: &PolarisDBSpec{
-			SMTPDetails: SMTPDetails{},
+			SMTPDetails: SMTPDetails{
+				TLSCheckServerIdentity: true,
+				TLSMode:                SMTPTLSModeDisable,
+			},
 			PostgresDetails: PostgresDetails{
 				Host:       "postgresql",
 				Username:   "postgres",
