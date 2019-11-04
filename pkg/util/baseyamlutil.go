@@ -38,7 +38,7 @@ func HTTPGet(url string) (content []byte, err error) {
 }
 
 // ConvertYamlFileToRuntimeObjects converts the yaml file string to map of runtime object
-func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Object {
+func ConvertYamlFileToRuntimeObjects(stringContent string) (map[string]runtime.Object, error) {
 	routev1.AddToScheme(scheme.Scheme)
 	securityv1.AddToScheme(scheme.Scheme)
 
@@ -47,30 +47,25 @@ func ConvertYamlFileToRuntimeObjects(stringContent string) map[string]runtime.Ob
 
 	for _, singleYaml := range listOfSingleK8sResourceYaml {
 		if singleYaml == "\n" || singleYaml == "" {
-			// ignore empty cases
-			//log.V(1).Info("Got empty", "here", singleYaml)
 			continue
 		}
 
 		decode := scheme.Codecs.UniversalDeserializer().Decode
 		runtimeObject, groupVersionKind, err := decode([]byte(singleYaml), nil, nil)
 		if err != nil {
-			//log.V(1).Info("unable to decode a single yaml object, skipping", "singleYaml", singleYaml, "error", err)
-			continue
+			return nil, err
 		}
 
 		accessor := meta.NewAccessor()
 		runtimeObjectKind := groupVersionKind.Kind
 		runtimeObjectName, err := accessor.Name(runtimeObject)
 		if err != nil {
-			//log.V(1).Info("Failed to get runtimeObject's name", "err", err)
-			continue
+			return nil, err
 		}
 		uniqueID := fmt.Sprintf("%s.%s", runtimeObjectKind, runtimeObjectName)
-		//log.V(1).Info("creating runtime object label", "uniqueId", uniqueID)
 		mapOfUniqueIDToDesiredRuntimeObject[uniqueID] = runtimeObject
 	}
-	return mapOfUniqueIDToDesiredRuntimeObject
+	return mapOfUniqueIDToDesiredRuntimeObject, nil
 }
 
 // GetBaseYaml returns the base yaml as string for the given app and version

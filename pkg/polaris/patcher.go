@@ -58,10 +58,12 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	// SMTP
 	content = strings.ReplaceAll(content, "${SMTP_SENDER_EMAIL}", polaris.PolarisDBSpec.SMTPDetails.SenderEmail)
 	content = strings.ReplaceAll(content, "${SMTP_HOST}", polaris.PolarisDBSpec.SMTPDetails.Host)
-	if polaris.PolarisDBSpec.SMTPDetails.Port != 2525 {
-		// TODO this needs to be a placeholder
-		content = strings.ReplaceAll(content, "2525", strconv.Itoa(polaris.PolarisDBSpec.SMTPDetails.Port))
-	}
+	content = strings.ReplaceAll(content, "${SMTP_PORT}", fmt.Sprintf("\"%d\"", polaris.PolarisDBSpec.SMTPDetails.Port))
+
+	content = strings.ReplaceAll(content, "${SMTP_TLS_MODE}", string(polaris.PolarisDBSpec.SMTPDetails.TLSMode))
+	content = strings.ReplaceAll(content, "${SMTP_TLS_CHECK_SERVER_IDENTITY}", fmt.Sprintf("\"%s\"", strconv.FormatBool(polaris.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity)))
+	content = strings.ReplaceAll(content, "${SMTP_TLS_TRUSTED_HOSTS}", fmt.Sprintf("\"%s\"", polaris.PolarisDBSpec.SMTPDetails.TLSTrustedHosts))
+
 	if len(polaris.PolarisDBSpec.SMTPDetails.Username) != 0 {
 		content = strings.ReplaceAll(content, "${SMTP_USERNAME}", util.EncodeStringToBase64(polaris.PolarisDBSpec.SMTPDetails.Username))
 	} else {
@@ -78,10 +80,7 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	content = strings.ReplaceAll(content, "${POSTGRES_PASSWORD}", util.EncodeStringToBase64(polaris.PolarisDBSpec.PostgresDetails.Password))
 	content = strings.ReplaceAll(content, "${POSTGRES_SSL_MODE}", string(polaris.PolarisDBSpec.PostgresDetails.SSLMode))
 	content = strings.ReplaceAll(content, "${POSTGRES_HOST}", polaris.PolarisDBSpec.PostgresDetails.Host)
-	if polaris.PolarisDBSpec.PostgresDetails.Port != 5432 {
-		// TODO this needs to be a placeholder
-		content = strings.ReplaceAll(content, "5432", strconv.Itoa(polaris.PolarisDBSpec.PostgresDetails.Port))
-	}
+	content = strings.ReplaceAll(content, "${POSTGRES_PORT}", fmt.Sprintf("\"%d\"", polaris.PolarisDBSpec.PostgresDetails.Port))
 
 	// TODO Do we really need this?
 	if polaris.PolarisDBSpec.PostgresDetails.IsInternal {
@@ -110,7 +109,10 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	content = strings.ReplaceAll(content, "${RETENTION_START_DATE}", polaris.OrganizationDetails.OrganizationProvisionRetentionStartDate)
 	content = strings.ReplaceAll(content, "${RETENTION_END_DATE}", polaris.OrganizationDetails.OrganizationProvisionRetentionEndDate)
 
-	mapOfUniqueIDToBaseRuntimeObject := util.ConvertYamlFileToRuntimeObjects(content)
+	mapOfUniqueIDToBaseRuntimeObject, err := util.ConvertYamlFileToRuntimeObjects(content)
+	if err != nil {
+		return nil, err
+	}
 	mapOfUniqueIDToBaseRuntimeObject = removeTestManifests(mapOfUniqueIDToBaseRuntimeObject)
 
 	patcher := Patcher{
