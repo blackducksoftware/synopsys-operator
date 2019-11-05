@@ -24,6 +24,7 @@ package containers
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetPVCs will return the PVCs
@@ -41,6 +42,10 @@ func (c *Creater) GetPVCs() ([]*components.PersistentVolumeClaim, error) {
 
 	if c.blackDuck.Spec.ExternalPostgres == nil {
 		defaultPVC["blackduck-postgres"] = "150Gi"
+	}
+
+	if greater, _ := util.IsVersionGreaterThanOrEqualTo(c.blackDuck.Spec.Version, 2019, 6, 0); greater {
+		delete(defaultPVC, "blackduck-solr")
 	}
 
 	return blackduckutil.GenPVC(defaultPVC, c.blackDuck)

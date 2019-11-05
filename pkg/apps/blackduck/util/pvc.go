@@ -22,6 +22,8 @@ under the License.
 package util
 
 import (
+	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -62,7 +64,7 @@ func GenPVC(defaultPVC map[string]string, blackDuck *blackduckapi.Blackduck) ([]
 
 			pvc, err := createPVC(claim, horizonapi.ReadWriteOnce, getLabel(blackDuck.Name, "pvc"), blackDuck.Spec.Namespace)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to create PVC object '%s': %+v", name, err)
 			}
 			pvcs = append(pvcs, pvc)
 		}
@@ -83,7 +85,7 @@ func createPVC(claim blackduckapi.PVC, accessMode horizonapi.PVCAccessModeType, 
 	var size string
 	_, err := resource.ParseQuantity(claim.Size)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse PVC size: %+v", err)
 	}
 	size = claim.Size
 

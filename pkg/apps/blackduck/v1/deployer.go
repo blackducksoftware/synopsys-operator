@@ -150,7 +150,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		componentList.Services = append(componentList.Services, containerCreater.GetDocumentationService())
 	}
 
-	// solr
+	// TODO: solr is not supported in v1 (leaving here in case we consolidate the deployers)
 	imageName = containerCreater.GetImageTag("blackduck-solr")
 	if len(imageName) > 0 {
 		solrRc, err := containerCreater.GetSolrDeployment(imageName)
