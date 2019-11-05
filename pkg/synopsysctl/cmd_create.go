@@ -720,7 +720,8 @@ func updatePolarisSpecWithFlags(cmd *cobra.Command, namespace string) (*polaris.
 }
 
 func polarisPostgresCheck(flagset *pflag.FlagSet) error {
-	if flagset.Lookup("postgres-container").Changed {
+	usingPostgresContainer, _ := flagset.GetBool("postgres-container")
+	if usingPostgresContainer {
 		if flagset.Lookup("postgres-host").Changed || flagset.Lookup("postgres-port").Changed || flagset.Lookup("postgres-username").Changed {
 			return fmt.Errorf("cannot change the host, port and username when using the postgres container")
 		}
