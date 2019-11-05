@@ -21,6 +21,8 @@
 
 package polaris
 
+import "time"
+
 // Polaris configures all Polaris specifications
 type Polaris struct {
 	Namespace           string               `json:"namespace,omitempty"`
@@ -310,15 +312,36 @@ type OrganizationDetails struct {
 	OrganizationProvisionAdminName               string
 	OrganizationProvisionAdminUsername           string
 	OrganizationProvisionAdminEmail              string
-	OrganizationProvisionLicenseSeatCount        string
-	OrganizationProvisionLicenseType             string
-	OrganizationProvisionResultsStartDate        string
-	OrganizationProvisionResultsEndDate          string
-	OrganizationProvisionRetentionStartDate      string
-	OrganizationProvisionRetentionEndDate        string
 }
 
 // Licenses configures license specifications
 type Licenses struct {
+	Polaris  string
 	Coverity string
+}
+
+type PlatformLicense struct {
+	License struct {
+		Name       string    `json:"name"`
+		IssuedTo   string    `json:"issued-to"`
+		IssuedDate time.Time `json:"issued-date"`
+		IssuedBy   string    `json:"issued-by"`
+		Type       string    `json:"type"`
+		SeatCount  int       `json:"seat-count"`
+		Limits     struct {
+			RESULTS struct {
+				Start time.Time `json:"start"`
+				End   time.Time `json:"end"`
+			} `json:"RESULTS"`
+			RETENTION struct {
+				Start time.Time `json:"start"`
+				End   time.Time `json:"end"`
+			} `json:"RETENTION"`
+		} `json:"limits"`
+	} `json:"license"`
+	SignatureInfo struct {
+		KeyID     string `json:"key-id"`
+		Algorithm string `json:"algorithm"`
+		Signature string `json:"signature"`
+	} `json:"signature-info"`
 }

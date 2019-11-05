@@ -23,8 +23,9 @@ package polaris
 
 import (
 	"encoding/json"
-
+	"fmt"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,6 +95,16 @@ func GetComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, 
 func GetPolarisBaseSecrets(polaris Polaris) (map[string]runtime.Object, error) {
 	mapOfUniqueIDToBaseRuntimeObject := make(map[string]runtime.Object, 0)
 
+	var plaformLicense *PlatformLicense
+	if err := json.Unmarshal([]byte(polaris.Licenses.Polaris), &plaformLicense); err != nil {
+		return nil, err
+	}
+
+	if strings.Compare(plaformLicense.License.IssuedTo, polaris.OrganizationDetails.OrganizationProvisionOrganizationName) != 0 {
+		return nil, fmt.Errorf("the Polaris license is only valid for the following organization: %s", plaformLicense.License.IssuedTo)
+	}
+
+	// TODO store all the licenses inside a single secret
 	// Coverity license
 	mapOfUniqueIDToBaseRuntimeObject["Secret.coverity-license"] = &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -109,6 +120,25 @@ func GetPolarisBaseSecrets(polaris Polaris) (map[string]runtime.Object, error) {
 		},
 		Data: map[string][]byte{
 			"license": []byte(polaris.Licenses.Coverity),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	// Org license
+	mapOfUniqueIDToBaseRuntimeObject["Secret.organization-license"] = &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "organization-license",
+			Namespace: polaris.Namespace,
+			Labels: map[string]string{
+				"environment": polaris.Namespace,
+			},
+		},
+		Data: map[string][]byte{
+			"polaris": []byte(util.EncodeStringToBase64(polaris.Licenses.Polaris)),
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
