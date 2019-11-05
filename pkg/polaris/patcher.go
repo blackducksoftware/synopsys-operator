@@ -102,12 +102,6 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	content = strings.ReplaceAll(content, "${ADMIN_NAME}", polaris.OrganizationDetails.OrganizationProvisionAdminName)
 	content = strings.ReplaceAll(content, "${ADMIN_USERNAME}", polaris.OrganizationDetails.OrganizationProvisionAdminUsername)
 	content = strings.ReplaceAll(content, "${ADMIN_EMAIL}", polaris.OrganizationDetails.OrganizationProvisionAdminEmail)
-	content = strings.ReplaceAll(content, "${SEAT_COUNT}", polaris.OrganizationDetails.OrganizationProvisionLicenseSeatCount)
-	content = strings.ReplaceAll(content, "${TYPE}", polaris.OrganizationDetails.OrganizationProvisionLicenseType)
-	content = strings.ReplaceAll(content, "${RESULTS_START_DATE}", polaris.OrganizationDetails.OrganizationProvisionResultsStartDate)
-	content = strings.ReplaceAll(content, "${RESULTS_END_DATE}", polaris.OrganizationDetails.OrganizationProvisionResultsEndDate)
-	content = strings.ReplaceAll(content, "${RETENTION_START_DATE}", polaris.OrganizationDetails.OrganizationProvisionRetentionStartDate)
-	content = strings.ReplaceAll(content, "${RETENTION_END_DATE}", polaris.OrganizationDetails.OrganizationProvisionRetentionEndDate)
 
 	mapOfUniqueIDToBaseRuntimeObject, err := util.ConvertYamlFileToRuntimeObjects(content)
 	if err != nil {
