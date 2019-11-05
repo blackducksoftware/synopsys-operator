@@ -75,6 +75,7 @@ type CRSpecBuilderFromCobraFlags struct {
 
 	EnableReporting bool
 
+	polarisLicensePath                           string
 	coverityLicensePath                          string
 	organizationProvisionOrganizationDescription string
 	organizationProvisionOrganizationName        string
@@ -156,6 +157,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminName, "organization-admin-name", "", ctl.organizationProvisionAdminName, "Organization admin name")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminUsername, "organization-admin-username", "", ctl.organizationProvisionAdminUsername, "Organization admin username")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminEmail, "organization-admin-email", "", ctl.organizationProvisionAdminEmail, "Organization admin email")
+	cmd.Flags().StringVarP(&ctl.polarisLicensePath, "polaris-license-path", "", ctl.polarisLicensePath, "Path to the polaris license")
 	cmd.Flags().StringVarP(&ctl.coverityLicensePath, "coverity-license-path", "", ctl.coverityLicensePath, "Path to the coverity license")
 }
 
@@ -283,6 +285,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				panic(err)
 			}
 			ctl.spec.Licenses.Coverity = data
+		case "polaris-license-path":
+			data, err := util.ReadFileData(ctl.polarisLicensePath)
+			if err != nil {
+				panic(err)
+			}
+			ctl.spec.Licenses.Polaris = data
 
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
@@ -295,18 +303,11 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 // GetPolarisDefault returns PolarisDB default configuration
 func GetPolarisDefault() *Polaris {
 	return &Polaris{
-		ImagePullSecrets: "gcr-json-key",
-		IngressClass:     "nginx",
-		Licenses:         &Licenses{},
-		OrganizationDetails: &OrganizationDetails{
-			OrganizationProvisionLicenseSeatCount:   "100",
-			OrganizationProvisionLicenseType:        "PAID",
-			OrganizationProvisionResultsStartDate:   "2019-02-22",
-			OrganizationProvisionResultsEndDate:     "2030-10-01",
-			OrganizationProvisionRetentionStartDate: "2019-02-22",
-			OrganizationProvisionRetentionEndDate:   "2031-10-01",
-		},
-		EnableReporting: false,
+		ImagePullSecrets:    "gcr-json-key",
+		IngressClass:        "nginx",
+		Licenses:            &Licenses{},
+		OrganizationDetails: &OrganizationDetails{},
+		EnableReporting:     false,
 		PolarisSpec: &PolarisSpec{
 			DownloadServerDetails: DownloadServerDetails{
 				Storage: Storage{
