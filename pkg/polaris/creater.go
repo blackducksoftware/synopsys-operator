@@ -97,9 +97,10 @@ func GetPolarisBaseSecrets(polaris Polaris) (map[string]runtime.Object, error) {
 
 	var plaformLicense *PlatformLicense
 	if err := json.Unmarshal([]byte(polaris.Licenses.Polaris), &plaformLicense); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("the Polaris license is in an invalid format and has to have a IssuedTo field: %s", polaris.Licenses.Polaris)
 	}
 
+	// client-side validation only [TODO: change this to remove org name and just use it from license]
 	if strings.Compare(plaformLicense.License.IssuedTo, polaris.OrganizationDetails.OrganizationProvisionOrganizationName) != 0 {
 		return nil, fmt.Errorf("the Polaris license is only valid for the following organization: %s", plaformLicense.License.IssuedTo)
 	}
