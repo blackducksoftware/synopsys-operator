@@ -87,19 +87,19 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return fmt.Errorf("migrate blackduck: %+v", errors)
 		}
 
-		// Black Duck should only have the database during the DbMigrate State
+		// Black Duck should only have the database during the DbMigrate State (and ServiceAccount)
 		cpPostgresList, err := hc.GetPostgresComponents(blackduck)
 		if err != nil {
 			return err
 		}
 		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			cpPostgresList, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackduck.Name), false)
+			cpPostgresList, fmt.Sprintf("app=%s,name=%s,component in (postgres,serviceaccount)", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update postgres component: %+v", errors)
 		}
 	} else {
-		// Save/Update the PVCs for the Black Duck
+		// Save/Update the PVCs and Service Account for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
@@ -107,7 +107,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return fmt.Errorf("update pvc: %+v", errors)
 		}
 
-		// Get postgres components
+		// Get postgres components (and ServiceAccount)
 		cpPostgresList, err := hc.GetPostgresComponents(blackduck)
 		if err != nil {
 			return err
@@ -115,7 +115,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 		// install postgres
 		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			cpPostgresList, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackduck.Name), false)
+			cpPostgresList, fmt.Sprintf("app=%s,name=%s,component in (postgres,serviceaccount)", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update postgres component: %+v", errors)
@@ -139,7 +139,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 		// install cfssl
 		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			cpList, fmt.Sprintf("app=%s,name=%s,component in (configmap,serviceAccount,cfssl)", util.BlackDuckName, blackduck.Name), false)
+			cpList, fmt.Sprintf("app=%s,name=%s,component in (configmap,cfssl)", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update cfssl component: %+v", errors)
@@ -152,7 +152,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 		// deploy non postgres and uploadcache component
 		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			cpList, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl,configmap,serviceAccount,uploadcache,route)", util.BlackDuckName, blackduck.Name), false)
+			cpList, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl,configmap,serviceaccount,uploadcache,route)", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update non postgres, cfssl and uploadcache components: %+v", errors)

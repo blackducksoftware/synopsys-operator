@@ -32,7 +32,7 @@ import (
 
 // getOpenShiftRoute creates the OpenShift route component for the alert
 func (a *SpecConfig) getOpenShiftRoute() *api.Route {
-	if strings.ToUpper(a.alert.Spec.ExposeService) == util.OPENSHIFT {
+	if a.isOpenshift && strings.ToUpper(a.alert.Spec.ExposeService) == util.OPENSHIFT {
 		return &api.Route{
 			Name:               util.GetResourceName(a.alert.Name, util.AlertName, ""),
 			Namespace:          a.alert.Spec.Namespace,

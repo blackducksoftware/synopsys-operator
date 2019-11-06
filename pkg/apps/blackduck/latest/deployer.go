@@ -29,6 +29,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	bdcommon "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/common"
 	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
@@ -38,6 +39,10 @@ import (
 // GetPostgresComponents returns the blackduck postgres component list
 func (hc *Creater) GetPostgresComponents(blackduck *blackduckapi.Blackduck) (*api.ComponentList, error) {
 	componentList := &api.ComponentList{}
+
+	// Add ServiceAccount
+	serviceAccounts := bdcommon.GetServiceAccounts(blackduck.Spec.Namespace, blackduck.Name)
+	componentList.ServiceAccounts = serviceAccounts
 
 	// Get Containers Flavor
 	hubContainerFlavor, err := hc.getContainersFlavor(blackduck)
@@ -164,17 +169,6 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		}
 		componentList.Deployments = append(componentList.Deployments, documentationDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetDocumentationService())
-	}
-
-	// TODO: solr is not supported in latest (leaving here in case we consolidate the deployers)
-	imageName = containerCreater.GetImageTag("blackduck-solr")
-	if len(imageName) > 0 {
-		solrDeployment, err := containerCreater.GetSolrDeployment(imageName)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-		componentList.Deployments = append(componentList.Deployments, solrDeployment)
-		componentList.Services = append(componentList.Services, containerCreater.GetSolrService())
 	}
 
 	// registration

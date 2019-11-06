@@ -24,14 +24,17 @@ package containers
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetDocumentationDeployment will return the documentation deployment
 func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Deployment, error) {
+	podName := "documentation"
+
 	documentationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-documentation")
 	documentationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: imageName,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: podName, Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.DocumentationMemoryLimit, MaxMem: c.hubContainerFlavor.DocumentationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
@@ -56,20 +59,18 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Depl
 	podConfig := &util.PodConfig{
 		Volumes:             []*components.Volume{documentationEmptyDir},
 		Containers:          []*util.Container{documentationContainerConfig},
-		Labels:              c.GetVersionLabel("documentation"),
-		NodeAffinityConfigs: c.GetNodeAffinityConfigs("documentation"),
+		Labels:              c.GetVersionLabel(podName),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs(podName),
 	}
 
 	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	if !c.config.IsOpenshift {
-		podConfig.FSGID = util.IntToInt64(0)
-	}
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-documentation", 1000, c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "documentation"), Replicas: util.IntToInt32(1)},
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("documentation"))
 }
 

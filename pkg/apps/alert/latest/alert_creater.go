@@ -29,6 +29,7 @@ import (
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertcommon "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/common"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -54,13 +55,14 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 
 // GetComponents returns the resource components for an Alert
 func (ac *Creater) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
-	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
+	isOpenshift := util.IsOpenshift(ac.kubeClient)
+	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped, isOpenshift)
 	return specConfig.GetComponents()
 }
 
 // GetPVC returns the Persistent Volume Claims for an Alert
 func (ac *Creater) GetPVC(alert *alertapi.Alert) ([]*components.PersistentVolumeClaim, error) {
-	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
+	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped, ac.config.IsOpenshift)
 	pvc, err := specConfig.getAlertPersistentVolumeClaim()
 	return []*components.PersistentVolumeClaim{pvc}, err
 }
@@ -73,20 +75,23 @@ func (ac *Creater) Versions() []string {
 // Ensure is an Interface function that will make sure the instance is correctly deployed or deploy it if needed
 func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	// Get Kubernetes Components for the Alert
-	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
+	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped, ac.config.IsOpenshift)
 	cpList, err := specConfig.GetComponents()
 	if err != nil {
 		return err
 	}
 	if strings.EqualFold(alert.Spec.DesiredState, "STOP") {
+		serviceAccounts := alertcommon.GetServiceAccounts(alert.Spec.Namespace, alert.Name)
 		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
+			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims, ServiceAccounts: serviceAccounts}, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("unable to stop Alert: %+v", errors)
 		}
 	} else {
 		// Update components in cluster
+		serviceAccounts := alertcommon.GetServiceAccounts(alert.Spec.Namespace, alert.Name)
+		cpList.ServiceAccounts = serviceAccounts
 		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
 			cpList, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()

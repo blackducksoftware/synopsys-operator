@@ -68,10 +68,11 @@ func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
 		return nil
 	}
 	// Initialize the Route Client for Openshift routes
-	routeClient, err := routeclient.NewForConfig(kubeConfig)
-	if err != nil {
-		routeClient = nil
+	var routeClient *routeclient.RouteV1Client
+	if util.IsOpenshift(kubeclient) {
+		routeClient = util.GetRouteClient(kubeConfig, kubeclient, config.Namespace)
 	}
+
 	// Initialize creaters for different versions of Alert (each Creater can support differernt versions)
 	creaters := []Creater{
 		latestalert.NewCreater(config, kubeConfig, kubeclient, alertClient, routeClient),

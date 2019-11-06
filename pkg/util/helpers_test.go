@@ -275,7 +275,7 @@ func TestIsVersionGreaterThanOrEqualTo(t *testing.T) {
 		{
 			name: "greater dot version",
 			args: args{
-				version:      "2019.10.1",
+				version:      "2019.12.0",
 				majorRelease: 2019,
 				minorRelease: time.October,
 				dotRelease:   0,

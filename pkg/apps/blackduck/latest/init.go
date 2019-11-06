@@ -85,11 +85,6 @@ func (hc *Creater) init(deployer *horizon.Deployer, bdspec *v1.BlackduckSpec, hu
 				if len(claim.Size) > 0 {
 					size = claim.Size
 				}
-			case "blackduck-solr":
-				size = "2Gi"
-				if len(claim.Size) > 0 {
-					size = claim.Size
-				}
 			case "blackduck-webapp":
 				size = "2Gi"
 				if len(claim.Size) > 0 {

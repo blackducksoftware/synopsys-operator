@@ -53,10 +53,18 @@ func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 
 // getCfsslPod returns a new Pod for a Cffsl
 func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
-	pod := components.NewPod(horizonapi.PodConfig{
-		Name: util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
-	})
-	pod.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
+	podConfig := &util.PodConfig{
+		Name:           util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
+		Labels:         map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"},
+		ServiceAccount: util.GetResourceName(a.alert.Name, util.AlertName, "service-account"),
+	}
+
+	appsutil.ConfigurePodConfigSecurityContext(podConfig, a.alert.Spec.SecurityContexts, "alert-cfssl", 1000, a.isOpenshift)
+
+	pod, err := util.CreatePod(podConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Alert's Cfssl Pod: %+v", err)
+	}
 
 	container, err := a.getCfsslContainer()
 	if err != nil {

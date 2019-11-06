@@ -30,6 +30,7 @@ import (
 	latestblackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	v1blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
 	v2blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v2"
+	v3blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v3"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -78,6 +79,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 	creaters := []Creater{
 		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
 		v2blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
+		v3blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
 		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
 	}
 
@@ -108,7 +110,7 @@ func (b *Blackduck) ensureVersion(bd *blackduckapi.Blackduck) error {
 	if len(bd.Spec.Version) == 0 {
 		// TODO: fix the sort logic for Black Duck version
 		// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-		bd.Spec.Version = "2019.10.1"
+		bd.Spec.Version = "2019.12.0"
 	} else {
 		// If the verion is provided, check that it's supported
 		for _, v := range versions {
@@ -189,7 +191,6 @@ func (b *Blackduck) Ensure(bd *blackduckapi.Blackduck) error {
 	if err != nil {
 		return err
 	}
-
 	return creater.Ensure(bd)
 }
 

@@ -22,11 +22,8 @@ under the License.
 package util
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"reflect"
 	"strings"
@@ -184,8 +181,10 @@ func CreatePod(podConfig *PodConfig) (*components.Pod, error) {
 	name := podConfig.Name
 	// create pod config
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name:  name,
-		FSGID: podConfig.FSGID,
+		Name:       name,
+		FSGID:      podConfig.FSGID,
+		RunAsUser:  podConfig.RunAsUser,
+		RunAsGroup: podConfig.RunAsGroup,
 	})
 
 	// set service account
@@ -388,12 +387,6 @@ func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *cor
 // DeleteSecret will delete the secret
 func DeleteSecret(clientset *kubernetes.Clientset, namespace string, name string) error {
 	return clientset.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
-}
-
-// ReadFromFile will read the file
-func ReadFromFile(filePath string) ([]byte, error) {
-	file, err := ioutil.ReadFile(filePath)
-	return file, err
 }
 
 // GetConfigMap will get the config map
@@ -658,13 +651,6 @@ func FilterPodByNamePrefix(pods *corev1.PodList, prefix string) *corev1.Pod {
 		}
 	}
 	return nil
-}
-
-// NewStringReader will convert string array to string reader object
-func NewStringReader(ss []string) io.Reader {
-	formattedString := strings.Join(ss, "\n")
-	reader := strings.NewReader(formattedString)
-	return reader
 }
 
 // GetService will get the service information for the input service name inside the input namespace
@@ -973,65 +959,6 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 		}
 	}
 	return pvList, nil
-}
-
-// IntToPtr will convert int to pointer
-func IntToPtr(i int) *int {
-	return &i
-}
-
-// BoolToPtr will convert bool to pointer
-func BoolToPtr(b bool) *bool {
-	return &b
-}
-
-// Int32ToInt will convert from int32 to int
-func Int32ToInt(i *int32) int {
-	return int(*i)
-}
-
-// IntToInt32 will convert from int to int32
-func IntToInt32(i int) *int32 {
-	j := int32(i)
-	return &j
-}
-
-// IntToInt64 will convert from int to int64
-func IntToInt64(i int) *int64 {
-	j := int64(i)
-	return &j
-}
-
-// IntToUInt32 will convert from int to uint32
-func IntToUInt32(i int) uint32 {
-	return uint32(i)
-}
-
-func getBytes(n int) ([]byte, error) {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
-	return b, nil
-}
-
-// Base64Encode will return an encoded string using a URL-compatible base64 format
-func Base64Encode(data []byte) string {
-	return base64.URLEncoding.EncodeToString(data)
-}
-
-// Base64Decode will return a decoded string using a URL-compatible base64 format;
-// decoding may return an error, which you can check if you don’t already know the input to be well-formed.
-func Base64Decode(data string) (string, error) {
-	uDec, err := base64.URLEncoding.DecodeString(data)
-	return string(uDec), err
-}
-
-// RandomString will generate the random string
-func RandomString(n int) (string, error) {
-	b, err := getBytes(n)
-	return Base64Encode(b), err
 }
 
 // CreateServiceAccount creates a service account
@@ -1475,21 +1402,6 @@ func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new
 	return nil
 }
 
-// UniqueValues returns a unique subset of the string slice provided.
-func UniqueValues(input []string) []string {
-	u := make([]string, 0, len(input))
-	m := make(map[string]bool)
-
-	for _, val := range input {
-		if _, ok := m[val]; !ok {
-			m[val] = true
-			u = append(u, val)
-		}
-	}
-
-	return u
-}
-
 // GetCustomResourceDefinition get the custom resource defintion
 func GetCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, name string) (*apiextensions.CustomResourceDefinition, error) {
 	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(name, metav1.GetOptions{})
@@ -1635,15 +1547,6 @@ func GetOperatorNamespace(clientset *kubernetes.Clientset, namespace string) ([]
 		return MapKeyToStringArray(namespaces), nil
 	}
 	return nil, fmt.Errorf("unable to find the synopsys operator namespace")
-}
-
-// MapKeyToStringArray will return map keys
-func MapKeyToStringArray(maps map[string]string) []string {
-	keys := make([]string, 0)
-	for key := range maps {
-		keys = append(keys, key)
-	}
-	return keys
 }
 
 // GetOperatorRoles returns the roles or the cluster role of the synopsys operator based on the labels
@@ -1940,14 +1843,6 @@ func GetCRDNamesFromConfigMap(kubeClient *kubernetes.Clientset, namespace string
 		return crdNames.(string), nil
 	}
 	return "", fmt.Errorf("unable to find CRD names in the Synopsys Operator config map")
-}
-
-// StringToStringSlice slices s into all substrings separated by sep
-func StringToStringSlice(s string, sep string) []string {
-	if len(s) > 0 {
-		return strings.Split(s, sep)
-	}
-	return make([]string, 0)
 }
 
 // InitLabels initialize the label

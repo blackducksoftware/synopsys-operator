@@ -77,6 +77,7 @@ type CRSpecBuilderFromCobraFlags struct {
 	EnableBinaryAnalysis          bool
 	EnableSourceCodeUpload        bool
 	NodeAffinityFilePath          string
+	SecurityContextFilePath       string
 	Registry                      string
 	RegistryNamespace             string
 	PullSecrets                   []string
@@ -199,6 +200,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().BoolVar(&ctl.EnableBinaryAnalysis, "enable-binary-analysis", ctl.EnableBinaryAnalysis, "If true, enable binary analysis by setting the environment variable (this takes priority over environs flag values)")
 	cmd.Flags().BoolVar(&ctl.EnableSourceCodeUpload, "enable-source-code-upload", ctl.EnableSourceCodeUpload, "If true, enable source code upload by setting the environment variable (this takes priority over environs flag values)")
 	cmd.Flags().StringVar(&ctl.NodeAffinityFilePath, "node-affinity-file-path", ctl.NodeAffinityFilePath, "Absolute path to a file containing a list of node affinities")
+	cmd.Flags().StringVar(&ctl.SecurityContextFilePath, "security-context-file-path", ctl.SecurityContextFilePath, "Absolute path to a file containing a map of pod names to security contexts runAsUser, fsGroup, and runAsGroup")
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 	if master {
@@ -429,6 +431,19 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				log.Fatalf("failed to unmarshal node affinities: %+v", err)
 			}
 			ctl.blackDuckSpec.NodeAffinities = nodeAffinities
+		case "security-context-file-path":
+			data, err := util.ReadFileData(ctl.SecurityContextFilePath)
+			if err != nil {
+				log.Errorf("failed to read security context file: %+v", err)
+				return
+			}
+			SecurityContexts := map[string]api.SecurityContext{}
+			err = json.Unmarshal([]byte(data), &SecurityContexts)
+			if err != nil {
+				log.Errorf("failed to unmarshal security contexts: %+v", err)
+				return
+			}
+			ctl.blackDuckSpec.SecurityContexts = SecurityContexts
 		case "postgres-claim-size":
 			for i := range ctl.blackDuckSpec.PVC {
 				if ctl.blackDuckSpec.PVC[i].Name == "blackduck-postgres" { // update claim size and return

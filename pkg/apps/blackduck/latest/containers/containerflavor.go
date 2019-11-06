@@ -44,7 +44,6 @@ const (
 // ContainerFlavor configuration will have the settings for flavored Black Duck Blackduck
 type ContainerFlavor struct {
 	WebserverMemoryLimit       string
-	SolrMemoryLimit            string
 	WebappCPULimit             string
 	WebappMemoryLimit          string
 	WebappHubMaxMemory         string
@@ -74,7 +73,6 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 	case SMALL:
 		return &ContainerFlavor{
 			WebserverMemoryLimit:       smallWebServerMemoryRequestsAndLimits,
-			SolrMemoryLimit:            smallSolrMemoryRequestsAndLimits,
 			WebappCPULimit:             smallWebappLogstashCpuRequests,
 			WebappMemoryLimit:          smallWebappLogstashMemoryRequestsAndLimits,
 			WebappHubMaxMemory:         smallWebappLogstashHubMaxMemoryEnvVar,
@@ -100,7 +98,6 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 	case MEDIUM:
 		return &ContainerFlavor{
 			WebserverMemoryLimit:       mediumWebServerMemoryRequestsAndLimits,
-			SolrMemoryLimit:            mediumSolrMemoryRequestsAndLimits,
 			WebappCPULimit:             mediumWebappLogstashCpuRequests,
 			WebappMemoryLimit:          mediumWebappLogstashMemoryRequestsAndLimits,
 			WebappHubMaxMemory:         mediumWebappLogstashHubMaxMemoryEnvVar,
@@ -126,7 +123,6 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 	case LARGE:
 		return &ContainerFlavor{
 			WebserverMemoryLimit:       largeWebServerMemoryRequestsAndLimits,
-			SolrMemoryLimit:            largeSolrMemoryRequestsAndLimits,
 			WebappCPULimit:             largeWebappLogstashCpuRequests,
 			WebappMemoryLimit:          largeWebappLogstashMemoryRequestsAndLimits,
 			WebappHubMaxMemory:         largeWebappLogstashHubMaxMemoryEnvVar,
@@ -152,7 +148,6 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 	case XLARGE:
 		return &ContainerFlavor{
 			WebserverMemoryLimit:       xLargeWebServerMemoryRequestsAndLimits,
-			SolrMemoryLimit:            xLargeSolrMemoryRequestsAndLimits,
 			WebappCPULimit:             xLargeWebappLogstashCpuRequests,
 			WebappMemoryLimit:          xLargeWebappLogstashMemoryRequestsAndLimits,
 			WebappHubMaxMemory:         xLargeWebappLogstashHubMaxMemoryEnvVar,
