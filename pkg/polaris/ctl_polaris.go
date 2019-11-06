@@ -120,29 +120,16 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) err
 // The flags map to fields in the CRSpecBuilderFromCobraFlags struct.
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
+
+	// [DEV NOTE:] please organize flags in order of importance
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris")
-	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "Environment DNS")
-	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret")
-	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Set the storage class to use for all the PVC")
-	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", GetPolarisDefault().EnableReporting, "Send this flag if you wish to enable ReportingPlatform.")
-	cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Google Cloud Service account")
-	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", GetPolarisDefault().IngressClass, "The name of the ingress class to use.")
-	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Docker registry e.g. docker.io/myuser")
 
-	cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "Postgres Host")
-	cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "PostgresPort")
-	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
-	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
-	cmd.Flags().StringVar(&ctl.PostgresSSLMode, "postgres-ssl-mode", string(GetPolarisDefault().PolarisDBSpec.PostgresDetails.SSLMode), "Postgres ssl mode [disable|require]")
-	cmd.Flags().BoolVar(&ctl.PostgresInternal, "postgres-container", GetPolarisDefault().PolarisDBSpec.PostgresDetails.IsInternal, "Use in-cluster postgres in a container (Not recommended)")
+	// license related flags
+	cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Absolute path to the Google Cloud service account given to pull images")
+	cmd.Flags().StringVarP(&ctl.polarisLicensePath, "polaris-license-path", "", ctl.polarisLicensePath, "Absolute path to the given Polaris license")
+	cmd.Flags().StringVarP(&ctl.coverityLicensePath, "coverity-license-path", "", ctl.coverityLicensePath, "Absolute path to the given Coverity license")
 
-	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Storage.StorageSize, "PVC size to use for postgres.")
-	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", GetPolarisDefault().PolarisDBSpec.UploadServerDetails.Storage.StorageSize, "PVC size to use for uploadserver.")
-	cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", GetPolarisDefault().PolarisDBSpec.EventstoreDetails.Storage.StorageSize, "PVC size to use for eventstore.")
-	cmd.Flags().StringVar(&ctl.MongoDBSize, "mongodb-size", GetPolarisDefault().PolarisDBSpec.MongoDBDetails.Storage.StorageSize, "PVC size to use for mongodb.")
-	cmd.Flags().StringVar(&ctl.DownloadServerSize, "downloadserver-size", GetPolarisDefault().PolarisSpec.DownloadServerDetails.Storage.StorageSize, "PVC size to use for downloadserver.")
-	cmd.Flags().StringVar(&ctl.ReportStorageSize, "reportstorage-size", GetPolarisDefault().ReportingSpec.ReportStorageDetails.Storage.StorageSize, "PVC size to use for reportstorage. Only applicable if --enable-reporting is set to true.")
-
+	// smtp related flags
 	cmd.Flags().StringVar(&ctl.SMTPHost, "smtp-host", ctl.SMTPHost, "SMTP host")
 	cmd.Flags().IntVar(&ctl.SMTPPort, "smtp-port", ctl.SMTPPort, "SMTP port")
 	cmd.Flags().StringVar(&ctl.SMTPUsername, "smtp-username", ctl.SMTPUsername, "SMTP username")
@@ -150,15 +137,45 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.SMTPSenderEmail, "smtp-sender-email", ctl.SMTPSenderEmail, "SMTP sender email")
 	cmd.Flags().StringVar(&ctl.SMTPTlsMode, "smtp-tls-mode", string(GetPolarisDefault().PolarisDBSpec.SMTPDetails.TLSMode), "SMTP TLS mode [disable|try-starttls|require-starttls|require-tls]")
 	cmd.Flags().StringVar(&ctl.SMTPTlsTrustedHosts, "smtp-trusted-hosts", ctl.SMTPTlsTrustedHosts, "Whitespace separated list of trusted hosts")
-	cmd.Flags().BoolVar(&ctl.SMTPTlsIgnoreInvalidCert, "smtp-tls-insecure", false, "Accept invalid certificates")
+	cmd.Flags().BoolVar(&ctl.SMTPTlsIgnoreInvalidCert, "smtp-tls-insecure", false, "Enable accepting invalid certificates")
 
-	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationDescription, "organization-description", "", ctl.organizationProvisionOrganizationDescription, "Organization description")
+	// domain-name specific flags
+	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "environment-dns", ctl.EnvironmentDNS, "Fully qualified domain name (FQDN)")
+
+	// postgres specific flags
+	// these flags are specific for an external managed postgres
+	cmd.Flags().StringVar(&ctl.PostgresHost, "postgres-host", ctl.PostgresHost, "Postgres host")
+	cmd.Flags().IntVar(&ctl.PostgresPort, "postgres-port", ctl.PostgresPort, "Postgres port")
+	cmd.Flags().StringVar(&ctl.PostgresSSLMode, "postgres-ssl-mode", string(GetPolarisDefault().PolarisDBSpec.PostgresDetails.SSLMode), "Postgres ssl mode [disable|require]")
+	cmd.Flags().StringVar(&ctl.PostgresUsername, "postgres-username", ctl.PostgresUsername, "Postgres username")
+	// if using in-cluster containerized Postgres, then currently we require "postgres-container", "postgres-password" and optionally "postgres-size"
+	// [TODO: make the above point clear to customers]
+	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
+	cmd.Flags().BoolVar(&ctl.PostgresInternal, "postgres-container", GetPolarisDefault().PolarisDBSpec.PostgresDetails.IsInternal, "If true, synopsysctl will deploy a postgres container backed by persistent volume in the same namespace as Polaris (Not recommended for production usage)")
+	cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Storage.StorageSize, "Persistent volume claim size to use for postgres")
+
+	// pvc and size related flags
+	cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Set the storage class to use for all persistent volume claims")
+	cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", GetPolarisDefault().PolarisDBSpec.UploadServerDetails.Storage.StorageSize, "Persistent volume claim size for uploadserver")
+	cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", GetPolarisDefault().PolarisDBSpec.EventstoreDetails.Storage.StorageSize, "Persistent volume claim size for eventstore")
+	cmd.Flags().StringVar(&ctl.MongoDBSize, "mongodb-size", GetPolarisDefault().PolarisDBSpec.MongoDBDetails.Storage.StorageSize, "Persistent volume claim size for mongodb")
+	cmd.Flags().StringVar(&ctl.DownloadServerSize, "downloadserver-size", GetPolarisDefault().PolarisSpec.DownloadServerDetails.Storage.StorageSize, "Persistent volume claim size for downloadserver")
+
+	// reporting related flags
+	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", GetPolarisDefault().EnableReporting, "Enable Reporting Platform")
+	cmd.Flags().StringVar(&ctl.ReportStorageSize, "reportstorage-size", GetPolarisDefault().ReportingSpec.ReportStorageDetails.Storage.StorageSize, "Persistent volume claim size for reportstorage. Only applicable if --enable-reporting is set to true")
+
+	// first organization related flags
 	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationName, "organization-name", "", ctl.organizationProvisionOrganizationName, "Organization name")
+	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationDescription, "organization-description", "", ctl.organizationProvisionOrganizationDescription, "Organization description")
+	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminEmail, "organization-admin-email", "", ctl.organizationProvisionAdminEmail, "Organization admin email")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminName, "organization-admin-name", "", ctl.organizationProvisionAdminName, "Organization admin name")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminUsername, "organization-admin-username", "", ctl.organizationProvisionAdminUsername, "Organization admin username")
-	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminEmail, "organization-admin-email", "", ctl.organizationProvisionAdminEmail, "Organization admin email")
-	cmd.Flags().StringVarP(&ctl.polarisLicensePath, "polaris-license-path", "", ctl.polarisLicensePath, "Path to the polaris license")
-	cmd.Flags().StringVarP(&ctl.coverityLicensePath, "coverity-license-path", "", ctl.coverityLicensePath, "Path to the coverity license")
+
+	// flags that are add-ons (helpful, but not required to set up an environment
+	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", GetPolarisDefault().IngressClass, "Name of ingress class")
+	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Docker registry e.g. docker.io/myuser")
+	cmd.Flags().StringVar(&ctl.ImagePullSecrets, "pull-secret", ctl.ImagePullSecrets, "Pull secret when using a private registry")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
@@ -293,7 +310,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				panic(err)
 			}
 			ctl.spec.Licenses.Polaris = data
-
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}

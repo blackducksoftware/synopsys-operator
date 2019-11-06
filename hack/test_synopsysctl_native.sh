@@ -1,7 +1,22 @@
 #!/bin/bash
 
+# HOW TO RUN:
+# ./test_synopsysctl_native.sh
+
+# https://news.ycombinator.com/item?id=10736584
+set -o errexit -o nounset -o pipefail
+# this line enables debugging
+set -xv
+
 NATIVE_FILENAME=native.yml
-synopsysctl --verbose-level=debug create polaris native --namespace "$NAMESPACE" --version "$POLARIS_VERSION" --environment-dns "travis-onprem-polaris.com" --smtp-host "smtp.sendgrid.net" --smtp-port "3000" --smtp-username "smtp-admin" --smtp-password "password" --smtp-sender-email "noreply@synopsys.com" --postgres-username "postgres-admin" --postgres-password "postgres" --organization-admin-email "polaris-admin@synopsys.com" --organization-admin-name "Polaris Admin" --organization-admin-username "test123" --organization-description "Cloud Native Eng" --organization-name "Polaris" --gcp-service-account-path "$GCP_SERVICE_ACCOUNT_PATH" --coverity-license-path "$COVERITY_LICENSE_PATH" --yaml-url "https://raw.githubusercontent.com/blackducksoftware/releases/Development" -o yaml >> $NATIVE_FILENAME
+synopsysctl --verbose-level=debug create polaris native --namespace "$NAMESPACE" --version "$POLARIS_VERSION" --gcp-service-account-path "$GCP_SERVICE_ACCOUNT_PATH" --polaris-license-path "$POLARIS_LICENSE_PATH" --coverity-license-path "$COVERITY_LICENSE_PATH" --environment-dns "travis-onprem-polaris.com" --smtp-host "smtp.sendgrid.net" --smtp-port "3000" --smtp-username "smtp-admin" --smtp-password "password" --smtp-sender-email "noreply@synopsys.com" --postgres-container  --postgres-password "postgres" --postgres-size "1Gi" --uploadserver-size "1Gi" --eventstore-size "1Gi" --mongodb-size "1Gi" --downloadserver-size "1Gi" --enable-reporting --reportstorage-size "1Gi" --organization-name "myorg" --organization-description "Cloud Native Eng" --organization-admin-email "polaris-admin@synopsys.com" --organization-admin-name "admin" --organization-admin-username "test123" --ingress-class "nginx" --yaml-url "https://raw.githubusercontent.com/blackducksoftware/releases/Development" -o yaml >> $NATIVE_FILENAME
+# if synopsysctl command fails, can't test anything else, fail immediately
+if [ $? -eq 0 ]; then
+  printf "\n\nsynopsysctl command completed, moving on to testing the generated yaml\n"
+else
+  printf "\n\nsynopsysctl command failed, please check\n"
+  exit 1
+fi
 
 # Source: https://github.com/instrumenta/kubernetes-json-schema/blob/master/build.sh#L23
 declare -a k8s_versions=("1.15.4"
