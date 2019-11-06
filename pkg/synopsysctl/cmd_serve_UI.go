@@ -537,6 +537,9 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 		if polarisUIRequestConfig.Namespace == "" {
 			return fmt.Errorf("field required: Namespace")
 		}
+		if polarisUIRequestConfig.PolarisLicensePath == "" {
+			return fmt.Errorf("field required: PolarisLicensePath")
+		}
 		if polarisUIRequestConfig.CoverityLicensePath == "" {
 			return fmt.Errorf("field required: CoverityLicensePath")
 		}
@@ -656,7 +659,7 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 	}
 	polarisObj.PolarisDBSpec.PostgresDetails.Password = polarisUIRequestConfig.PostgresPassword
 
-	// CONFIGURE SMTP - these fields are always required
+	// CONFIGURE SMTP - SMTPHost, SMTPPort, SMTPUsername, SMTPPassword, SMTPSenderEmail are always required
 	polarisObj.PolarisDBSpec.SMTPDetails.Host = polarisUIRequestConfig.SMTPHost
 	var sPort int64
 	var err error
@@ -670,6 +673,7 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 	polarisObj.PolarisDBSpec.SMTPDetails.Username = polarisUIRequestConfig.SMTPUsername
 	polarisObj.PolarisDBSpec.SMTPDetails.Password = polarisUIRequestConfig.SMTPPassword
 	polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail = polarisUIRequestConfig.SMTPSenderEmail
+
 	polarisObj.PolarisDBSpec.SMTPDetails.TLSTrustedHosts = polarisUIRequestConfig.SMTPTLSTrustedHosts
 	polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity = polarisUIRequestConfig.SMTPTLSCheckServerIdentity
 
@@ -717,7 +721,7 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 	polarisUIRequestConfig.Version = polarisObj.Version
 	polarisUIRequestConfig.EnvironmentDNS = polarisObj.EnvironmentDNS
 
-	// synopsysctl does not save the file paths so the data - the data is not sent to the UI
+	// synopsysctl does not save the file paths - the data is not sent to the UI
 	polarisUIRequestConfig.GCPServiceAccountPath = ""
 	polarisUIRequestConfig.CoverityLicensePath = ""
 	polarisUIRequestConfig.PolarisLicensePath = ""
