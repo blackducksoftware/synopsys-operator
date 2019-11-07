@@ -317,7 +317,7 @@ var createBlackDuckCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			defaultPvcComponentsList, err := app.Blackduck().GetComponents(&blackduckv1.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackDuckName, Namespace: blackDuckNamespace}, Spec: blackDuckSpec}, blackduckapp.PVCResources)
+			defaultPvcComponentsList, err := app.Blackduck().GetComponents(&blackduckv1.Blackduck{Spec: blackDuckSpec}, blackduckapp.PVCResources)
 			if err != nil {
 				return err
 			}
@@ -325,7 +325,7 @@ var createBlackDuckCmd = &cobra.Command{
 			for _, defaultPvcComponent := range defaultPvcComponentsList.PersistentVolumeClaims {
 				defaultPvcComponentResourceQuantitySize := defaultPvcComponent.Spec.Resources.Requests[v1.ResourceStorage]
 				pvc := blackduckv1.PVC{
-					Name: defaultPvcComponent.Name,
+					Name: defaultPvcComponent.Name[1:],
 					Size: defaultPvcComponentResourceQuantitySize.String(),
 				}
 				defaultPvcList = append(defaultPvcList, pvc)
