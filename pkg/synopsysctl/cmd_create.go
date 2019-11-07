@@ -29,6 +29,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
@@ -55,6 +56,7 @@ var createAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createPolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var createBDBACobraHelper CRSpecBuilderFromCobraFlagsInterface
 
 // Default Base Specs for Create
 var baseAlertSpec string
@@ -792,12 +794,114 @@ func validatePolaris(polarisConf polaris.Polaris) error {
 	return nil
 }
 
+// createCmd creates a BDBA instance
+var createBDBACmd = &cobra.Command{
+	Use:           "bdba",
+	Example:       "synopsysctl create bdba -n <namespace>",
+	Short:         "Create a BDBA instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 argument")
+		}
+		return nil
+	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		err := createBDBACobraHelper.SetPredefinedCRSpec("")
+		if err != nil {
+			cmd.Help()
+			return err
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		bdbaObj, err := updateBDBASpecWithFlags(cmd, namespace)
+		if err != nil {
+			return err
+		}
+
+		if err := ensureBDBA(bdbaObj, false, true); err != nil {
+			return err
+		}
+
+		log.Info("Polaris has been successfully deployed!")
+		return nil
+	},
+}
+
+//createBDBANativeCmd prints the Kubernetes resources for creating a BDBA instance
+var createBDBANativeCmd = &cobra.Command{
+	Use:           "native",
+	Example:       "synopsysctl create polaris native",
+	Short:         "Print the Kubernetes resources for creating a Polaris instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 arguments")
+		}
+		return nil
+	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		err := createBDBACobraHelper.SetPredefinedCRSpec("")
+		if err != nil {
+			cmd.Help()
+			return err
+		}
+
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		bdbaObj, err := updateBDBASpecWithFlags(cmd, namespace)
+		if err != nil {
+			return err
+		}
+
+		components, err := bdba.GetComponents(baseURL, *bdbaObj)
+		if err != nil {
+			return err
+		}
+
+		var objectArr []interface{}
+		for _, v := range components {
+			objectArr = append(objectArr, v)
+		}
+
+		PrintComponents(objectArr, nativeFormat)
+
+		return nil
+	},
+}
+
+func updateBDBASpecWithFlags(cmd *cobra.Command, namespace string) (*bdba.BDBA, error) {
+	// Update Spec with user's flags
+	log.Debugf("updating spec with user's flags")
+	bdbaInterface, err := createBDBACobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
+	if err != nil {
+		return nil, err
+	}
+
+	bdbaSpec, ok := bdbaInterface.(bdba.BDBA)
+	if !ok {
+		panic("Couldn't cast polarisInterface to polarisSpec")
+	}
+	bdbaSpec.Namespace = namespace
+
+	return &bdbaSpec, nil
+}
+
 func init() {
 	// initialize global resource ctl structs for commands to use
 	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	createBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	createPolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
+	createBDBACobraHelper = bdba.NewCRSpecBuilderFromCobraFlags()
 
 	rootCmd.AddCommand(createCmd)
 
@@ -847,5 +951,16 @@ func init() {
 	addNativeFormatFlag(createPolarisNativeCmd)
 	addbaseURLFlag(createPolarisNativeCmd)
 	createPolarisCmd.AddCommand(createPolarisNativeCmd)
+
+	// Add BDBA commands
+	createBDBACmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	createBDBACobraHelper.AddCRSpecFlagsToCommand(createBDBACmd, true)
+	addbaseURLFlag(createBDBACmd)
+	createCmd.AddCommand(createBDBACmd)
+
+	createBDBACobraHelper.AddCRSpecFlagsToCommand(createBDBANativeCmd, true)
+	addNativeFormatFlag(createBDBANativeCmd)
+	addbaseURLFlag(createBDBANativeCmd)
+	createBDBACmd.AddCommand(createBDBANativeCmd)
 
 }
