@@ -126,6 +126,7 @@ type Patcher struct {
 func (p *Patcher) patch() (map[string]runtime.Object, error) {
 	patches := []func() error{
 		p.patchNamespace,
+		p.patchLabel,
 		p.patchStorageClass,
 		p.patchRegistry,
 	}
@@ -172,6 +173,25 @@ func (p *Patcher) patchStorageClass() error {
 func (p *Patcher) patchRegistry() error {
 	if len(p.polaris.Registry) > 0 {
 		if _, err := util.UpdateRegistry(p.mapOfUniqueIDToBaseRuntimeObject, p.polaris.Registry); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// patchLabel will set some useful labels
+func (p *Patcher) patchLabel() error {
+	accessor := meta.NewAccessor()
+	for _, runtimeObject := range p.mapOfUniqueIDToBaseRuntimeObject {
+		labels, err := accessor.Labels(runtimeObject)
+		if err != nil {
+			return err
+		}
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		labels["synopsysctl.synopsys.com/polaris"] = p.polaris.Namespace
+		if err := accessor.SetLabels(runtimeObject, labels); err != nil {
 			return err
 		}
 	}
