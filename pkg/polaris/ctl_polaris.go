@@ -165,8 +165,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", GetPolarisDefault().EnableReporting, "Enable Reporting Platform")
 	cmd.Flags().StringVar(&ctl.ReportStorageSize, "reportstorage-size", GetPolarisDefault().ReportingSpec.ReportStorageDetails.Storage.StorageSize, "Persistent volume claim size for reportstorage. Only applicable if --enable-reporting is set to true")
 
-	// first organization related flags
-	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationName, "organization-name", "", ctl.organizationProvisionOrganizationName, "Organization name")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationDescription, "organization-description", "", ctl.organizationProvisionOrganizationDescription, "Organization description")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminEmail, "organization-admin-email", "", ctl.organizationProvisionAdminEmail, "Organization admin email")
 	cmd.Flags().StringVarP(&ctl.organizationProvisionAdminName, "organization-admin-name", "", ctl.organizationProvisionAdminName, "Organization admin name")
@@ -290,8 +288,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.spec.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity = !ctl.SMTPTlsIgnoreInvalidCert
 		case "organization-description":
 			ctl.spec.OrganizationDetails.OrganizationProvisionOrganizationDescription = ctl.organizationProvisionOrganizationDescription
-		case "organization-name":
-			ctl.spec.OrganizationDetails.OrganizationProvisionOrganizationName = ctl.organizationProvisionOrganizationName
 		case "organization-admin-name":
 			ctl.spec.OrganizationDetails.OrganizationProvisionAdminName = ctl.organizationProvisionAdminName
 		case "organization-admin-username":

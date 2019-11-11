@@ -23,9 +23,7 @@ package polaris
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,16 +92,6 @@ func GetComponents(baseURL string, polaris Polaris) (map[string]runtime.Object, 
 // GetPolarisBaseSecrets get polaris base secrets
 func GetPolarisBaseSecrets(polaris Polaris) (map[string]runtime.Object, error) {
 	mapOfUniqueIDToBaseRuntimeObject := make(map[string]runtime.Object, 0)
-
-	var plaformLicense *PlatformLicense
-	if err := json.Unmarshal([]byte(polaris.Licenses.Polaris), &plaformLicense); err != nil {
-		return nil, fmt.Errorf("the Polaris license is in an invalid format and has to have a IssuedTo field: %s", polaris.Licenses.Polaris)
-	}
-
-	// client-side validation only [TODO: change this to remove org name and just use it from license]
-	if strings.Compare(plaformLicense.License.IssuedTo, polaris.OrganizationDetails.OrganizationProvisionOrganizationName) != 0 {
-		return nil, fmt.Errorf("the Polaris license is only valid for the following organization: %s", plaformLicense.License.IssuedTo)
-	}
 
 	// TODO store all the licenses inside a single secret
 	// Coverity license
