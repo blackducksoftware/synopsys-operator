@@ -39,9 +39,6 @@ func fromYaml(content string, polaris Polaris) (map[string]runtime.Object, error
 	// Basic
 	content = strings.ReplaceAll(content, "${NAMESPACE}", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${VERSION}", polaris.Version)
-	content = strings.ReplaceAll(content, "$(JAEGER_NAMESPACE)", polaris.Namespace)
-	content = strings.ReplaceAll(content, "$(EVENT_STORE_NAMESPACE)", polaris.Namespace)
-	content = strings.ReplaceAll(content, "$(LEADER_ELECTOR_NAMESPACE)", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polaris.Namespace)
 	content = strings.ReplaceAll(content, "${POLARIS_ROOT_DOMAIN}", polaris.EnvironmentDNS)
 	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polaris.ImagePullSecrets)
