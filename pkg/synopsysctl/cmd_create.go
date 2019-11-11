@@ -22,6 +22,7 @@ under the License.
 package synopsysctl
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -601,7 +602,6 @@ var createPolarisCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-sender-email")
 
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-description")
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-name")
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-name")
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-email")
@@ -667,7 +667,6 @@ var createPolarisNativeCmd = &cobra.Command{
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-sender-email")
 
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-description")
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-name")
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-name")
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-email")
@@ -712,6 +711,13 @@ func updatePolarisSpecWithFlags(cmd *cobra.Command, namespace string) (*polaris.
 		panic("Couldn't cast polarisInterface to polarisSpec")
 	}
 	polarisSpec.Namespace = namespace
+
+	// Unmarshal the platform license and set the organization name according to the license
+	var plaformLicense *polaris.PlatformLicense
+	if err := json.Unmarshal([]byte(polarisSpec.Licenses.Polaris), &plaformLicense); err != nil {
+		return nil, fmt.Errorf("the Polaris license is in an invalid format and has to have a IssuedTo field: %s", polarisSpec.Licenses.Polaris)
+	}
+	polarisSpec.OrganizationDetails.OrganizationProvisionOrganizationName = plaformLicense.License.IssuedTo
 
 	if err := validatePolaris(polarisSpec); err != nil {
 		return nil, err
