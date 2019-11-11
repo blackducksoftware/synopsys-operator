@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -1235,6 +1236,16 @@ func updatePolaris(polarisObj polaris.Polaris, flagset *pflag.FlagSet) (*polaris
 		return nil, err
 	}
 	newSpec := spec.(polaris.Polaris)
+
+	// Unmarshal the platform license and set the organization name according to the license
+	var plaformLicense *polaris.PlatformLicense
+	if err := json.Unmarshal([]byte(newSpec.Licenses.Polaris), &plaformLicense); err != nil {
+		return nil, fmt.Errorf("the Polaris license is in an invalid format and has to have a IssuedTo field: %s", newSpec.Licenses.Polaris)
+	}
+
+	if strings.Compare(newSpec.OrganizationDetails.OrganizationProvisionOrganizationName, plaformLicense.License.IssuedTo) != 0 {
+		return nil, fmt.Errorf("the Polaris license provided is not valid for organizationd: %s", newSpec.OrganizationDetails.OrganizationProvisionOrganizationName)
+	}
 
 	if err := validatePolaris(newSpec); err != nil {
 		return nil, err
