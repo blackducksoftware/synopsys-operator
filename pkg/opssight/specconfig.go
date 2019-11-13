@@ -294,6 +294,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		if perceiverSvc != nil {
 			components.Services = append(components.Services, perceiverSvc)
 		}
+		secure := false
+		if len(p.opssight.Spec.Perceiver.Certificate) > 0 && len(p.opssight.Spec.Perceiver.CertificateKey) > 0 {
+			secure = true
+		}
+		route := p.GetPerceiverOpenShiftRoute("artifactory", secure)
+		if route != nil {
+			components.Routes = append(components.Routes, route)
+		}
 	}
 
 	// Add Quay Perceiver if enabled
@@ -311,6 +319,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		if perceiverSvc != nil {
 			components.Services = append(components.Services, perceiverSvc)
+		}
+		secure := false
+		if len(p.opssight.Spec.Perceiver.Certificate) > 0 && len(p.opssight.Spec.Perceiver.CertificateKey) > 0 {
+			secure = true
+		}
+		route := p.GetPerceiverOpenShiftRoute("quay", secure)
+		if route != nil {
+			components.Routes = append(components.Routes, route)
 		}
 	}
 

@@ -27,8 +27,10 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	routev1 "github.com/openshift/api/route/v1"
 )
 
 // PodPerceiverReplicationController creates a replication controller for the pod perceiver
@@ -245,6 +247,28 @@ func (p *SpecConfig) PerceiverLoadBalancerService(perceiverName string) (*compon
 	service.AddSelectors(map[string]string{"component": p.names[fmt.Sprintf("%s-perceiver", perceiverName)], "app": "opssight", "name": p.opssight.Name})
 
 	return service, nil
+}
+
+// GetPerceiverOpenShiftRoute creates the OpenShift route component for the perceiver model
+func (p *SpecConfig) GetPerceiverOpenShiftRoute(perceiverName string, secure bool) *api.Route {
+	perceiverName = fmt.Sprintf("%s-perceiver", perceiverName)
+	name := p.names[perceiverName]
+	namespace := p.opssight.Spec.Namespace
+	if strings.ToUpper(p.opssight.Spec.Perceiver.Expose) == util.OPENSHIFT {
+		route := &api.Route{
+			Name:        util.GetResourceName(p.opssight.Name, util.OpsSightName, name),
+			Namespace:   namespace,
+			Kind:        "Service",
+			ServiceName: util.GetResourceName(p.opssight.Name, util.OpsSightName, name),
+			PortName:    fmt.Sprintf("port-%s", name),
+			Labels:      map[string]string{"app": "opssight", "name": p.opssight.Name, "component": fmt.Sprintf("%s-exposed", name)},
+		}
+		if secure {
+			route.TLSTerminationType = routev1.TLSTerminationPassthrough
+		}
+		return route
+	}
+	return nil
 }
 
 func (p *SpecConfig) perceiverService(name string) *components.Service {
