@@ -70,7 +70,7 @@ func (p *SpecConfig) ArtifactoryPerceiverReplicationController() (*components.Re
 
 	rc := p.perceiverReplicationController(name, 1)
 
-	pod, err := p.perceiverPod(name, image, util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["perceiver-service-account"]))
+	pod, err := p.perceiverPod(name, image, "")
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create artifactory perceiver pod")
 	}
@@ -85,7 +85,7 @@ func (p *SpecConfig) QuayPerceiverReplicationController() (*components.Replicati
 
 	rc := p.perceiverReplicationController(name, 1)
 
-	pod, err := p.perceiverPod(name, image, util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["perceiver-service-account"]))
+	pod, err := p.perceiverPod(name, image, "")
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create quay perceiver pod")
 	}
@@ -175,9 +175,6 @@ func (p *SpecConfig) perceiverContainer(name string, image string) (*components.
 		return nil, errors.Annotatef(err, "unable to add the volume mount to %s container", name)
 	}
 	if strings.Contains(name, "artifactory") || strings.Contains(name, "quay") {
-		if p.opssight.Spec.Perceiver.EnableArtifactoryPerceiverDumper {
-			// container.AddEnv()
-		}
 		container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: util.GetResourceName(p.opssight.Name, util.OpsSightName, "blackduck")})
 	}
 	return container, nil

@@ -129,7 +129,9 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 			ImagePullerType:  opssightSpec.ScannerPod.ImageFacade.ImagePullerType,
 		},
 		Perceiver: &PerceiverConfig{
-			Image: &ImagePerceiverConfig{},
+			Certificate:    opssightSpec.Perceiver.Certificate,
+			CertificateKey: opssightSpec.Perceiver.CertificateKey,
+			Image:          &ImagePerceiverConfig{},
 			Pod: &PodPerceiverConfig{
 				NamespaceFilter: opssightSpec.Perceiver.PodPerceiver.NamespaceFilter,
 			},

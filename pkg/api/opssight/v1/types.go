@@ -108,6 +108,8 @@ type PodPerceiver struct {
 
 // Perceiver stores the Perceiver configuration
 type Perceiver struct {
+	Certificate                      string        `json:"certificate,omitempty"`
+	CertificateKey                   string        `json:"certificateKey,omitempty"`
 	EnableImagePerceiver             bool          `json:"enableImagePerceiver"`
 	EnableArtifactoryPerceiver       bool          `json:"enableArtifactoryPerceiver"`
 	EnableArtifactoryPerceiverDumper bool          `json:"enableArtifactoryPerceiverDumper"`

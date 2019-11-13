@@ -31,6 +31,8 @@ import (
 
 // PerceiverConfig stores the Perceiver configuration
 type PerceiverConfig struct {
+	Certificate               string
+	CertificateKey            string
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
 	Port                      int

@@ -187,6 +187,8 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverArtifactoryExpose, "expose-artifactory-processor", ctl.PerceiverArtifactoryExpose, "Type of service for Artifactory processor [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().StringVar(&ctl.PerceiverQuayExpose, "expose-quay-processor", ctl.PerceiverQuayExpose, "Type of service for Quay processor [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	cmd.Flags().StringVar(&ctl.PerceiverTLSCertificatePath, "processor-TLS-certificate-path", ctl.PerceiverTLSCertificatePath, "Accepts certificate file to start server with TLS enabled, works in conjunction with Quay and Artifactory processors")
+	cmd.Flags().StringVar(&ctl.PerceiverTLSKeyPath, "processor-TLS-key-path", ctl.PerceiverTLSKeyPath, "Accepts key file to sign the TLS certificate, works in conjunction with Quay and Artifactory processors")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
 	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processor-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
 	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processor-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes Image Processor and Pod Processor wait between creating dumps of data/metrics")
