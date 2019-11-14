@@ -332,11 +332,13 @@ type PolarisUIRequestResponse struct {
 	PostgresContainer bool   `json:"postgresContainer"`
 	PostgresSSLMode   string `json:"postgresSSLMode"`
 
-	SMTPHost        string `json:"smtpHost"`
-	SMTPPort        string `json:"smtpPort"`
-	SMTPUsername    string `json:"smtpUsername"`
-	SMTPPassword    string `json:"smtpPassword"`
-	SMTPSenderEmail string `json:"smtpSenderEmail"`
+	SMTPHost                   string `json:"smtpHost"`
+	SMTPPort                   string `json:"smtpPort"`
+	SMTPUsername               string `json:"smtpUsername"`
+	SMTPPassword               string `json:"smtpPassword"`
+	SMTPSenderEmail            string `json:"smtpSenderEmail"`
+	SMTPTLSTrustedHosts        string `json:"smtpTLSTrustedHosts"`
+	SMTPTLSCheckServerIdentity bool   `json:"smtpTLSCheckServerIdentity"`
 
 	UploadServerSize   string `json:"uploadServerSize"`
 	EventstoreSize     string `json:"eventstoreSize"`
@@ -351,7 +353,9 @@ type PolarisUIRequestResponse struct {
 	OrganizationAdminName     string `json:"organizationAdminName"`
 	OrganizationAdminUsername string `json:"organizationAdminUsername"`
 	OrganizationAdminEmail    string `json:"organizationAdminEmail"`
-	CoverityLicensePath       string `json:"coverityLicensePath"`
+
+	CoverityLicensePath string `json:"coverityLicensePath"`
+	PolarisLicensePath  string `json:"polarisLicensePath"`
 }
 
 // // TODO: add Black Duck to UI for 12.0 release
@@ -533,6 +537,9 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 		if polarisUIRequestConfig.Namespace == "" {
 			return fmt.Errorf("field required: Namespace")
 		}
+		if polarisUIRequestConfig.PolarisLicensePath == "" {
+			return fmt.Errorf("field required: PolarisLicensePath")
+		}
 		if polarisUIRequestConfig.CoverityLicensePath == "" {
 			return fmt.Errorf("field required: CoverityLicensePath")
 		}
@@ -595,6 +602,13 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 		}
 		polarisObj.Licenses.Coverity = CoverityLicense
 	}
+	if !updating || polarisUIRequestConfig.PolarisLicensePath != "" {
+		PolarisLicense, err := util.ReadFileData(polarisUIRequestConfig.PolarisLicensePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read polaris license from file: %+v", err)
+		}
+		polarisObj.Licenses.Polaris = PolarisLicense
+	}
 
 	// If the user is updating then overwrite the old values even if these fields are empty
 	// If the user is creating then only overwrite the default value if the new value is not empty
@@ -645,7 +659,7 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 	}
 	polarisObj.PolarisDBSpec.PostgresDetails.Password = polarisUIRequestConfig.PostgresPassword
 
-	// CONFIGURE SMTP - these fields are always required
+	// CONFIGURE SMTP - SMTPHost, SMTPPort, SMTPUsername, SMTPPassword, SMTPSenderEmail are always required
 	polarisObj.PolarisDBSpec.SMTPDetails.Host = polarisUIRequestConfig.SMTPHost
 	var sPort int64
 	var err error
@@ -659,6 +673,9 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 	polarisObj.PolarisDBSpec.SMTPDetails.Username = polarisUIRequestConfig.SMTPUsername
 	polarisObj.PolarisDBSpec.SMTPDetails.Password = polarisUIRequestConfig.SMTPPassword
 	polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail = polarisUIRequestConfig.SMTPSenderEmail
+
+	polarisObj.PolarisDBSpec.SMTPDetails.TLSTrustedHosts = polarisUIRequestConfig.SMTPTLSTrustedHosts
+	polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity = polarisUIRequestConfig.SMTPTLSCheckServerIdentity
 
 	// CONFIGURE STORAGE
 	// use defaults/previous values if they aren't provided
@@ -704,9 +721,10 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 	polarisUIRequestConfig.Version = polarisObj.Version
 	polarisUIRequestConfig.EnvironmentDNS = polarisObj.EnvironmentDNS
 
-	// synopsysctl does not save the file paths so the data - the data is not sent to the UI
+	// synopsysctl does not save the file paths - the data is not sent to the UI
 	polarisUIRequestConfig.GCPServiceAccountPath = ""
 	polarisUIRequestConfig.CoverityLicensePath = ""
+	polarisUIRequestConfig.PolarisLicensePath = ""
 
 	polarisUIRequestConfig.ImagePullSecrets = polarisObj.ImagePullSecrets
 	polarisUIRequestConfig.Registry = polarisObj.Registry
@@ -728,6 +746,8 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 	polarisUIRequestConfig.SMTPUsername = polarisObj.PolarisDBSpec.SMTPDetails.Username
 	polarisUIRequestConfig.SMTPPassword = polarisObj.PolarisDBSpec.SMTPDetails.Password
 	polarisUIRequestConfig.SMTPSenderEmail = polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail
+	polarisUIRequestConfig.SMTPTLSTrustedHosts = polarisObj.PolarisDBSpec.SMTPDetails.TLSTrustedHosts
+	polarisUIRequestConfig.SMTPTLSCheckServerIdentity = polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity
 
 	// STORAGE
 	polarisUIRequestConfig.UploadServerSize = polarisObj.PolarisDBSpec.UploadServerDetails.Storage.StorageSize
