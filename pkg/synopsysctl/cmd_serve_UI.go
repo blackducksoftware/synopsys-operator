@@ -315,30 +315,33 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // PolarisUIRequestResponse represents the format that
 // the front-end and back-end can communicate Polaris data
 type PolarisUIRequestResponse struct {
-	Version               string `json:"version"`
-	Namespace             string `json:"namespace"`
-	EnvironmentDNS        string `json:"environmentDNS"`
+	Version   string `json:"version"`
+	Namespace string `json:"namespace"`
+
+	FullyQualifiedDomainName string `json:"fullyQualifiedDomainName"`
+	IngressClass             string `json:"ingressClass"`
+
+	CoverityLicensePath   string `json:"coverityLicensePath"`
+	PolarisLicensePath    string `json:"polarisLicensePath"`
 	GCPServiceAccountPath string `json:"GCPServiceAccountPath"`
-	ImagePullSecrets      string `json:"imagePullSecrets"`
-	Registry              string `json:"registry"`
-	StorageClass          string `json:"storageClass"`
-	IngressClass          string `json:"ingressClass"`
 
-	PostgresHost      string `json:"postgresHost"`
-	PostgresPort      string `json:"postgresPort"`
-	PostgresUsername  string `json:"postgresUsername"`
-	PostgresPassword  string `json:"postgresPassword"`
-	PostgresSize      string `json:"postgresSize"`
-	PostgresContainer bool   `json:"postgresContainer"`
-	PostgresSSLMode   string `json:"postgresSSLMode"`
+	SMTPHost                 string `json:"smtpHost"`
+	SMTPPort                 string `json:"smtpPort"`
+	SMTPUsername             string `json:"smtpUsername"`
+	SMTPPassword             string `json:"smtpPassword"`
+	SMTPSenderEmail          string `json:"smtpSenderEmail"`
+	SMTPTLSTrustedHosts      string `json:"smtpTLSTrustedHosts"`
+	SMTPTlsIgnoreInvalidCert bool   `json:"smtpTlsIgnoreInvalidCert"`
 
-	SMTPHost                   string `json:"smtpHost"`
-	SMTPPort                   string `json:"smtpPort"`
-	SMTPUsername               string `json:"smtpUsername"`
-	SMTPPassword               string `json:"smtpPassword"`
-	SMTPSenderEmail            string `json:"smtpSenderEmail"`
-	SMTPTLSTrustedHosts        string `json:"smtpTLSTrustedHosts"`
-	SMTPTLSCheckServerIdentity bool   `json:"smtpTLSCheckServerIdentity"`
+	PostgresHost            string `json:"postgresHost"`
+	PostgresPort            string `json:"postgresPort"`
+	PostgresSSLMode         string `json:"postgresSSLMode"`
+	PostgresUsername        string `json:"postgresUsername"`
+	PostgresPassword        string `json:"postgresPassword"`
+	EnablePostgresContainer bool   `json:"enablePostgresContainer"`
+	PostgresSize            string `json:"postgresSize"`
+
+	StorageClass string `json:"storageClass"`
 
 	UploadServerSize   string `json:"uploadServerSize"`
 	EventstoreSize     string `json:"eventstoreSize"`
@@ -354,8 +357,8 @@ type PolarisUIRequestResponse struct {
 	OrganizationAdminUsername string `json:"organizationAdminUsername"`
 	OrganizationAdminEmail    string `json:"organizationAdminEmail"`
 
-	CoverityLicensePath string `json:"coverityLicensePath"`
-	PolarisLicensePath  string `json:"polarisLicensePath"`
+	ImagePullSecrets string `json:"imagePullSecrets"`
+	Registry         string `json:"registry"`
 }
 
 // // TODO: add Black Duck to UI for 12.0 release
@@ -498,8 +501,8 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 	if polarisUIRequestConfig.Version == "" {
 		return fmt.Errorf("field required: Version")
 	}
-	if polarisUIRequestConfig.EnvironmentDNS == "" {
-		return fmt.Errorf("field required: EnvironmentDNS")
+	if polarisUIRequestConfig.FullyQualifiedDomainName == "" {
+		return fmt.Errorf("field required: FullyQualifiedDomainName")
 	}
 
 	if polarisUIRequestConfig.SMTPHost == "" {
@@ -548,7 +551,7 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 		}
 	}
 
-	if !polarisUIRequestConfig.PostgresContainer {
+	if !polarisUIRequestConfig.EnablePostgresContainer {
 		if polarisUIRequestConfig.PostgresHost == "" {
 			return fmt.Errorf("field required when using an external Postgres database: PostgresHost")
 		}
@@ -582,7 +585,7 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 	}
 
 	polarisObj.Version = polarisUIRequestConfig.Version
-	polarisObj.EnvironmentDNS = polarisUIRequestConfig.EnvironmentDNS
+	polarisObj.EnvironmentDNS = polarisUIRequestConfig.FullyQualifiedDomainName
 
 	// If the user is not updating (aka creating) then the path is required so it is set here
 	// If the user is updating then only overwrite the old value if the user provides a path
@@ -626,8 +629,8 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 	}
 
 	// CONFIGURE POSTGRES
-	polarisObj.PolarisDBSpec.PostgresDetails.IsInternal = polarisUIRequestConfig.PostgresContainer
-	if polarisUIRequestConfig.PostgresContainer { // Using the Postgres provided by synopsysctl (internal)
+	polarisObj.PolarisDBSpec.PostgresDetails.IsInternal = polarisUIRequestConfig.EnablePostgresContainer
+	if polarisUIRequestConfig.EnablePostgresContainer { // Using the Postgres provided by synopsysctl (internal)
 		polarisObj.PolarisDBSpec.PostgresDetails.SSLMode = polaris.PostgresSSLModeDisable
 		if polarisUIRequestConfig.PostgresSize != "" {
 			polarisObj.PolarisDBSpec.PostgresDetails.Storage.StorageSize = polarisUIRequestConfig.PostgresSize
@@ -675,7 +678,7 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 	polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail = polarisUIRequestConfig.SMTPSenderEmail
 
 	polarisObj.PolarisDBSpec.SMTPDetails.TLSTrustedHosts = polarisUIRequestConfig.SMTPTLSTrustedHosts
-	polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity = polarisUIRequestConfig.SMTPTLSCheckServerIdentity
+	polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity = polarisUIRequestConfig.SMTPTlsIgnoreInvalidCert
 
 	// CONFIGURE STORAGE
 	// use defaults/previous values if they aren't provided
@@ -719,7 +722,7 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 	// Populate Polaris Config Fields
 	polarisUIRequestConfig.Namespace = polarisObj.Namespace
 	polarisUIRequestConfig.Version = polarisObj.Version
-	polarisUIRequestConfig.EnvironmentDNS = polarisObj.EnvironmentDNS
+	polarisUIRequestConfig.FullyQualifiedDomainName = polarisObj.EnvironmentDNS
 
 	// synopsysctl does not save the file paths - the data is not sent to the UI
 	polarisUIRequestConfig.GCPServiceAccountPath = ""
@@ -737,7 +740,7 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 	polarisUIRequestConfig.PostgresUsername = polarisObj.PolarisDBSpec.PostgresDetails.Username
 	polarisUIRequestConfig.PostgresPassword = polarisObj.PolarisDBSpec.PostgresDetails.Password
 	polarisUIRequestConfig.PostgresSize = polarisObj.PolarisDBSpec.PostgresDetails.Storage.StorageSize
-	polarisUIRequestConfig.PostgresContainer = polarisObj.PolarisDBSpec.PostgresDetails.IsInternal
+	polarisUIRequestConfig.EnablePostgresContainer = polarisObj.PolarisDBSpec.PostgresDetails.IsInternal
 	polarisUIRequestConfig.PostgresSSLMode = string(polarisObj.PolarisDBSpec.PostgresDetails.SSLMode)
 
 	// SMTP
@@ -747,7 +750,7 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 	polarisUIRequestConfig.SMTPPassword = polarisObj.PolarisDBSpec.SMTPDetails.Password
 	polarisUIRequestConfig.SMTPSenderEmail = polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail
 	polarisUIRequestConfig.SMTPTLSTrustedHosts = polarisObj.PolarisDBSpec.SMTPDetails.TLSTrustedHosts
-	polarisUIRequestConfig.SMTPTLSCheckServerIdentity = polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity
+	polarisUIRequestConfig.SMTPTlsIgnoreInvalidCert = polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity
 
 	// STORAGE
 	polarisUIRequestConfig.UploadServerSize = polarisObj.PolarisDBSpec.UploadServerDetails.Storage.StorageSize
