@@ -623,6 +623,10 @@ var createPolarisCmd = &cobra.Command{
 			}
 		}
 
+		if err := CheckVersionExists(baseURL, polarisObj.Version); err != nil {
+			return err
+		}
+
 		if err := ensurePolaris(polarisObj, false, true); err != nil {
 			return err
 		}
@@ -679,6 +683,10 @@ var createPolarisNativeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		polarisObj, err := updatePolarisSpecWithFlags(cmd, namespace)
 		if err != nil {
+			return err
+		}
+
+		if err := CheckVersionExists(baseURL, polarisObj.Version); err != nil {
 			return err
 		}
 

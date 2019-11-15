@@ -1281,6 +1281,9 @@ var updatePolarisCmd = &cobra.Command{
 			return err
 		}
 
+		if err := CheckVersionExists(baseURL, newPolaris.Version); err != nil {
+			return err
+		}
 		if err := ensurePolaris(newPolaris, true, createOrganization); err != nil {
 			return err
 		}

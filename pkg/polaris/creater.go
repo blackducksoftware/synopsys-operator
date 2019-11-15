@@ -23,7 +23,11 @@ package polaris
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"net/url"
+	"path"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -194,6 +198,22 @@ func GetPolarisBaseSecrets(polaris Polaris) (map[string]runtime.Object, error) {
 	}
 
 	return mapOfUniqueIDToBaseRuntimeObject, nil
+}
+
+func GetVersions(baseURL string) ([]string, error) {
+	serverURL, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("the base url provided is not a valid url")
+	}
+
+	serverURL.Path = path.Join(serverURL.Path, "polaris", "VERSIONS")
+
+	content, err := util.HTTPGet(serverURL.String())
+	if err != nil {
+		return nil, fmt.Errorf("couldn't fetch version list from the remote server: %+v", err)
+	}
+
+	return strings.Split(string(content), "\n"), nil
 }
 
 // GetPolarisReportingComponents get Polaris reporting components
