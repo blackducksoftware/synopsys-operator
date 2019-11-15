@@ -347,42 +347,43 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *horizoncomponents.Cluste
 		Resources: []string{"customresourcedefinitions"},
 	})
 
+	// TODO: is watch/update/patch/delete/deletecollection needed currently?
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{"rbac.authorization.k8s.io"},
 		Resources: []string{"clusterrolebindings", "clusterroles"},
 	})
 
+	// TODO: is watch/update/patch/delete/deletecollection needed currently?
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{"rbac.authorization.k8s.io"},
 		Resources: []string{"rolebindings", "roles"},
 	})
 
-	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups: []string{"batch", "extensions"},
-		Resources: []string{"jobs", "cronjobs"},
-	})
-
+	// TODO: is rollback needed currently?
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{"extensions", "apps"},
-		Resources: []string{"deployments", "deployments/scale", "deployments/rollback", "statefulsets", "statefulsets/scale", "replicasets", "replicasets/scale", "daemonsets"},
+		Resources: []string{"deployments", "deployments/scale", "deployments/rollback"},
 	})
 
+	// TODO: is deletecollection needed currently?
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{""},
 		Resources: []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
 	})
 
+	// TODO: is logs needed currently?
+	// TODO: do we make any endpoints, or we let services make them?
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "update"},
 		APIGroups: []string{""},
 		Resources: []string{"pods", "pods/log", "endpoints"},
 	})
 
+	// TODO: is this needed currently?
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"create"},
 		APIGroups: []string{""},
@@ -447,22 +448,18 @@ func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 		Namespace:  specConfig.Namespace,
 	})
 
+	// TODO: is watch/update/patch/delete/deletecollection needed currently?
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{"rbac.authorization.k8s.io"},
 		Resources: []string{"rolebindings", "roles"},
 	})
 
-	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups: []string{"batch", "extensions"},
-		Resources: []string{"jobs", "cronjobs"},
-	})
-
+	// TODO: is deletecollection needed?
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{"extensions", "apps"},
-		Resources: []string{"deployments", "deployments/scale", "deployments/rollback", "statefulsets", "statefulsets/scale", "replicasets", "replicasets/scale", "daemonsets"},
+		Resources: []string{"deployments", "deployments/scale", "deployments/rollback"},
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
@@ -471,18 +468,22 @@ func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 		Resources: []string{"namespaces"},
 	})
 
+	// TODO: is deletecollection needed?
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups: []string{""},
 		Resources: []string{"configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
 	})
 
+	// TODO: is logs needed?
+	// TODO: is endpoints needed?
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"get", "list", "watch", "update"},
 		APIGroups: []string{""},
 		Resources: []string{"pods", "pods/log", "endpoints"},
 	})
 
+	// TODO: is this needed?
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"create"},
 		APIGroups: []string{""},
