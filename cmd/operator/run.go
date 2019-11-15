@@ -91,8 +91,6 @@ func runProtoform(configPath string, version string) {
 		}()
 	}
 
-	// Start the prometheus endpoint
-	protoform.SetupHTTPServer()
 	<-stopCh
 }
 

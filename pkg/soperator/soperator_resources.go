@@ -160,50 +160,10 @@ func (specConfig *SpecConfig) getOperatorDeployment() (*horizoncomponents.Deploy
 	return synopsysOperator, nil
 }
 
-// getOperatorService creates a Service Horizon component for Synopsys Operaotor
+// getOperatorService creates a exposed UI Service Horizon component for Synopsys Operaotor
 func (specConfig *SpecConfig) getOperatorService() []*horizoncomponents.Service {
 
 	services := []*horizoncomponents.Service{}
-	// Add the Service to the Deployer
-	synopsysOperatorService := horizoncomponents.NewService(horizonapi.ServiceConfig{
-		APIVersion: "v1",
-		Name:       "synopsys-operator",
-		Namespace:  specConfig.Namespace,
-	})
-
-	synopsysOperatorService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
-
-	if specConfig.Expose != util.NONE && len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.BlackDuckCRDName) {
-		synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-			Name:       "synopsys-operator-ui",
-			Port:       3000,
-			TargetPort: "3000",
-			Protocol:   horizonapi.ProtocolTCP,
-		})
-		synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-			Name:       "synopsys-operator-ui-standard-port",
-			Port:       80,
-			TargetPort: "3000",
-			Protocol:   horizonapi.ProtocolTCP,
-		})
-	}
-
-	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-		Name:       "synopsys-operator",
-		Port:       8080,
-		TargetPort: "8080",
-		Protocol:   horizonapi.ProtocolTCP,
-	})
-	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-		Name:       "synopsys-operator-tls",
-		Port:       443,
-		TargetPort: "443",
-		Protocol:   horizonapi.ProtocolTCP,
-	})
-
-	synopsysOperatorService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
-	services = append(services, synopsysOperatorService)
-
 	if specConfig.Expose != util.NONE && len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.BlackDuckCRDName) {
 		if strings.EqualFold(specConfig.Expose, util.NODEPORT) || strings.EqualFold(specConfig.Expose, util.LOADBALANCER) {
 
@@ -348,39 +308,39 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
 		APIGroups: []string{"rbac.authorization.k8s.io"},
 		Resources: []string{"clusterrolebindings", "clusterroles"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
 		APIGroups: []string{"rbac.authorization.k8s.io"},
 		Resources: []string{"rolebindings", "roles"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups: []string{"batch", "extensions"},
-		Resources: []string{"jobs", "cronjobs"},
+		Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
+		APIGroups: []string{"apps"},
+		Resources: []string{"deployments"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups: []string{"extensions", "apps"},
-		Resources: []string{"deployments", "deployments/scale", "deployments/rollback", "statefulsets", "statefulsets/scale", "replicasets", "replicasets/scale", "daemonsets"},
-	})
-
-	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
 		APIGroups: []string{""},
-		Resources: []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
+		Resources: []string{"namespaces", "persistentvolumeclaims", "services", "replicationcontrollers", "serviceaccounts"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "update"},
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 		APIGroups: []string{""},
-		Resources: []string{"pods", "pods/log", "endpoints"},
+		Resources: []string{"configmaps", "secrets"},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "update"},
+		APIGroups: []string{""},
+		Resources: []string{"pods"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
@@ -412,7 +372,7 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *horizoncomponents.Cluste
 		})
 
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:     []string{"get", "list", "create", "delete", "deletecollection"},
+			Verbs:     []string{"get", "list", "create", "delete"},
 			APIGroups: []string{"route.openshift.io"},
 			Resources: []string{"routes"},
 		})
@@ -447,22 +407,17 @@ func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 		Namespace:  specConfig.Namespace,
 	})
 
+	// TODO: is watch/deletecollection needed currently?
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
 		APIGroups: []string{"rbac.authorization.k8s.io"},
 		Resources: []string{"rolebindings", "roles"},
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups: []string{"batch", "extensions"},
-		Resources: []string{"jobs", "cronjobs"},
-	})
-
-	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups: []string{"extensions", "apps"},
-		Resources: []string{"deployments", "deployments/scale", "deployments/rollback", "statefulsets", "statefulsets/scale", "replicasets", "replicasets/scale", "daemonsets"},
+		Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
+		APIGroups: []string{"apps"},
+		Resources: []string{"deployments"},
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
@@ -472,15 +427,23 @@ func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
 		APIGroups: []string{""},
-		Resources: []string{"configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
+		Resources: []string{"persistentvolumeclaims", "services", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:     []string{"get", "list", "watch", "update"},
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 		APIGroups: []string{""},
-		Resources: []string{"pods", "pods/log", "endpoints"},
+		Resources: []string{"configmaps", "secrets"},
+	})
+
+	// TODO: is logs needed?
+	// TODO: is endpoints needed?
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "update"},
+		APIGroups: []string{""},
+		Resources: []string{"pods"},
 	})
 
 	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
@@ -507,7 +470,7 @@ func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 	if specConfig.ClusterType == OpenshiftClusterType {
 
 		synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:     []string{"get", "list", "create", "delete", "deletecollection"},
+			Verbs:     []string{"get", "list", "create", "delete"},
 			APIGroups: []string{"route.openshift.io"},
 			Resources: []string{"routes"},
 		})
