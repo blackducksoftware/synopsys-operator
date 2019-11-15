@@ -195,7 +195,28 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 		}
 		response, err := convertPolarisObjToUIResponse(*polarisObj)
 		if err != nil {
-			errMsg := fmt.Sprintf("error converting PolarisObj to Response: %s", err)
+			errMsg := fmt.Sprintf("error converting PolarisObj to UI Response: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 500)
+			return
+		}
+		responseByte, err := json.Marshal(response)
+		if err != nil {
+			errMsg := fmt.Sprintf("error converting Polaris to bytes: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 500)
+			return
+		}
+		w.Write(responseByte)
+	})
+
+	// api route - get_polaris_defaults returns Polaris default specifications to the client
+	router.HandleFunc("/api/get_polaris_defaults", func(w http.ResponseWriter, r *http.Request) {
+		log.Infof("handling request: %q\n", html.EscapeString(r.URL.Path))
+		polarisObj := polaris.GetPolarisDefault()
+		response, err := convertPolarisObjToUIResponse(*polarisObj)
+		if err != nil {
+			errMsg := fmt.Sprintf("error converting PolarisObj to UI Response: %s", err)
 			log.Errorf(errMsg)
 			http.Error(w, errMsg, 500)
 			return
@@ -243,6 +264,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 	// fmt.Printf("  - /api/deploy_operator\n") // TODO: add operator for Black Duck for 12.0 release
 	fmt.Printf("  - /api/ensure_polaris\n")
 	fmt.Printf("  - /api/get_polaris\n")
+	fmt.Printf("  - /api/get_polaris_defaults\n")
 	// fmt.Printf("  - /api/deploy_black_duck\n") // TODO: add Black Duck to UI for 12.0 release
 	fmt.Printf("==================================\n")
 	fmt.Printf("\n")
@@ -321,9 +343,9 @@ type PolarisUIRequestResponse struct {
 	FullyQualifiedDomainName string `json:"fullyQualifiedDomainName"`
 	IngressClass             string `json:"ingressClass"`
 
-	CoverityLicensePath   string `json:"coverityLicensePath"`
-	PolarisLicensePath    string `json:"polarisLicensePath"`
 	GCPServiceAccountPath string `json:"GCPServiceAccountPath"`
+	PolarisLicensePath    string `json:"polarisLicensePath"`
+	CoverityLicensePath   string `json:"coverityLicensePath"`
 
 	SMTPHost                 string `json:"smtpHost"`
 	SMTPPort                 string `json:"smtpPort"`
@@ -352,7 +374,6 @@ type PolarisUIRequestResponse struct {
 	ReportStorageSize string `json:"reportStorageSize"`
 
 	OrganizationDescription   string `json:"organizationDescription"`
-	OrganizationName          string `json:"organizationName"`
 	OrganizationAdminName     string `json:"organizationAdminName"`
 	OrganizationAdminUsername string `json:"organizationAdminUsername"`
 	OrganizationAdminEmail    string `json:"organizationAdminEmail"`
@@ -524,9 +545,6 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 	if polarisUIRequestConfig.OrganizationDescription == "" {
 		return fmt.Errorf("field required: OrganizationDescription")
 	}
-	if polarisUIRequestConfig.OrganizationName == "" {
-		return fmt.Errorf("field required: OrganizationName")
-	}
 	if polarisUIRequestConfig.OrganizationAdminName == "" {
 		return fmt.Errorf("field required: OrganizationAdminName")
 	}
@@ -536,10 +554,10 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 	if polarisUIRequestConfig.OrganizationAdminEmail == "" {
 		return fmt.Errorf("field required: OrganizationAdminEmail")
 	}
+	if polarisUIRequestConfig.Namespace == "" {
+		return fmt.Errorf("field required: Namespace")
+	}
 	if !updating { // not required if updating a polaris instance
-		if polarisUIRequestConfig.Namespace == "" {
-			return fmt.Errorf("field required: Namespace")
-		}
 		if polarisUIRequestConfig.PolarisLicensePath == "" {
 			return fmt.Errorf("field required: PolarisLicensePath")
 		}
@@ -678,7 +696,7 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 	polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail = polarisUIRequestConfig.SMTPSenderEmail
 
 	polarisObj.PolarisDBSpec.SMTPDetails.TLSTrustedHosts = polarisUIRequestConfig.SMTPTLSTrustedHosts
-	polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity = polarisUIRequestConfig.SMTPTlsIgnoreInvalidCert
+	polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity = !polarisUIRequestConfig.SMTPTlsIgnoreInvalidCert
 
 	// CONFIGURE STORAGE
 	// use defaults/previous values if they aren't provided
@@ -706,7 +724,6 @@ func convertPolarisUIResponseToPolarisObject(polarisObj *polaris.Polaris, polari
 
 	// CONFIGURE ORGANIZATION - these fields are always required
 	polarisObj.OrganizationDetails.OrganizationProvisionOrganizationDescription = polarisUIRequestConfig.OrganizationDescription
-	polarisObj.OrganizationDetails.OrganizationProvisionOrganizationName = polarisUIRequestConfig.OrganizationName
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminName = polarisUIRequestConfig.OrganizationAdminName
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminUsername = polarisUIRequestConfig.OrganizationAdminUsername
 	polarisObj.OrganizationDetails.OrganizationProvisionAdminEmail = polarisUIRequestConfig.OrganizationAdminEmail
@@ -750,7 +767,7 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 	polarisUIRequestConfig.SMTPPassword = polarisObj.PolarisDBSpec.SMTPDetails.Password
 	polarisUIRequestConfig.SMTPSenderEmail = polarisObj.PolarisDBSpec.SMTPDetails.SenderEmail
 	polarisUIRequestConfig.SMTPTLSTrustedHosts = polarisObj.PolarisDBSpec.SMTPDetails.TLSTrustedHosts
-	polarisUIRequestConfig.SMTPTlsIgnoreInvalidCert = polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity
+	polarisUIRequestConfig.SMTPTlsIgnoreInvalidCert = !polarisObj.PolarisDBSpec.SMTPDetails.TLSCheckServerIdentity
 
 	// STORAGE
 	polarisUIRequestConfig.UploadServerSize = polarisObj.PolarisDBSpec.UploadServerDetails.Storage.StorageSize
@@ -764,7 +781,6 @@ func convertPolarisObjToUIResponse(polarisObj polaris.Polaris) (*PolarisUIReques
 
 	// ORGANIZATIONS
 	polarisUIRequestConfig.OrganizationDescription = polarisObj.OrganizationDetails.OrganizationProvisionOrganizationDescription
-	polarisUIRequestConfig.OrganizationName = polarisObj.OrganizationDetails.OrganizationProvisionOrganizationName
 	polarisUIRequestConfig.OrganizationAdminName = polarisObj.OrganizationDetails.OrganizationProvisionAdminName
 	polarisUIRequestConfig.OrganizationAdminUsername = polarisObj.OrganizationDetails.OrganizationProvisionAdminUsername
 	polarisUIRequestConfig.OrganizationAdminEmail = polarisObj.OrganizationDetails.OrganizationProvisionAdminEmail
