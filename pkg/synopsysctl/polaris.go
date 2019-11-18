@@ -229,3 +229,24 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 	//}
 	return nil
 }
+
+func CheckVersionExists(baseURL string, version string) error {
+	versions, err := polaris.GetVersions(baseURL)
+	if err != nil {
+		return err
+	}
+
+	if !IsInStringSlice(versions, version) {
+		return fmt.Errorf("only the following Polaris versions are supported %v", versions)
+	}
+	return nil
+}
+
+func IsInStringSlice(slice []string, search string) bool {
+	for _, v := range slice {
+		if v == search {
+			return true
+		}
+	}
+	return false
+}
