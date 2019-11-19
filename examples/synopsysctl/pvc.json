@@ -1,12 +1,12 @@
 [
     {
         "name": "name1",
-        "size": "size1",
+        "size": "10Gi",
         "storageClass": "storageclass1"
     },
     {
         "name": "name2",
-        "size": "size2",
+        "size": "10Gi",
         "storageClass": "storageclass2"
     }
 ]
