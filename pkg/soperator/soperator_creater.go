@@ -200,17 +200,3 @@ func (sc *Creater) UpdateSOperatorComponents(specConfig *SpecConfig) error {
 
 	return nil
 }
-
-// UpdatePrometheus updates Kubernetes resources for Prometheus
-func (sc *Creater) UpdatePrometheus(specConfig *PrometheusSpecConfig) error {
-	prometheusComponents, err := specConfig.GetComponents()
-	if err != nil {
-		return fmt.Errorf("failed to get Prometheus components: %s", err)
-	}
-	prometheusCommonConfig := crdupdater.NewCRUDComponents(sc.KubeConfig, sc.KubeClient, false, false, specConfig.Namespace, "", prometheusComponents, "app=synopsys-operator,component=prometheus", false)
-	_, errs := prometheusCommonConfig.CRUDComponents()
-	if errs != nil {
-		return fmt.Errorf("failed to update Prometheus components: %+v", errs)
-	}
-	return nil
-}
