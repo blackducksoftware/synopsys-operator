@@ -27,12 +27,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	alertApps "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	alertLatest "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
+	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -98,6 +101,13 @@ var migrateCmd = &cobra.Command{
 		err := migrate(namespaceToMigrate, crdNamespace)
 		if err != nil {
 			return err
+		}
+
+		// Delete the prometheus metrics
+		prometheusCrdUpdater := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespaceToMigrate, "", &api.ComponentList{}, "app=synopsys-operator,component=prometheus", false)
+		_, errs := prometheusCrdUpdater.CRUDComponents()
+		if errs != nil {
+			log.Errorf("failed to delete Prometheus components: %+v", errs)
 		}
 
 		// Update the Operator Image
@@ -222,23 +232,6 @@ func migrateOperator(namespace string) error {
 	_, err = util.UpdateConfigMap(kubeClient, namespace, cm)
 	if err != nil {
 		return fmt.Errorf("unable to update the Synopsys Operator config map in namespace %s due to %+v", namespace, err)
-	}
-
-	cm, err = util.GetConfigMap(kubeClient, namespace, "prometheus")
-	if err != nil {
-		return fmt.Errorf("error getting the Prometheus config map in namespace %s due to %+v", namespace, err)
-	}
-	isUpdated := false
-	if val, ok := cm.Data["Expose"]; (ok && len(val) == 0) || !ok {
-		cm.Data["Expose"] = util.NONE
-		isUpdated = true
-	}
-
-	if isUpdated {
-		_, err = util.UpdateConfigMap(kubeClient, namespace, cm)
-		if err != nil {
-			return fmt.Errorf("unable to update the Synopsys Operator config map in namespace %s due to %+v", namespace, err)
-		}
 	}
 
 	log.Infof("successfully migrated Synopsys Operator resources in namespace '%s'", namespace)

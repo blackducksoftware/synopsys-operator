@@ -294,37 +294,7 @@ var updateOperatorCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("unable to update Synopsys Operator due to %+v", err)
 		}
-		log.Debugf("updating Prometheus in namespace '%s'", namespace)
-		// Create new Prometheus SpecConfig
-		currPrometheusSpec, err := soperator.GetOldPrometheusSpec(restconfig, kubeClient, namespace)
-		if err != nil {
-			return fmt.Errorf("error in updating Prometheus due to %+v", err)
-		}
-		// check for changes
-		newPrometheusSpec := soperator.PrometheusSpecConfig{}
-		if cmd.Flag("metrics-image").Changed {
-			log.Debugf("updating Prometheus' image to '%s'", metricsImage)
-			newPrometheusSpec.Image = metricsImage
-		}
-		if cmd.Flag("expose-metrics").Changed {
-			log.Debugf("updating expose metrics")
-			isValid := util.IsExposeServiceValid(exposeMetrics)
-			if !isValid {
-				cmd.Help()
-				return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
-			}
-			newPrometheusSpec.Expose = exposeMetrics
-		}
-		// merge old and new data
-		err = mergo.Merge(&newPrometheusSpec, currPrometheusSpec)
-		if err != nil {
-			return fmt.Errorf("unable to merge old and new Prometheus' info due to %+v", err)
-		}
-		// update prometheus
-		err = sOperatorCreater.UpdatePrometheus(&newPrometheusSpec)
-		if err != nil {
-			return fmt.Errorf("unable to update Prometheus due to %+v", err)
-		}
+
 		log.Infof("successfully submitted updates to Synopsys Operator in namespace '%s'", namespace)
 		return nil
 	},
@@ -1211,11 +1181,8 @@ func addUpdateOperatorFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&isEnabledAlert, "enable-alert", "a", isEnabledAlert, "Enable/Disable Alert Custom Resource Definition (CRD) in your cluster")
 	cmd.Flags().BoolVarP(&isEnabledBlackDuck, "enable-blackduck", "b", isEnabledBlackDuck, "Enable/Disable Black Duck Custom Resource Definition (CRD) in your cluster")
 	cmd.Flags().BoolVarP(&isEnabledOpsSight, "enable-opssight", "s", isEnabledOpsSight, "Enable/Disable OpsSight Custom Resource Definition (CRD) in your cluster")
-	// cmd.Flags().BoolVarP(&isEnabledPrm, "enable-prm", "p", isEnabledPrm, "Enable/Disable Polaris Reporting Module Custom Resource Definition (CRD) in your cluster")
 	cmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "Service type to expose Synopsys Operator's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	cmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "Image URL of Synopsys Operator")
-	cmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "x", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
-	cmd.Flags().StringVarP(&metricsImage, "metrics-image", "m", metricsImage, "Image URL of Synopsys Operator's metrics pod")
 	cmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "q", postgresRestartInMins, "Minutes to check for restarting postgres")
 	cmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")
 	cmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "Seconds for resyncing custom resources")
