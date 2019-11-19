@@ -265,10 +265,7 @@ func AskYesNoWithDefault(question func() error, alwaysYes bool, reader io.Reader
 
 func askYesNo(reader io.Reader) (bool, error) {
 	var resp string
-	_, err := fmt.Fscanln(reader, &resp)
-	if err != nil {
-		return false, err
-	}
+	fmt.Fscanln(reader, &resp)
 
 	if strings.EqualFold("yes", strings.TrimSpace(resp)) {
 		return true, nil
