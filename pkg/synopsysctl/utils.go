@@ -32,6 +32,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
@@ -315,6 +316,27 @@ func getInstanceInfo(mock bool, crdName string, appName string, namespace string
 	}
 
 	return namespace, crdNamespace, crdScope, nil
+}
+
+func getBDBAFromSecret() (*bdba.BDBA, error) {
+	bdbaSecret, err := kubeClient.CoreV1().Secrets(namespace).Get("bdba", metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	bdbaSecretBytes, ok := bdbaSecret.Data["bdba"]
+	if !ok {
+		return nil, fmt.Errorf("bdba entry is missing in the secret")
+	}
+
+	var p *bdba.BDBA
+	if err := json.Unmarshal(bdbaSecretBytes, &p); err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 func getPolarisFromSecret() (*polaris.Polaris, error) {

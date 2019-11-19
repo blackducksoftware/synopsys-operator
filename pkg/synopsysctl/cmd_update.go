@@ -35,6 +35,7 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
@@ -52,6 +53,7 @@ var updateAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updatePolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var updateBDBACobraHelper CRSpecBuilderFromCobraFlagsInterface
 
 var updateMockFormat = "json"
 
@@ -1291,12 +1293,62 @@ var updatePolarisCmd = &cobra.Command{
 	},
 }
 
+func updateBDBA(bdbaObj bdba.BDBA, flagset *pflag.FlagSet) (*bdba.BDBA, error) {
+	if err := updatePolarisCobraHelper.SetCRSpec(bdbaObj); err != nil {
+		return nil, err
+	}
+
+	spec, err := updateBDBACobraHelper.GenerateCRSpecFromFlags(flagset)
+	if err != nil {
+		return nil, err
+	}
+	newSpec := spec.(bdba.BDBA)
+
+	return &newSpec, nil
+}
+
+// updateBDBACmd updates a BDBA instance
+var updateBDBACmd = &cobra.Command{
+	Use:           "bdba",
+	Example:       "synopsyctl update bdba -n <namespace>",
+	Short:         "Update a BDBA instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("this command takes 0 arguments")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		bdbaObj, err := getBDBAFromSecret()
+		if err != nil {
+			return err
+		}
+
+		if bdbaObj == nil {
+			return fmt.Errorf("either namespace does not exist or secret does not exist because this instance of polaris was not created via synopsysctl")
+		}
+
+		newBDBA, err := updateBDBA(*bdbaObj, cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		if err := ensureBDBA(newBDBA, true, createOrganization); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 func init() {
 	// initialize global resource ctl structs for commands to use
 	updateBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	updateOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	updatePolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
+	updateBDBACobraHelper = bdba.NewCRSpecBuilderFromCobraFlags()
 
 	rootCmd.AddCommand(updateCmd)
 

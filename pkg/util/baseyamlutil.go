@@ -53,14 +53,14 @@ func ConvertYamlFileToRuntimeObjects(stringContent string) (map[string]runtime.O
 		decode := scheme.Codecs.UniversalDeserializer().Decode
 		runtimeObject, groupVersionKind, err := decode([]byte(singleYaml), nil, nil)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode '%+v': %+v", singleYaml, err)
 		}
 
 		accessor := meta.NewAccessor()
 		runtimeObjectKind := groupVersionKind.Kind
 		runtimeObjectName, err := accessor.Name(runtimeObject)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get runtime object name: %+v", err)
 		}
 		uniqueID := fmt.Sprintf("%s.%s", runtimeObjectKind, runtimeObjectName)
 		mapOfUniqueIDToDesiredRuntimeObject[uniqueID] = runtimeObject

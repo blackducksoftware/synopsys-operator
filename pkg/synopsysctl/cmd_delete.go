@@ -29,6 +29,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -249,6 +250,110 @@ var deletePolarisCmd = &cobra.Command{
 		}
 
 		log.Info("Polaris has been successfully Deleted!")
+		return nil
+	},
+}
+
+// deleteBDBACmd deletes BDBA instances from the cluster
+var deleteBDBACmd = &cobra.Command{
+	Use:           "bdba",
+	Example:       "synopsysctl delete bdba -n <namespace>",
+	Short:         "Delete a BDBA instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes no argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(namespace) == 0 {
+			return fmt.Errorf("a namespace must be provided using -n")
+		}
+
+		// create a BDBA Object from the secret that contains the configuration
+		bdbaObj, err := getBDBAFromSecret()
+		if err != nil {
+			return err
+		}
+		if bdbaObj == nil {
+			return fmt.Errorf("bdba secret data could not be found in the cluster: either the namespace does not exist or BDBA was not created via synopsysctl")
+		}
+
+		runtimeObjects, err := bdba.GetComponents(baseURL, *bdbaObj)
+		if err != nil {
+			return err
+		}
+
+		// Convert all runtimeObjects to Bytes
+		var bdbaRuntimeObjectsBytes []byte
+		for _, runtimeobject := range runtimeObjects {
+			// We skip it if it's a PVC
+			if _, ok := runtimeobject.(*v1.PersistentVolumeClaim); ok {
+				continue
+			}
+
+			runtimeObjectBytes, err := json.Marshal(runtimeobject)
+			if err != nil {
+				return err
+			}
+			bdbaRuntimeObjectsBytes = append(bdbaRuntimeObjectsBytes, runtimeObjectBytes...)
+		}
+
+		log.Info("Deleting BDBA")
+
+		// Delete the Runtime Objects
+		out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(bdbaRuntimeObjectsBytes), "delete", "-f", "-")
+		if err != nil {
+			continueAnswer, err := AskYesNoWithDefault(func() error {
+				log.Warn("Some errors occurred during the deletion of BDBA. Do you want to continue? (Yes/No)")
+				return nil
+			}, promptAnswerYes, os.Stdin)
+
+			if err != nil {
+				return err
+			}
+
+			if !continueAnswer {
+				return fmt.Errorf("couldn't delete bdba |  %+v - %s", out, err)
+			}
+		}
+
+		// Delete StatefulSet PVCs
+		if listOfPVCs, err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("environment=%s", bdbaObj.Namespace)}); err == nil {
+			if len(listOfPVCs.Items) > 0 {
+
+				deletePvc, err := AskYesNoWithDefault(func() error {
+					log.Warn("Do you want to delete the following PVCs? (Yes/No)")
+					for _, v := range listOfPVCs.Items {
+						log.Warn(v.Name)
+					}
+					return nil
+				}, promptAnswerYes, os.Stdin)
+
+				if err != nil {
+					return err
+				}
+
+				if deletePvc {
+					for _, pvcRuntimeObject := range listOfPVCs.Items {
+						log.Warnf("deleting %s", pvcRuntimeObject.Name)
+						if err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).Delete(pvcRuntimeObject.Name, &metav1.DeleteOptions{}); err != nil {
+							log.Warnf("Couldn't delete PVC %s in namespace %s", pvcRuntimeObject.Name, namespace)
+						}
+					}
+				}
+			}
+		}
+
+		// Delete the bdba secret that contains the configuration
+		if err := kubeClient.CoreV1().Secrets(namespace).Delete("bdba", &metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+
+		log.Info("BDBA has been successfully Deleted!")
 		return nil
 	},
 }
