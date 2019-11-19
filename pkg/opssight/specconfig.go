@@ -61,6 +61,8 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 		"perceptor":                 "core",
 		"pod-perceiver":             "pod-processor",
 		"image-perceiver":           "image-processor",
+		"artifactory-perceiver":     "artifactory-processor",
+		"quay-perceiver":            "quay-processor",
 		"scanner":                   "scanner",
 		"perceptor-imagefacade":     "image-getter",
 		"skyfire":                   "skyfire",
@@ -74,6 +76,8 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 		"perceptor":             fmt.Sprintf("%s/opssight-core:%s", baseImageURL, version),
 		"pod-perceiver":         fmt.Sprintf("%s/opssight-pod-processor:%s", baseImageURL, version),
 		"image-perceiver":       fmt.Sprintf("%s/opssight-image-processor:%s", baseImageURL, version),
+		"artifactory-perceiver": fmt.Sprintf("%s/opssight-artifactory-processor:%s", baseImageURL, version),
+		"quay-perceiver":        fmt.Sprintf("%s/opssight-quay-processor:%s", baseImageURL, version),
 		"scanner":               fmt.Sprintf("%s/opssight-scanner:%s", baseImageURL, version),
 		"perceptor-imagefacade": fmt.Sprintf("%s/opssight-image-getter:%s", baseImageURL, version),
 		"skyfire":               "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
@@ -84,6 +88,8 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 			"perceptor":                 "perceptor",
 			"pod-perceiver":             "pod-perceiver",
 			"image-perceiver":           "image-perceiver",
+			"artifactory-perceiver":     "artifactory-perceiver",
+			"quay-perceiver":            "quay-perceiver",
 			"scanner":                   "scanner",
 			"perceptor-imagefacade":     "image-facade",
 			"skyfire":                   "skyfire",
@@ -97,6 +103,8 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 			"perceptor":             fmt.Sprintf("%s/perceptor:%s", baseImageURL, version),
 			"pod-perceiver":         fmt.Sprintf("%s/pod-perceiver:%s", baseImageURL, version),
 			"image-perceiver":       fmt.Sprintf("%s/image-perceiver:%s", baseImageURL, version),
+			"artifactory-perceiver": fmt.Sprintf("%s/artifactory-perceiver:%s", baseImageURL, version),
+			"quay-perceiver":        fmt.Sprintf("%s/quay-perceiver:%s", baseImageURL, version),
 			"scanner":               fmt.Sprintf("%s/perceptor-scanner:%s", baseImageURL, version),
 			"perceptor-imagefacade": fmt.Sprintf("%s/perceptor-imagefacade:%s", baseImageURL, version),
 			"skyfire":               "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
@@ -121,9 +129,14 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 			ImagePullerType:  opssightSpec.ScannerPod.ImageFacade.ImagePullerType,
 		},
 		Perceiver: &PerceiverConfig{
-			Image: &ImagePerceiverConfig{},
+			Certificate:    opssightSpec.Perceiver.Certificate,
+			CertificateKey: opssightSpec.Perceiver.CertificateKey,
+			Image:          &ImagePerceiverConfig{},
 			Pod: &PodPerceiverConfig{
 				NamespaceFilter: opssightSpec.Perceiver.PodPerceiver.NamespaceFilter,
+			},
+			Artifactory: &ArtifactoryPerceiverConfig{
+				Dumper: opssightSpec.Perceiver.EnableArtifactoryPerceiverDumper,
 			},
 			AnnotationIntervalSeconds: opssightSpec.Perceiver.AnnotationIntervalSeconds,
 			DumpIntervalMinutes:       opssightSpec.Perceiver.DumpIntervalMinutes,
@@ -265,6 +278,58 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(imageClusterRole))
 	}
 
+	// Add Artifactory Perceiver if enabled
+	if p.opssight.Spec.Perceiver.EnableArtifactoryPerceiver {
+		rc, err = p.ArtifactoryPerceiverReplicationController()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create artifactory perceiver")
+		}
+
+		components.ReplicationControllers = append(components.ReplicationControllers, rc)
+		components.Services = append(components.Services, p.ArtifactoryPerceiverService())
+		perceiverSvc, err := p.getPerceiverExposeService("artifactory")
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create artifactory perceiver service")
+		}
+		if perceiverSvc != nil {
+			components.Services = append(components.Services, perceiverSvc)
+		}
+		secure := false
+		if len(p.opssight.Spec.Perceiver.Certificate) > 0 && len(p.opssight.Spec.Perceiver.CertificateKey) > 0 {
+			secure = true
+		}
+		route := p.GetPerceiverOpenShiftRoute("artifactory", secure)
+		if route != nil {
+			components.Routes = append(components.Routes, route)
+		}
+	}
+
+	// Add Quay Perceiver if enabled
+	if p.opssight.Spec.Perceiver.EnableQuayPerceiver {
+		rc, err = p.QuayPerceiverReplicationController()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create quay perceiver")
+		}
+
+		components.ReplicationControllers = append(components.ReplicationControllers, rc)
+		components.Services = append(components.Services, p.QuayPerceiverService())
+		perceiverSvc, err := p.getPerceiverExposeService("quay")
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create quay perceiver service")
+		}
+		if perceiverSvc != nil {
+			components.Services = append(components.Services, perceiverSvc)
+		}
+		secure := false
+		if len(p.opssight.Spec.Perceiver.Certificate) > 0 && len(p.opssight.Spec.Perceiver.CertificateKey) > 0 {
+			secure = true
+		}
+		route := p.GetPerceiverOpenShiftRoute("quay", secure)
+		if route != nil {
+			components.Routes = append(components.Routes, route)
+		}
+	}
+
 	if p.opssight.Spec.Perceiver.EnablePodPerceiver || p.opssight.Spec.Perceiver.EnableImagePerceiver {
 		// Use the same service account
 		//components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
@@ -322,6 +387,21 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	return components, nil
+}
+
+func (p *SpecConfig) getPerceiverExposeService(perceiverName string) (*components.Service, error) {
+	var svc *components.Service
+	var err error
+	switch strings.ToUpper(p.opssight.Spec.Perceiver.Expose) {
+	case util.NODEPORT:
+		svc, err = p.PerceiverNodePortService(perceiverName)
+		break
+	case util.LOADBALANCER:
+		svc, err = p.PerceiverLoadBalancerService(perceiverName)
+		break
+	default:
+	}
+	return svc, err
 }
 
 func (p *SpecConfig) getPerceptorExposeService() (*components.Service, error) {
