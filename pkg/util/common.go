@@ -1240,7 +1240,7 @@ func UpdateRoute(routeClient *routeclient.RouteV1Client, namespace string, route
 
 // GetRouteComponent returns the route component
 func GetRouteComponent(routeClient *routeclient.RouteV1Client, route *api.Route, labels map[string]string) *routev1.Route {
-	return &routev1.Route{
+	componentRoute := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      route.Name,
 			Namespace: route.Namespace,
@@ -1255,6 +1255,10 @@ func GetRouteComponent(routeClient *routeclient.RouteV1Client, route *api.Route,
 			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: route.PortName}},
 		},
 	}
+	if len(route.TLSTerminationType) > 0 {
+		componentRoute.Spec.TLS = &routev1.TLSConfig{Termination: route.TLSTerminationType}
+	}
+	return componentRoute
 }
 
 // CreateRoute creates an OpenShift routes

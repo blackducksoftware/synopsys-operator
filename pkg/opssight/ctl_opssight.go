@@ -59,7 +59,14 @@ type CRSpecBuilderFromCobraFlags struct {
 	ScannerPodReplicaCount                          int
 	ScannerPodImageDirectory                        string
 	PerceiverEnableImagePerceiver                   string
+	PerceiverEnableArtifactoryPerceiver             string
+	PerceiverEnableArtifactoryPerceiverDumper       string
+	PerceiverEnableQuayPerceiver                    string
 	PerceiverEnablePodPerceiver                     string
+	PerceiverArtifactoryExpose                      string
+	PerceiverQuayExpose                             string
+	PerceiverTLSCertificatePath                     string
+	PerceiverTLSKeyPath                             string
 	PerceiverPodPerceiverNamespaceFilter            string
 	PerceiverAnnotationIntervalSeconds              int
 	PerceiverDumpIntervalMinutes                    int
@@ -163,7 +170,14 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Containers for scanning")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in Scanner's pod where images are stored for scanning")
 	cmd.Flags().StringVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "If true, Image Processor discovers images for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverEnableArtifactoryPerceiver, "enable-artifactory-processor", ctl.PerceiverEnableArtifactoryPerceiver, "If true, Artifactory Processor discovers artifactory images for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverEnableArtifactoryPerceiverDumper, "enable-artifactory-processor-dumper", ctl.PerceiverEnableArtifactoryPerceiverDumper, "If true, Artifactory Processor dumps all docker images in an artifactory instance for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverEnableQuayPerceiver, "enable-quay-processor", ctl.PerceiverEnableQuayPerceiver, "If true, Quay Processor discovers quay images for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverArtifactoryExpose, "expose-artifactory-processor", ctl.PerceiverArtifactoryExpose, "Type of service for Artifactory processor [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	cmd.Flags().StringVar(&ctl.PerceiverQuayExpose, "expose-quay-processor", ctl.PerceiverQuayExpose, "Type of service for Quay processor [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	cmd.Flags().StringVar(&ctl.PerceiverTLSCertificatePath, "processor-TLS-certificate-path", ctl.PerceiverTLSCertificatePath, "Accepts certificate file to start webhook receiver with TLS enabled, works in conjunction with Quay and Artifactory processors")
+	cmd.Flags().StringVar(&ctl.PerceiverTLSKeyPath, "processor-TLS-key-path", ctl.PerceiverTLSKeyPath, "Accepts key file to sign the TLS certificate, works in conjunction with Quay and Artifactory processors")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
 	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processor-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
 	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processor-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes Image Processor and Pod Processor wait between creating dumps of data/metrics")
@@ -200,6 +214,18 @@ func (ctl *CRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *pflag.Flag
 	}
 	if FlagWasSet(flagset, "expose-metrics") {
 		isValid := util.IsExposeServiceValid(ctl.PrometheusExpose)
+		if !isValid {
+			return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+		}
+	}
+	if FlagWasSet(flagset, "expose-artifactory-processor") {
+		isValid := util.IsExposeServiceValid(ctl.PerceiverArtifactoryExpose)
+		if !isValid {
+			return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+		}
+	}
+	if FlagWasSet(flagset, "expose-quay-processor") {
+		isValid := util.IsExposeServiceValid(ctl.PerceiverQuayExpose)
 		if !isValid {
 			return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
 		}
@@ -325,6 +351,51 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
 			ctl.opsSightSpec.Perceiver.EnableImagePerceiver = strings.ToUpper(ctl.PerceiverEnableImagePerceiver) == "TRUE"
+		case "enable-artifactory-processor":
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
+			}
+			ctl.opsSightSpec.Perceiver.EnableArtifactoryPerceiver = strings.ToUpper(ctl.PerceiverEnableArtifactoryPerceiver) == "TRUE"
+		case "enable-artifactory-processor-dumper":
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
+			}
+			ctl.opsSightSpec.Perceiver.EnableArtifactoryPerceiverDumper = strings.ToUpper(ctl.PerceiverEnableArtifactoryPerceiverDumper) == "TRUE"
+		case "enable-quay-processor":
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
+			}
+			ctl.opsSightSpec.Perceiver.EnableQuayPerceiver = strings.ToUpper(ctl.PerceiverEnableQuayPerceiver) == "TRUE"
+		case "expose-artifactory-processor":
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
+			}
+			ctl.opsSightSpec.Perceiver.Expose = ctl.PerceiverArtifactoryExpose
+		case "expose-quay-processor":
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
+			}
+			ctl.opsSightSpec.Perceiver.Expose = ctl.PerceiverQuayExpose
+		case "processor-TLS-certificate-path":
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
+			}
+			data, err := util.ReadFileData(ctl.PerceiverTLSCertificatePath)
+			if err != nil {
+				log.Errorf("failed to read certificate file: %+v", err)
+				return
+			}
+			ctl.opsSightSpec.Perceiver.Certificate = data
+		case "processor-TLS-key-path":
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
+			}
+			data, err := util.ReadFileData(ctl.PerceiverTLSKeyPath)
+			if err != nil {
+				log.Errorf("failed to read certificate file: %+v", err)
+				return
+			}
+			ctl.opsSightSpec.Perceiver.CertificateKey = data
 		case "enable-pod-processor":
 			if ctl.opsSightSpec.Perceiver == nil {
 				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}

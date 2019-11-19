@@ -323,11 +323,13 @@ func getOpsSightDefaultValue() *opssightapi.OpsSight {
 				ClientTimeoutMilliseconds:      100000,
 			},
 			Perceiver: &opssightapi.Perceiver{
-				EnableImagePerceiver:      false,
-				EnablePodPerceiver:        true,
-				PodPerceiver:              &opssightapi.PodPerceiver{},
-				AnnotationIntervalSeconds: 30,
-				DumpIntervalMinutes:       30,
+				EnableImagePerceiver:       false,
+				EnableArtifactoryPerceiver: false,
+				EnableQuayPerceiver:        false,
+				EnablePodPerceiver:         true,
+				PodPerceiver:               &opssightapi.PodPerceiver{},
+				AnnotationIntervalSeconds:  30,
+				DumpIntervalMinutes:        30,
 			},
 			ScannerPod: &opssightapi.ScannerPod{
 				ImageFacade: &opssightapi.ImageFacade{
