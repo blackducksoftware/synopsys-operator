@@ -540,7 +540,7 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				blackDuckSpec: &blackduckapi.BlackduckSpec{},
 				PVCFilePath:   "../../examples/synopsysctl/pvc.json",
 			},
-			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "name1", Size: "size1", StorageClass: "storageclass1"}, {Name: "name2", Size: "size2", StorageClass: "storageclass2"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "name1", Size: "10Gi", StorageClass: "storageclass1"}, {Name: "name2", Size: "10Gi", StorageClass: "storageclass2"}}},
 		},
 		// case
 		{

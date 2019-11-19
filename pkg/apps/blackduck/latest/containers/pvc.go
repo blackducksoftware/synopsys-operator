@@ -32,7 +32,6 @@ func (c *Creater) GetPVCs() ([]*components.PersistentVolumeClaim, error) {
 		"blackduck-authentication":   "2Gi",
 		"blackduck-cfssl":            "2Gi",
 		"blackduck-registration":     "2Gi",
-		"blackduck-solr":             "2Gi",
 		"blackduck-webapp":           "2Gi",
 		"blackduck-logstash":         "20Gi",
 		"blackduck-zookeeper":        "4Gi",
