@@ -25,15 +25,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	v1 "k8s.io/api/core/v1"
 	"os"
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -177,7 +176,7 @@ var deletePolarisCmd = &cobra.Command{
 		var content []byte
 		for _, v := range components {
 			// We skip it if it's a PVC
-			if _, ok := v.(*v1.PersistentVolumeClaim); ok {
+			if _, ok := v.(*corev1.PersistentVolumeClaim); ok {
 				continue
 			}
 
@@ -253,6 +252,7 @@ var deletePolarisCmd = &cobra.Command{
 	},
 }
 
+// AskYesNoWithDefault will ask for Yes/No for deleting resources
 func AskYesNoWithDefault(question func() error, alwaysYes bool, reader io.Reader) (bool, error) {
 	if alwaysYes {
 		return alwaysYes, nil

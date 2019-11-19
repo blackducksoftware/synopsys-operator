@@ -40,8 +40,6 @@ import (
 var operatorNamespace = DefaultOperatorNamespace
 var exposeUI = util.NONE
 var synopsysOperatorImage string
-var metricsImage = DefaultMetricsImage
-var exposeMetrics = util.NONE
 var terminationGracePeriodSeconds int64 = 180
 var dryRun = "false"
 var logLevel = "debug"
@@ -253,11 +251,6 @@ var deployCmd = &cobra.Command{
 			return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
 		}
 
-		isValid = util.IsExposeServiceValid(exposeMetrics)
-		if !isValid {
-			cmd.Help()
-			return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -321,13 +314,6 @@ var deployCmd = &cobra.Command{
 			return fmt.Errorf("error deploying Synopsys Operator due to %+v", err)
 		}
 
-		log.Debugf("creating Metrics components")
-		promtheusSpec := soperator.NewPrometheus(operatorNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
-		err = sOperatorCreater.UpdatePrometheus(promtheusSpec)
-		if err != nil {
-			return fmt.Errorf("error deploying metrics due to %s", err)
-		}
-
 		log.Infof("successfully submitted Synopsys Operator into namespace '%s'", operatorNamespace)
 		return nil
 	},
@@ -352,11 +338,6 @@ var deployNativeCmd = &cobra.Command{
 			return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
 		}
 
-		isValid = util.IsExposeServiceValid(exposeMetrics)
-		if !isValid {
-			cmd.Help()
-			return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -404,8 +385,6 @@ func addOperatorDeployFlags(cmd *cobra.Command) {
 	// cmd.Flags().BoolVarP(&isEnabledPrm, "enable-prm", "p", isEnabledPrm, "Enable/Disable Polaris Reporting Module Custom Resource Definition (CRD) in your cluster")
 	cmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "Service type to expose Synopsys Operator's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "Image URL of Synopsys Operator")
-	cmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "x", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
-	cmd.Flags().StringVarP(&metricsImage, "metrics-image", "m", metricsImage, "Image URL of Synopsys Operator's metrics pod")
 	cmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "q", postgresRestartInMins, "Minutes to check for restarting postgres")
 	cmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")
 	cmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "Seconds for resyncing custom resources")
