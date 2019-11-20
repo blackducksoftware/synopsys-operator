@@ -32,6 +32,7 @@ import (
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 
+	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -267,7 +268,7 @@ func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blac
 	log.Debugf("updating spec with user's flags")
 	blackDuckInterface, err := createBlackDuckCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate the spec from the flags: %s", err)
 	}
 
 	// Set Namespace in Spec
@@ -286,6 +287,54 @@ func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blac
 	blackDuck.APIVersion = "synopsys.com/v1"
 
 	return blackDuck, nil
+}
+
+// addPVCValuesToBlackDuckSpec returns the baseBlackDuckSpec with it's PVC values
+func addPVCValuesToBlackDuckSpec(cmd *cobra.Command, blackDuckName string, blackDuckNamespace string, baseBlackDuckSpec *blackduckv1.BlackduckSpec) (*blackduckv1.BlackduckSpec, error) {
+	// Create a Black Duck configuration based on the flags
+	blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update Spec with flags: %+v", err)
+	}
+	// Get the PVCs based on the Black Duck configuration
+	defaultPvcComponentsList, err := getBlackDuckPVCValues(blackDuck)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Black Duck PVC values: %+v", err)
+	}
+	// Add the PVCs to the base Black Duck spec
+	baseBlackDuckSpec.PVC = convertHorizonPVCComponentToBlackDuckPVC(defaultPvcComponentsList)
+	return baseBlackDuckSpec, nil
+}
+
+func getBlackDuckPVCValues(bd *blackduckv1.Blackduck) ([]*components.PersistentVolumeClaim, error) {
+	app, err := getDefaultApp(nativeClusterType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Default App: %+v", err)
+	}
+	defaultPvcComponentsList, err := app.Blackduck().GetComponents(&blackduckv1.Blackduck{Spec: bd.Spec}, blackduckapp.PVCResources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get PVC Components List: %+v", err)
+	}
+	return defaultPvcComponentsList.PersistentVolumeClaims, nil
+}
+
+func convertHorizonPVCComponentToBlackDuckPVC(horizonPVCList []*components.PersistentVolumeClaim) []blackduckv1.PVC {
+	blackDuckPVC := []blackduckv1.PVC{}
+	for _, defaultPvcComponent := range horizonPVCList {
+		defaultPvcComponentResourceQuantitySize := defaultPvcComponent.Spec.Resources.Requests[v1.ResourceStorage]
+		pvc := blackduckv1.PVC{
+			Name: defaultPvcComponent.Name[1:],
+			Size: defaultPvcComponentResourceQuantitySize.String(),
+		}
+		if defaultPvcComponent.Spec.StorageClassName != nil {
+			pvc.StorageClass = *defaultPvcComponent.Spec.StorageClassName
+		}
+		if defaultPvcComponent.Spec.VolumeName != "" {
+			pvc.VolumeName = defaultPvcComponent.Spec.VolumeName
+		}
+		blackDuckPVC = append(blackDuckPVC, pvc)
+	}
+	return blackDuckPVC
 }
 
 // createBlackDuckCmd creates a Black Duck instance
@@ -316,38 +365,25 @@ var createBlackDuckCmd = &cobra.Command{
 		// If mock mode, return and don't create resources
 		if mockMode {
 			log.Debugf("generating CRD for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-			// Get Default CR Spec from the createBlackDuckCobraHelper
+
+			// Update the BlackDuck spec in 'createBlackDuckCobraHelper' with the correct PVC values
 			blackDuckSpecInterface := createBlackDuckCobraHelper.GetCRSpec()
-			blackDuckSpec, _ := blackDuckSpecInterface.(blackduckv1.BlackduckSpec)
-			// Add Default PVCs to the CR Spec
-			app, err := getDefaultApp(nativeClusterType)
+			baseBlackDuckSpec, _ := blackDuckSpecInterface.(blackduckv1.BlackduckSpec)
+			baseBlackDuckSpecWithPVCs, err := addPVCValuesToBlackDuckSpec(cmd, blackDuckName, blackDuckNamespace, &baseBlackDuckSpec)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to add PVCs to Black Duck spec: %+v", err)
 			}
-			defaultPvcComponentsList, err := app.Blackduck().GetComponents(&blackduckv1.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackDuckName, Namespace: blackDuckNamespace}, Spec: blackDuckSpec}, blackduckapp.PVCResources)
+			err = createBlackDuckCobraHelper.SetCRSpec(*baseBlackDuckSpecWithPVCs)
 			if err != nil {
-				return err
+				return fmt.Errorf("error setting Spec with PVC values: %s", err)
 			}
-			defaultPvcList := []blackduckv1.PVC{}
-			for _, defaultPvcComponent := range defaultPvcComponentsList.PersistentVolumeClaims {
-				defaultPvcComponentResourceQuantitySize := defaultPvcComponent.Spec.Resources.Requests[v1.ResourceStorage]
-				pvc := blackduckv1.PVC{
-					Name: defaultPvcComponent.Name,
-					Size: defaultPvcComponentResourceQuantitySize.String(),
-				}
-				defaultPvcList = append(defaultPvcList, pvc)
-			}
-			blackDuckSpec.PVC = defaultPvcList
-			// Put the CR Spec with Default PVCs back into the createBlackDuckCobraHelper
-			err = createBlackDuckCobraHelper.SetCRSpec(blackDuckSpec)
-			if err != nil {
-				return err
-			}
+
 			// Update the CR in createBlackDuckCobraHelper with user's flags
 			blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
 			if err != nil {
 				return err
 			}
+
 			return PrintResource(*blackDuck, mockFormat, false)
 		}
 
