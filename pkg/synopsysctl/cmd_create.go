@@ -663,7 +663,7 @@ var createPolarisCmd = &cobra.Command{
 			return err
 		}
 
-		if err := ensurePolaris(polarisObj, false, true); err != nil {
+		if err := ensurePolaris(polarisObj, false); err != nil {
 			return err
 		}
 

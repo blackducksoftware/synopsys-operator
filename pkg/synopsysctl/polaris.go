@@ -29,7 +29,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,7 +37,7 @@ import (
 // ensurePolaris ensures the Polaris instance in the cluster (creates/updates it)
 // and ensures the Secret that stores the Polaris object specification/
 // This function requires that the global 'namespace' variable is set
-func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganization bool) error {
+func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool) error {
 	oldPolaris, err := getPolarisFromSecret()
 	if err != nil {
 		return err
@@ -117,16 +116,11 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool, createOrganizatio
 	}
 
 	// Organization provision
-	// Only deploy provision components during create operation. This job shouldn't run during update.
-	if createOrganization {
-		if err := kubeClient.BatchV1().Jobs(namespace).Delete("organization-provision-job", &metav1.DeleteOptions{}); err != nil && !apierrs.IsNotFound(err) {
-			return err
-		}
+	if !isUpdate {
 		provisionComponents, err := polaris.GetPolarisProvisionComponents(baseURL, *polarisObj)
 		if err != nil {
 			return err
 		}
-
 		deployments = append(deployments, deploy{name: "Polaris Organization Provision", obj: provisionComponents})
 	}
 
