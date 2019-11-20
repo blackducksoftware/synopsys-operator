@@ -286,7 +286,6 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
-		components.Services = append(components.Services, p.ArtifactoryPerceiverService())
 		perceiverSvc, err := p.getPerceiverExposeService("artifactory")
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create artifactory perceiver service")
@@ -300,6 +299,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		route := p.GetPerceiverOpenShiftRoute("artifactory", secure)
 		if route != nil {
+			components.Services = append(components.Services, p.ArtifactoryPerceiverService())
 			components.Routes = append(components.Routes, route)
 		}
 	}
@@ -312,7 +312,6 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
-		components.Services = append(components.Services, p.QuayPerceiverService())
 		perceiverSvc, err := p.getPerceiverExposeService("quay")
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create quay perceiver service")
@@ -326,6 +325,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		route := p.GetPerceiverOpenShiftRoute("quay", secure)
 		if route != nil {
+			components.Services = append(components.Services, p.QuayPerceiverService())
 			components.Routes = append(components.Routes, route)
 		}
 	}
