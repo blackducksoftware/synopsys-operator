@@ -147,7 +147,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 		}
 
 		if !requestIsUpdatingPolaris {
-			err = ensurePolaris(polarisObj, false, true)
+			err = ensurePolaris(polarisObj, false)
 			if err != nil {
 				errMsg := fmt.Sprintf("error ensuring Polaris: %s", err)
 				log.Errorf(errMsg)
@@ -155,7 +155,7 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 				return
 			}
 		} else {
-			err = ensurePolaris(polarisObj, true, false)
+			err = ensurePolaris(polarisObj, true)
 			if err != nil {
 				errMsg := fmt.Sprintf("error ensuring Polaris: %s", err)
 				log.Errorf(errMsg)
