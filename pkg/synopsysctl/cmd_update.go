@@ -1231,6 +1231,17 @@ var updatePolarisCmd = &cobra.Command{
 		}
 		return nil
 	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		polarisObj, err := getPolarisFromSecret()
+		if err != nil {
+			return err
+		}
+		reportingIsAlreadyEnabled := polarisObj.EnableReporting
+		if cmd.Flags().Changed("reportstorage-size") && reportingIsAlreadyEnabled {
+			return fmt.Errorf("reportstorage-size cannot be changed, you can only set it if you are enabling reporting for the first time")
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		polarisObj, err := getPolarisFromSecret()
 		if err != nil {

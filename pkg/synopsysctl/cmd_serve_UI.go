@@ -138,30 +138,20 @@ func ServeUICmd(cmd *cobra.Command, args []string) error {
 			return
 		}
 
-		err = checkRequiredPolarisRequestFields(pConfig, !requestIsUpdatingPolaris)
+		err = checkPolarisRequestFields(pConfig, oldPolaris, requestIsUpdatingPolaris)
 		if err != nil {
-			errMsg := fmt.Sprintf("missing data to ensure Polaris: %s", err)
+			errMsg := fmt.Sprintf("invalid request fields: %s", err)
 			log.Errorf(errMsg)
 			http.Error(w, errMsg, 422)
 			return
 		}
 
-		if !requestIsUpdatingPolaris {
-			err = ensurePolaris(polarisObj, false)
-			if err != nil {
-				errMsg := fmt.Sprintf("error ensuring Polaris: %s", err)
-				log.Errorf(errMsg)
-				http.Error(w, errMsg, 500)
-				return
-			}
-		} else {
-			err = ensurePolaris(polarisObj, true)
-			if err != nil {
-				errMsg := fmt.Sprintf("error ensuring Polaris: %s", err)
-				log.Errorf(errMsg)
-				http.Error(w, errMsg, 500)
-				return
-			}
+		err = ensurePolaris(polarisObj, requestIsUpdatingPolaris)
+		if err != nil {
+			errMsg := fmt.Sprintf("error ensuring Polaris: %s", err)
+			log.Errorf(errMsg)
+			http.Error(w, errMsg, 500)
+			return
 		}
 
 		log.Infof("successfully ensured Polaris")
@@ -515,9 +505,9 @@ type PolarisUIRequestResponse struct {
 // 	return nil
 // }
 
-// checkRequiredPolarisRequestFields returns an error if a required field is missing from
+// checkPolarisRequestFields returns an error if a required field is missing from
 // a request from the front end UI
-func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestResponse, updating bool) error {
+func checkPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestResponse, oldPolaris *polaris.Polaris, updating bool) error {
 	// Check required UI request fields
 	if polarisUIRequestConfig.Version == "" {
 		return fmt.Errorf("field required: Version")
@@ -582,6 +572,14 @@ func checkRequiredPolarisRequestFields(polarisUIRequestConfig PolarisUIRequestRe
 	}
 	if polarisUIRequestConfig.PostgresPassword == "" {
 		return fmt.Errorf("field required: PostgresPassword")
+	}
+
+	// if updating and reporting size was changed
+	if updating && polarisUIRequestConfig.ReportStorageSize != oldPolaris.ReportingSpec.ReportStorageDetails.Storage.StorageSize {
+		// if enableReporting was not "turned on"
+		if !(polarisUIRequestConfig.EnableReporting == true && oldPolaris.EnableReporting == false) {
+			return fmt.Errorf("reporting size cannot be updated, it can only be set when enabling reporting for the first time")
+		}
 	}
 
 	return nil
