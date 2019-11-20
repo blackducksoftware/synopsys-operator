@@ -373,6 +373,15 @@ var createBlackDuckCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to add PVCs to Black Duck spec: %+v", err)
 			}
+
+			// add versions
+			if len(baseBlackDuckSpecWithPVCs.Version) == 0 {
+				// versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
+				// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+				// TODO: fix the sort logic for Black Duck version
+				baseBlackDuckSpecWithPVCs.Version = "2019.10.1"
+			}
+
 			err = createBlackDuckCobraHelper.SetCRSpec(*baseBlackDuckSpecWithPVCs)
 			if err != nil {
 				return fmt.Errorf("error setting Spec with PVC values: %s", err)
@@ -394,9 +403,10 @@ var createBlackDuckCmd = &cobra.Command{
 
 		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 		if len(blackDuck.Spec.Version) == 0 {
-			versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
-			sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-			blackDuck.Spec.Version = versions[0]
+			// versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
+			// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+			// TODO: fix the sort logic for Black Duck version
+			blackDuck.Spec.Version = "2019.10.1"
 		}
 
 		if isBlackDuckVersionSupportMultipleInstance, _ := util.IsBlackDuckVersionSupportMultipleInstance(blackDuck.Spec.Version); !isBlackDuckVersionSupportMultipleInstance {

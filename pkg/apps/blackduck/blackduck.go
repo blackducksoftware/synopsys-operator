@@ -23,7 +23,6 @@ package blackduck
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
@@ -107,8 +106,9 @@ func (b *Blackduck) ensureVersion(bd *blackduckapi.Blackduck) error {
 	versions := b.Versions()
 	// If the version is not provided, then we set it to be the latest
 	if len(bd.Spec.Version) == 0 {
-		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-		bd.Spec.Version = versions[0]
+		// TODO: fix the sort logic for Black Duck version
+		// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+		bd.Spec.Version = "2019.10.1"
 	} else {
 		// If the verion is provided, check that it's supported
 		for _, v := range versions {

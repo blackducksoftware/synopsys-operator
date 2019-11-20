@@ -45,6 +45,10 @@ var imageTags = map[string]map[string]string{
 		"blackduck-alert": "5.0.0",
 		"blackduck-cfssl": "1.0.0",
 	},
+	"5.0.1": {
+		"blackduck-alert": "5.0.1",
+		"blackduck-cfssl": "1.0.0",
+	},
 }
 
 // GetImageTag returns the url for an image
