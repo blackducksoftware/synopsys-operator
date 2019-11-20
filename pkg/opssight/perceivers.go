@@ -209,8 +209,8 @@ func (p *SpecConfig) PerceiverNodePortService(perceiverName string) (*components
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(3008),
-		TargetPort: fmt.Sprintf("%d", 3008),
+		Port:       int32(3002),
+		TargetPort: fmt.Sprintf("%d", 3002),
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       fmt.Sprintf("port-%s", name),
 	})
@@ -234,8 +234,8 @@ func (p *SpecConfig) PerceiverLoadBalancerService(perceiverName string) (*compon
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(3008),
-		TargetPort: fmt.Sprintf("%d", 3008),
+		Port:       int32(3002),
+		TargetPort: fmt.Sprintf("%d", 3002),
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       fmt.Sprintf("port-%s", name),
 	})
@@ -304,46 +304,12 @@ func (p *SpecConfig) ImagePerceiverService() *components.Service {
 
 // ArtifactoryPerceiverService creates a service for the Artifactory perceiver
 func (p *SpecConfig) ArtifactoryPerceiverService() *components.Service {
-	name := p.names["artifactory-perceiver"]
-	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, name),
-		Namespace: p.opssight.Spec.Namespace,
-		Type:      horizonapi.ServiceTypeServiceIP,
-	})
-
-	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(3007),
-		TargetPort: fmt.Sprintf("%d", 3007),
-		Protocol:   horizonapi.ProtocolTCP,
-		Name:       fmt.Sprintf("port-%s", name),
-	})
-
-	service.AddLabels(map[string]string{"component": name, "app": "opssight", "name": p.opssight.Name})
-	service.AddSelectors(map[string]string{"component": name, "app": "opssight", "name": p.opssight.Name})
-
-	return service
+	return p.perceiverService(p.names["artifactory-perceiver"])
 }
 
 // QuayPerceiverService creates a service for the Quay perceiver
 func (p *SpecConfig) QuayPerceiverService() *components.Service {
-	name := p.names["quay-perceiver"]
-	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, name),
-		Namespace: p.opssight.Spec.Namespace,
-		Type:      horizonapi.ServiceTypeServiceIP,
-	})
-
-	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(3008),
-		TargetPort: fmt.Sprintf("%d", 3008),
-		Protocol:   horizonapi.ProtocolTCP,
-		Name:       fmt.Sprintf("port-%s", name),
-	})
-
-	service.AddLabels(map[string]string{"component": name, "app": "opssight", "name": p.opssight.Name})
-	service.AddSelectors(map[string]string{"component": name, "app": "opssight", "name": p.opssight.Name})
-
-	return service
+	return p.perceiverService(p.names["quay-perceiver"])
 }
 
 func (p *SpecConfig) perceiverServiceAccount(name string) *components.ServiceAccount {

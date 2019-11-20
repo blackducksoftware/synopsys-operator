@@ -292,7 +292,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 		Perceiver: &opssightv1.Perceiver{
 			EnableImagePerceiver:       false,
 			EnableArtifactoryPerceiver: false,
-			EnablePodPerceiver:         true,
+			EnablePodPerceiver:         false,
 			PodPerceiver:               &opssightv1.PodPerceiver{},
 			AnnotationIntervalSeconds:  30,
 			DumpIntervalMinutes:        30,
@@ -351,7 +351,7 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 		Perceiver: &opssightv1.Perceiver{
 			EnableImagePerceiver:       false,
 			EnableArtifactoryPerceiver: false,
-			EnablePodPerceiver:         false,
+			EnablePodPerceiver:         true,
 			PodPerceiver:               &opssightv1.PodPerceiver{},
 			AnnotationIntervalSeconds:  30,
 			DumpIntervalMinutes:        30,
