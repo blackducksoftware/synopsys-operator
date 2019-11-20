@@ -1247,7 +1247,6 @@ func GetRouteComponent(routeClient *routeclient.RouteV1Client, route *api.Route,
 			Labels:    labels,
 		},
 		Spec: routev1.RouteSpec{
-			TLS: &routev1.TLSConfig{Termination: route.TLSTerminationType},
 			To: routev1.RouteTargetReference{
 				Kind: route.Kind,
 				Name: route.ServiceName,
