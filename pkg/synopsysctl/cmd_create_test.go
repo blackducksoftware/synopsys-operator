@@ -39,7 +39,7 @@ func TestAddPVCValuesToBlackDuckSpec(t *testing.T) {
 		blackDuckVersion string
 	}{
 		{
-			name: "BlackDuck v1 with solr",
+			name: "BlackDuck v2 with solr",
 			expectedPVCMap: map[string]string{
 				"blackduck-authentication":   "2Gi",
 				"blackduck-cfssl":            "2Gi",
@@ -54,7 +54,7 @@ func TestAddPVCValuesToBlackDuckSpec(t *testing.T) {
 			blackDuckVersion: "2019.4.0",
 		},
 		{
-			name: "BlackDuck v1 no solr",
+			name: "BlackDuck v2 no solr",
 			expectedPVCMap: map[string]string{
 				"blackduck-authentication":   "2Gi",
 				"blackduck-cfssl":            "2Gi",
@@ -66,6 +66,34 @@ func TestAddPVCValuesToBlackDuckSpec(t *testing.T) {
 				"blackduck-postgres":         "150Gi",
 			},
 			blackDuckVersion: "2019.6.0",
+		},
+		{
+			name: "BlackDuck v1 with solr",
+			expectedPVCMap: map[string]string{
+				"blackduck-authentication": "2Gi",
+				"blackduck-cfssl":          "2Gi",
+				"blackduck-registration":   "2Gi",
+				"blackduck-solr":           "2Gi",
+				"blackduck-webapp":         "2Gi",
+				"blackduck-logstash":       "20Gi",
+				"blackduck-zookeeper":      "4Gi",
+				"blackduck-postgres":       "150Gi",
+			},
+			blackDuckVersion: "2018.12.0",
+		},
+		{
+			name: "BlackDuck latest with no solr",
+			expectedPVCMap: map[string]string{
+				"blackduck-authentication":   "2Gi",
+				"blackduck-cfssl":            "2Gi",
+				"blackduck-registration":     "2Gi",
+				"blackduck-webapp":           "2Gi",
+				"blackduck-logstash":         "20Gi",
+				"blackduck-zookeeper":        "4Gi",
+				"blackduck-uploadcache-data": "100Gi",
+				"blackduck-postgres":         "150Gi",
+			},
+			blackDuckVersion: "2019.8.1",
 		},
 	}
 
