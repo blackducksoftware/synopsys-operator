@@ -122,7 +122,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) err
 func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 
 	// [DEV NOTE:] please organize flags in order of importance
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris you want to install [Example: \"2019.11.1\"]\n")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris you want to install [Example: \"2019.11\"]\n")
 
 	// domain-name specific flags
 	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", GetPolarisDefault().IngressClass, "Name of ingress class")
