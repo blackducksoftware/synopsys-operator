@@ -215,6 +215,12 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 	if p.opssight.Spec.Perceiver.EnableImagePerceiver {
 		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["image-perceiver"]), 3002))
 	}
+	if p.opssight.Spec.Perceiver.EnableArtifactoryPerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["artifactory-perceiver"]), 3007))
+	}
+	if p.opssight.Spec.Perceiver.EnableQuayPerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["quay-perceiver"]), 3008))
+	}
 	if p.opssight.Spec.Perceiver.EnablePodPerceiver {
 		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["pod-perceiver"]), 3002))
 	}
