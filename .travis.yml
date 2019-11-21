@@ -54,7 +54,7 @@ before_install:
   - pwd
   - touch gcp_service_acount_path_file.json
   - touch covery_license_path_file.xml
-  - export NAMESPACE="onprem" && export POLARIS_VERSION="latest" && export GCP_SERVICE_ACCOUNT_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/gcp_service_acount_path_file.json" && export POLARIS_LICENSE_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/polaris_platform_license_path.json" && export COVERITY_LICENSE_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/covery_license_path_file.xml"
+  - export NAMESPACE="onprem" && export POLARIS_VERSION="2019.11" && export GCP_SERVICE_ACCOUNT_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/gcp_service_acount_path_file.json" && export POLARIS_LICENSE_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/polaris_platform_license_path.json" && export COVERITY_LICENSE_PATH="/home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/covery_license_path_file.xml"
   # build synopsysctl and move it into path
   - cd cmd/synopsysctl && go build -v .
   - sudo mv /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl/synopsysctl /usr/local/bin/
