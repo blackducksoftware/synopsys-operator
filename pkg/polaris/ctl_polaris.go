@@ -122,17 +122,18 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) err
 func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 
 	// [DEV NOTE:] please organize flags in order of importance
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris\n")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Polaris you want to install [Example: \"2019.11\"]\n")
 
 	// domain-name specific flags
 	cmd.Flags().StringVar(&ctl.IngressClass, "ingress-class", GetPolarisDefault().IngressClass, "Name of ingress class")
-	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "fqdn", ctl.EnvironmentDNS, "Fully qualified domain name (FQDN) i.e: example.polaris.synopsys.com\n")
+	cmd.Flags().StringVar(&ctl.EnvironmentDNS, "fqdn", ctl.EnvironmentDNS, "Fully qualified domain name [Example: \"example.polaris.synopsys.com\"]\n")
 
 	// license related flags
 	if master {
-		cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Absolute path to the Google Cloud service account given to pull images")
-		cmd.Flags().StringVarP(&ctl.polarisLicensePath, "polaris-license-path", "", ctl.polarisLicensePath, "Absolute path to the given Polaris license")
-		cmd.Flags().StringVarP(&ctl.coverityLicensePath, "coverity-license-path", "", ctl.coverityLicensePath, "Absolute path to the given Coverity license\n")
+		// licenses are not allowed to be changed during update
+		cmd.Flags().StringVar(&ctl.GCPServiceAccount, "gcp-service-account-path", ctl.GCPServiceAccount, "Absolute path to given Google Cloud Platform service account for pulling images")
+		cmd.Flags().StringVarP(&ctl.polarisLicensePath, "polaris-license-path", "", ctl.polarisLicensePath, "Absolute path to given Polaris Platform license")
+		cmd.Flags().StringVarP(&ctl.coverityLicensePath, "coverity-license-path", "", ctl.coverityLicensePath, "Absolute path to given Coverity license\n")
 	}
 
 	// smtp related flags
@@ -154,26 +155,29 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	// if using in-cluster containerized Postgres, then currently we require "enable-postgres-container", "postgres-password" and optionally "postgres-size"
 	// [TODO: make the above point clear to customers]
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "Postgres password")
-	cmd.Flags().BoolVar(&ctl.PostgresInternal, "enable-postgres-container", GetPolarisDefault().PolarisDBSpec.PostgresDetails.IsInternal, "If true, synopsysctl will deploy a postgres container backed by persistent volume in the same namespace as Polaris (Not recommended for production usage)\n")
+	cmd.Flags().BoolVar(&ctl.PostgresInternal, "enable-postgres-container", GetPolarisDefault().PolarisDBSpec.PostgresDetails.IsInternal, "If true, synopsysctl will deploy a postgres container backed by persistent volume (Not recommended for production usage)\n")
 
-	// pvc and size related flags
+	// organization settings are not allowed to be changed during update
 	if master {
-		cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Storage.StorageSize, "Persistent volume claim size to use for postgres. Only applicable if --enable-postgres-container is set to true")
-		cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", GetPolarisDefault().PolarisDBSpec.UploadServerDetails.Storage.StorageSize, "Persistent volume claim size for uploadserver")
-		cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", GetPolarisDefault().PolarisDBSpec.EventstoreDetails.Storage.StorageSize, "Persistent volume claim size for eventstore")
-		cmd.Flags().StringVar(&ctl.MongoDBSize, "mongodb-size", GetPolarisDefault().PolarisDBSpec.MongoDBDetails.Storage.StorageSize, "Persistent volume claim size for mongodb")
-		cmd.Flags().StringVar(&ctl.DownloadServerSize, "downloadserver-size", GetPolarisDefault().PolarisSpec.DownloadServerDetails.Storage.StorageSize, "Persistent volume claim size for downloadserver")
-		cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Set the storage class to use for all persistent volume claims\n")
-
 		cmd.Flags().StringVarP(&ctl.organizationProvisionOrganizationDescription, "organization-description", "", ctl.organizationProvisionOrganizationDescription, "Organization description")
 		cmd.Flags().StringVarP(&ctl.organizationProvisionAdminEmail, "organization-admin-email", "", ctl.organizationProvisionAdminEmail, "Organization admin email")
 		cmd.Flags().StringVarP(&ctl.organizationProvisionAdminName, "organization-admin-name", "", ctl.organizationProvisionAdminName, "Organization admin name")
 		cmd.Flags().StringVarP(&ctl.organizationProvisionAdminUsername, "organization-admin-username", "", ctl.organizationProvisionAdminUsername, "Organization admin username\n")
 	}
 
+	// size parameters are not allowed to change during update because of Kubernetes not allowing storage to be decreased (although note that it does allow it to be increased, see https://kubernetes.io/docs/concepts/storage/persistent-volumes/#expanding-persistent-volumes-claims)
+	if master {
+		cmd.Flags().StringVar(&ctl.EventstoreSize, "eventstore-size", GetPolarisDefault().PolarisDBSpec.EventstoreDetails.Storage.StorageSize, "Persistent volume claim size for eventstore")
+		cmd.Flags().StringVar(&ctl.MongoDBSize, "mongodb-size", GetPolarisDefault().PolarisDBSpec.MongoDBDetails.Storage.StorageSize, "Persistent volume claim size for mongodb")
+		cmd.Flags().StringVar(&ctl.DownloadServerSize, "downloadserver-size", GetPolarisDefault().PolarisSpec.DownloadServerDetails.Storage.StorageSize, "Persistent volume claim size for downloadserver")
+		cmd.Flags().StringVar(&ctl.UploadServerSize, "uploadserver-size", GetPolarisDefault().PolarisDBSpec.UploadServerDetails.Storage.StorageSize, "Persistent volume claim size for uploadserver")
+		cmd.Flags().StringVar(&ctl.PostgresSize, "postgres-size", GetPolarisDefault().PolarisDBSpec.PostgresDetails.Storage.StorageSize, "Persistent volume claim size to use for postgres. Only applicable if --enable-postgres-container is set to true")
+		cmd.Flags().StringVar(&ctl.StorageClass, "storage-class", ctl.StorageClass, "Set the storage class to use for all persistent volume claims\n")
+	}
+
 	// reporting related flags
 	cmd.Flags().BoolVar(&ctl.EnableReporting, "enable-reporting", GetPolarisDefault().EnableReporting, "Enable Reporting Platform")
-	cmd.Flags().StringVar(&ctl.ReportStorageSize, "reportstorage-size", GetPolarisDefault().ReportingSpec.ReportStorageDetails.Storage.StorageSize, "Persistent volume claim size for reportstorage. Only applicable if --enable-reporting is set to true\n")
+	cmd.Flags().StringVar(&ctl.ReportStorageSize, "reportstorage-size", GetPolarisDefault().ReportingSpec.ReportStorageDetails.Storage.StorageSize, "Persistent volume claim size for reportstorage. Only applicable if --enable-reporting is set to true")
 
 	// flags that are add-ons (helpful, but not required to set up an environment
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Docker registry e.g. docker.io/myuser")
