@@ -686,7 +686,7 @@ var createPolarisCmd = &cobra.Command{
 var createPolarisNativeCmd = &cobra.Command{
 	Use:           "native",
 	Example:       "synopsysctl create polaris native",
-	Short:         "Print the Kubernetes resources for creating a Polaris instance",
+	Short:         "Print the Kubernetes resources for creating a Polaris instance \n\nPlease make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview]",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
