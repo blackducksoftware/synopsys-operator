@@ -616,8 +616,8 @@ var createOpsSightNativeCmd = &cobra.Command{
 // createCmd creates a Polaris instance
 var createPolarisCmd = &cobra.Command{
 	Use:           "polaris",
-	Example:       "synopsysctl create polaris -n <namespace>",
-	Short:         "Create a Polaris instance",
+	Example:       "\nRequried flags for setup with external database:\n\n 	synopsysctl create polaris --namespace 'onprem' --version '2019.11.1' --gcp-service-account-path '<PATH>/gcp-service-account-file.json' --polaris-license-path '<PATH>/polaris-license-file.json' --coverity-license-path '<PATH>/coverity-license-file.xml' --fqdn 'example.polaris.com' --smtp-host 'example.smtp.com' --smtp-port 25 --smtp-username 'example' --smtp-password 'example' --smtp-sender-email 'example.email.com' --postgres-host 'example.postgres.com' --postgres-port 5432 --postgres-username 'example' --postgres-password 'example' --organization-description 'Your organization' --organization-admin-email 'example.email.com' --organization-admin-name 'example' --organization-admin-username 'example'",
+	Short:         "Create a Polaris instance \n\nPlease make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview]",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
