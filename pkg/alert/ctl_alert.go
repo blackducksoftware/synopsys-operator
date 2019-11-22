@@ -236,22 +236,19 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 		case "certificate-file-path":
 			data, err := util.ReadFileData(ctl.CertificateFilePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %+v", err)
-				return
+				log.Fatalf("failed to read certificate file: %+v", err)
 			}
 			ctl.alertSpec.Certificate = data
 		case "certificate-key-file-path":
 			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %+v", err)
-				return
+				log.Fatalf("failed to read certificate file: %+v", err)
 			}
 			ctl.alertSpec.CertificateKey = data
 		case "java-keystore-file-path":
 			data, err := util.ReadFileData(ctl.JavaKeyStoreFilePath)
 			if err != nil {
-				log.Errorf("failed to read Java keystore file: %+v", err)
-				return
+				log.Fatalf("failed to read Java keystore file: %+v", err)
 			}
 			ctl.alertSpec.JavaKeyStore = data
 		default:

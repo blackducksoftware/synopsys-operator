@@ -318,14 +318,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			}
 			data, err := util.ReadFileData(ctl.ScannerPodImageFacadeInternalRegistriesFilePath)
 			if err != nil {
-				log.Errorf("failed to read internal registries file: %+v", err)
-				return
+				log.Fatalf("failed to read internal registries file: %+v", err)
 			}
 			registryStructs := []*opssightapi.RegistryAuth{}
 			err = json.Unmarshal([]byte(data), &registryStructs)
 			if err != nil {
-				log.Errorf("failed to unmarshal internal registries: %+v", err)
-				return
+				log.Fatalf("failed to unmarshal internal registries: %+v", err)
 			}
 			ctl.opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = registryStructs
 		case "image-getter-image-puller-type":
@@ -382,8 +380,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			}
 			data, err := util.ReadFileData(ctl.PerceiverTLSCertificatePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %+v", err)
-				return
+				log.Fatalf("failed to read certificate file: %+v", err)
 			}
 			ctl.opsSightSpec.Perceiver.Certificate = data
 		case "processor-TLS-key-path":
@@ -392,8 +389,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			}
 			data, err := util.ReadFileData(ctl.PerceiverTLSKeyPath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %+v", err)
-				return
+				log.Fatalf("failed to read certificate file: %+v", err)
 			}
 			ctl.opsSightSpec.Perceiver.CertificateKey = data
 		case "enable-pod-processor":
@@ -442,14 +438,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			}
 			data, err := util.ReadFileData(ctl.BlackduckExternalHostsFilePath)
 			if err != nil {
-				log.Errorf("failed to read external hosts file: %+v", err)
-				return
+				log.Fatalf("failed to read external hosts file: %+v", err)
 			}
 			hostStructs := []*opssightapi.Host{}
 			err = json.Unmarshal([]byte(data), &hostStructs)
 			if err != nil {
-				log.Errorf("failed to unmarshal internal registry structs: %+v", err)
-				return
+				log.Fatalf("failed to unmarshal internal registry structs: %+v", err)
 			}
 			ctl.opsSightSpec.Blackduck.ExternalHosts = hostStructs
 		case "blackduck-TLS-verification":
