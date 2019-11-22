@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 )
 
 func TestMergeEnvMaps(t *testing.T) {
@@ -229,6 +230,99 @@ func TestGetResourceName(t *testing.T) {
 	}
 }
 
+func TestIsVersionGreaterThanOrEqualTo(t *testing.T) {
+	type args struct {
+		version      string
+		majorRelease int
+		minorRelease time.Month
+		dotRelease   int
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "less version",
+			args: args{
+				version:      "2019.8.0",
+				majorRelease: 2019,
+				minorRelease: time.September,
+				dotRelease:   0,
+			},
+			want: false,
+		},
+		{
+			name: "equal version",
+			args: args{
+				version:      "2019.8.0",
+				majorRelease: 2019,
+				minorRelease: time.August,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater minor version",
+			args: args{
+				version:      "2019.10.0",
+				majorRelease: 2019,
+				minorRelease: time.August,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater dot version",
+			args: args{
+				version:      "2019.10.1",
+				majorRelease: 2019,
+				minorRelease: time.October,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater major version",
+			args: args{
+				version:      "2020.1.0",
+				majorRelease: 2019,
+				minorRelease: time.December,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater major version comparing against greater minor version",
+			args: args{
+				version:      "2020.1.0",
+				majorRelease: 2019,
+				minorRelease: time.August,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater minor version comparing against greater dot release",
+			args: args{
+				version:      "2019.10.0",
+				majorRelease: 2019,
+				minorRelease: time.June,
+				dotRelease:   1,
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := IsVersionGreaterThanOrEqualTo(tt.args.version, tt.args.majorRelease, tt.args.minorRelease, tt.args.dotRelease); got != tt.want {
+				t.Errorf("IsVersionGreaterThanOrEqualTo() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIsNotDefaultVersionGreaterThanOrEqualTo(t *testing.T) {
 	type args struct {
 		version      string
@@ -288,6 +382,26 @@ func TestIsNotDefaultVersionGreaterThanOrEqualTo(t *testing.T) {
 				majorRelease: 5,
 				minorRelease: 0,
 				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater major version comparing against greater minor version",
+			args: args{
+				version:      "6.0.0",
+				majorRelease: 5,
+				minorRelease: 1,
+				dotRelease:   0,
+			},
+			want: true,
+		},
+		{
+			name: "greater minor version comparing against greater dot release",
+			args: args{
+				version:      "5.1.0",
+				majorRelease: 5,
+				minorRelease: 0,
+				dotRelease:   1,
 			},
 			want: true,
 		},
