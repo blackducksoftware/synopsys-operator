@@ -366,14 +366,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 		case "pvc-file-path":
 			data, err := util.ReadFileData(ctl.PVCFilePath)
 			if err != nil {
-				log.Errorf("failed to read pvc file: %+v", err)
-				return
+				log.Fatalf("failed to read pvc file: %+v", err)
 			}
 			pvcs := []blackduckv1.PVC{}
 			err = json.Unmarshal([]byte(data), &pvcs)
 			if err != nil {
-				log.Errorf("failed to unmarshal pvc structs: %+v", err)
-				return
+				log.Fatalf("failed to unmarshal pvc structs: %+v", err)
 			}
 			for _, newPVC := range pvcs {
 				found := false
@@ -391,14 +389,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 		case "node-affinity-file-path":
 			data, err := util.ReadFileData(ctl.NodeAffinityFilePath)
 			if err != nil {
-				log.Errorf("failed to read node affinity file: %+v", err)
-				return
+				log.Fatalf("failed to read node affinity file: %+v", err)
 			}
 			nodeAffinities := map[string][]blackduckv1.NodeAffinity{}
 			err = json.Unmarshal([]byte(data), &nodeAffinities)
 			if err != nil {
-				log.Errorf("failed to unmarshal node affinities: %+v", err)
-				return
+				log.Fatalf("failed to unmarshal node affinities: %+v", err)
 			}
 			ctl.blackDuckSpec.NodeAffinities = nodeAffinities
 		case "postgres-claim-size":
@@ -414,29 +410,25 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 		case "certificate-file-path":
 			data, err := util.ReadFileData(ctl.CertificateFilePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %+v", err)
-				return
+				log.Fatalf("failed to read certificate file: %+v", err)
 			}
 			ctl.blackDuckSpec.Certificate = data
 		case "certificate-key-file-path":
 			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %+v", err)
-				return
+				log.Fatalf("failed to read certificate file: %+v", err)
 			}
 			ctl.blackDuckSpec.CertificateKey = data
 		case "proxy-certificate-file-path":
 			data, err := util.ReadFileData(ctl.ProxyCertificateFilePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %+v", err)
-				return
+				log.Fatalf("failed to read certificate file: %+v", err)
 			}
 			ctl.blackDuckSpec.ProxyCertificate = data
 		case "auth-custom-ca-file-path":
 			data, err := util.ReadFileData(ctl.AuthCustomCAFilePath)
 			if err != nil {
-				log.Errorf("failed to read authCustomCA file: %+v", err)
-				return
+				log.Fatalf("failed to read authCustomCA file: %+v", err)
 			}
 			ctl.blackDuckSpec.AuthCustomCA = data
 		case "type":
