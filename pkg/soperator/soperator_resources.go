@@ -343,6 +343,14 @@ func (specConfig *SpecConfig) getOperatorClusterRole() *horizoncomponents.Cluste
 		Resources: []string{"pods"},
 	})
 
+	if len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.OpsSightCRDName) {
+		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+			Verbs:     []string{"watch"},
+			APIGroups: []string{""},
+			Resources: []string{"pods"},
+		})
+	}
+
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:     []string{"create"},
 		APIGroups: []string{""},
