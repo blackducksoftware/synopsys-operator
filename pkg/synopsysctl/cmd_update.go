@@ -907,8 +907,8 @@ var updateOpsSightCmd = &cobra.Command{
 		}
 
 		// update the namespace label if the version of the app got changed
-		// TODO: when opssight versioning PR is merged, the hard coded 2.2.4 version to be replaced with OpsSight
-		_, err = util.CheckAndUpdateNamespace(kubeClient, util.OpsSightName, opsSightNamespace, opsSightName, "2.2.4", false)
+		// TODO: when opssight versioning PR is merged, the hard coded 2.2.5 version to be replaced with OpsSight
+		_, err = util.CheckAndUpdateNamespace(kubeClient, util.OpsSightName, opsSightNamespace, opsSightName, "2.2.5", false)
 		if err != nil {
 			return err
 		}
