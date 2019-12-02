@@ -25,7 +25,6 @@ require (
 	github.com/onsi/gomega v1.5.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
-	github.com/prometheus/client_golang v1.1.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
@@ -65,7 +64,6 @@ replace (
 	github.com/onsi/gomega => github.com/onsi/gomega v1.4.3
 	github.com/openshift/api => github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go => github.com/openshift/client-go v3.9.0+incompatible
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.1.0
 	github.com/sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra => github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag => github.com/spf13/pflag v1.0.3
