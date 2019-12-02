@@ -92,14 +92,12 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 }
 
 func (h *Handler) handleObjectCreated(obj interface{}) error {
-	recordEvent("objectCreated")
 	h.ObjectUpdated(nil, obj)
 	return nil
 }
 
 // ObjectDeleted will be called for delete opssight events
 func (h *Handler) ObjectDeleted(name string) {
-	recordEvent("objectDeleted")
 	log.Debugf("objectDeleted: %+v", name)
 
 	// if cluster scope, then check whether the OpsSight CRD exist. If not exist, then don't delete the instance
@@ -117,17 +115,14 @@ func (h *Handler) ObjectDeleted(name string) {
 	err := opssightCreator.DeleteOpsSight(name)
 	if err != nil {
 		log.Errorf("unable to delete opssight: %v", err)
-		recordError("unable to delete opssight")
 	}
 }
 
 // ObjectUpdated will be called for update opssight events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	recordEvent("objectUpdated")
 	// log.Debugf("objectUpdated: %+v", objNew)
 	opssight, ok := objNew.(*opssightapi.OpsSight)
 	if !ok {
-		recordError("unable to cast opssight object")
 		log.Error("Unable to cast OpsSight object")
 		return
 	}
@@ -147,7 +142,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	defaultSpec := h.Defaults
 	err = mergo.Merge(&newSpec, defaultSpec)
 	if err != nil {
-		recordError("unable to merge default and new objects")
 		h.updateState(Error, err.Error(), opssight)
 		log.Errorf("unable to merge default and new objects due to %+v", err)
 		return
@@ -160,7 +154,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient, h.IsBlackDuckClusterScope)
 		err = opssightCreator.StopOpsSight(&opssight.Spec)
 		if err != nil {
-			recordError("unable to stop opssight")
 			h.updateState(Error, err.Error(), opssight)
 			log.Errorf("handle object stop: %s", err.Error())
 			return
@@ -168,7 +161,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 
 		_, err = h.updateState(Stopped, "", opssight)
 		if err != nil {
-			recordError("unable to update state")
 			log.Error(errors.Annotate(err, "unable to update stopped state"))
 			return
 		}
@@ -176,7 +168,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient, h.IsBlackDuckClusterScope)
 		err = opssightCreator.UpdateOpsSight(opssight)
 		if err != nil {
-			recordError("unable to update opssight")
 			h.updateState(Error, err.Error(), opssight)
 			log.Errorf("handle object update: %s", err.Error())
 			return
@@ -185,13 +176,11 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		if !strings.EqualFold(opssight.Status.State, string(Running)) {
 			_, err = h.updateState(Running, "", opssight)
 			if err != nil {
-				recordError("unable to update state")
 				log.Error(errors.Annotate(err, "unable to update running state"))
 				return
 			}
 		}
 	default:
-		recordError("unable to find the desired state value")
 		log.Errorf("unable to handle object update due to %+v", fmt.Errorf("desired state value is not expected"))
 		return
 	}
