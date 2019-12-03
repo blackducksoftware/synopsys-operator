@@ -71,7 +71,7 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 		"perceiver-service-account": "processor",
 	}
 	baseImageURL := "docker.io/blackducksoftware"
-	version := "2.2.4"
+	version := "2.2.5"
 	images := map[string]string{
 		"perceptor":             fmt.Sprintf("%s/opssight-core:%s", baseImageURL, version),
 		"pod-perceiver":         fmt.Sprintf("%s/opssight-pod-processor:%s", baseImageURL, version),
