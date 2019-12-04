@@ -180,7 +180,9 @@ func isYearAndMonthGreaterThanOrEqualTo(version string, year int, month time.Mon
 		if err != nil {
 			return false, err
 		}
-		if t.Year() >= year && t.Month() >= month {
+
+		if (t.Year() > year) ||
+			(t.Year() == year && t.Month() >= month) {
 			return true, nil
 		}
 	}

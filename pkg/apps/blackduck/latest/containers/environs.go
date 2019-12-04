@@ -27,6 +27,7 @@ func GetHubKnobs() map[string]string {
 		"IPV4_ONLY":                         "0",
 		"USE_ALERT":                         "0",
 		"USE_BINARY_UPLOADS":                "0",
+		"HUB_SCAN_ALLOW_PARTIAL":            "true",
 		"RABBIT_MQ_PORT":                    "5671",
 		"BROKER_USE_SSL":                    "yes",
 		"SCANNER_CONCURRENCY":               "1",
