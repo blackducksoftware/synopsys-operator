@@ -81,11 +81,11 @@ func (hc *Creater) GetPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 
 	postgres := containerCreater.GetPostgres()
 	if blackduck.Spec.ExternalPostgres == nil {
-		postgresRc, err := postgres.GetPostgresReplicationController()
+		postgresDeployment, err := postgres.GetPostgresDeployment()
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, postgresRc)
+		componentList.Deployments = append(componentList.Deployments, postgresDeployment)
 		componentList.Services = append(componentList.Services, postgres.GetPostgresService())
 	}
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetPostgresConfigmap())
@@ -126,109 +126,109 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	// cfssl
 	imageName := containerCreater.GetImageTag("blackduck-cfssl")
 	if len(imageName) > 0 {
-		cfsslRc, err := containerCreater.GetCfsslDeployment(imageName)
+		cfsslDeployment, err := containerCreater.GetCfsslDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, cfsslRc)
+		componentList.Deployments = append(componentList.Deployments, cfsslDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetCfsslService())
 	}
 
 	// nginx
 	imageName = containerCreater.GetImageTag("blackduck-nginx")
 	if len(imageName) > 0 {
-		nginxRc, err := containerCreater.GetWebserverDeployment(imageName)
+		nginxDeployment, err := containerCreater.GetWebserverDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, nginxRc)
+		componentList.Deployments = append(componentList.Deployments, nginxDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetWebServerService())
 	}
 
 	// documentation
 	imageName = containerCreater.GetImageTag("blackduck-documentation")
 	if len(imageName) > 0 {
-		documentationRc, err := containerCreater.GetDocumentationDeployment(imageName)
+		documentationDeployment, err := containerCreater.GetDocumentationDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, documentationRc)
+		componentList.Deployments = append(componentList.Deployments, documentationDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetDocumentationService())
 	}
 
 	// TODO: solr is not supported in latest (leaving here in case we consolidate the deployers)
 	imageName = containerCreater.GetImageTag("blackduck-solr")
 	if len(imageName) > 0 {
-		solrRc, err := containerCreater.GetSolrDeployment(imageName)
+		solrDeployment, err := containerCreater.GetSolrDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, solrRc)
+		componentList.Deployments = append(componentList.Deployments, solrDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetSolrService())
 	}
 
 	// registration
 	imageName = containerCreater.GetImageTag("blackduck-registration")
 	if len(imageName) > 0 {
-		registrationRc, err := containerCreater.GetRegistrationDeployment(imageName)
+		registrationDeployment, err := containerCreater.GetRegistrationDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, registrationRc)
+		componentList.Deployments = append(componentList.Deployments, registrationDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetRegistrationService())
 	}
 
 	// zookeeper
 	imageName = containerCreater.GetImageTag("blackduck-zookeeper")
 	if len(imageName) > 0 {
-		zookeeperRc, err := containerCreater.GetZookeeperDeployment(imageName)
+		zookeeperDeployment, err := containerCreater.GetZookeeperDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, zookeeperRc)
+		componentList.Deployments = append(componentList.Deployments, zookeeperDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetZookeeperService())
 	}
 
 	// jobRunner
 	imageName = containerCreater.GetImageTag("blackduck-jobrunner")
 	if len(imageName) > 0 {
-		jobRunnerRc, err := containerCreater.GetJobRunnerDeployment(imageName)
+		jobRunnerDeployment, err := containerCreater.GetJobRunnerDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, jobRunnerRc)
+		componentList.Deployments = append(componentList.Deployments, jobRunnerDeployment)
 	}
 
 	// hub-scan
 	imageName = containerCreater.GetImageTag("blackduck-scan")
 	if len(imageName) > 0 {
-		scanRc, err := containerCreater.GetScanDeployment(imageName)
+		scanDeployment, err := containerCreater.GetScanDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, scanRc)
+		componentList.Deployments = append(componentList.Deployments, scanDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetScanService())
 	}
 
 	// hub-authentication
 	imageName = containerCreater.GetImageTag("blackduck-authentication")
 	if len(imageName) > 0 {
-		authRc, err := containerCreater.GetAuthenticationDeployment(imageName)
+		authDeployment, err := containerCreater.GetAuthenticationDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, authRc)
+		componentList.Deployments = append(componentList.Deployments, authDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetAuthenticationService())
 	}
 
 	// webapp-logstash
 	imageName = containerCreater.GetImageTag("blackduck-webapp")
 	if len(imageName) > 0 {
-		webappLogstashRc, err := containerCreater.GetWebappLogstashDeployment(imageName, containerCreater.GetImageTag("blackduck-logstash"))
+		webappLogstashDeployment, err := containerCreater.GetWebappLogstashDeployment(imageName, containerCreater.GetImageTag("blackduck-logstash"))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, webappLogstashRc)
+		componentList.Deployments = append(componentList.Deployments, webappLogstashDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetWebAppService())
 		componentList.Services = append(componentList.Services, containerCreater.GetLogStashService())
 	}
@@ -237,11 +237,11 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	//As part of Black Duck 2019.4.0, upload cache is part of Black Duck
 	imageName = containerCreater.GetImageTag("blackduck-upload-cache")
 	if len(imageName) > 0 {
-		uploadCacheRc, err := containerCreater.GetUploadCacheDeployment(imageName)
+		uploadCacheDeployment, err := containerCreater.GetUploadCacheDeployment(imageName)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, uploadCacheRc)
+		componentList.Deployments = append(componentList.Deployments, uploadCacheDeployment)
 		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
 	}
 
@@ -256,21 +256,21 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		}
 
 		if len(imageName) > 0 {
-			binaryScannerRc, err := containerCreater.GetBinaryScannerDeployment(imageName)
+			binaryScannerDeployment, err := containerCreater.GetBinaryScannerDeployment(imageName)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
-			componentList.ReplicationControllers = append(componentList.ReplicationControllers, binaryScannerRc)
+			componentList.Deployments = append(componentList.Deployments, binaryScannerDeployment)
 		}
 
 		// Rabbitmq
 		imageName = containerCreater.GetImageTag("rabbitmq")
 		if len(imageName) > 0 {
-			rabbitmqRc, err := containerCreater.GetRabbitmqDeployment(imageName)
+			rabbitmqDeployment, err := containerCreater.GetRabbitmqDeployment(imageName)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
-			componentList.ReplicationControllers = append(componentList.ReplicationControllers, rabbitmqRc)
+			componentList.Deployments = append(componentList.Deployments, rabbitmqDeployment)
 			componentList.Services = append(componentList.Services, containerCreater.GetRabbitmqService())
 		}
 	}
