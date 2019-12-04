@@ -28,7 +28,7 @@ import (
 )
 
 // GetRegistrationDeployment will return the registration deployment
-func (c *Creater) GetRegistrationDeployment(imageName string) (*components.ReplicationController, error) {
+func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Deployment, error) {
 	registrationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
@@ -71,8 +71,8 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"), Replicas: util.IntToInt32(1)},
+	return util.CreateDeploymentFromContainer(
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("registration"))
 }
 

@@ -62,8 +62,8 @@ type Postgres struct {
 	ImagePullSecrets              []string
 }
 
-// GetPostgresReplicationController will return the postgres replication controller
-func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationController, error) {
+// GetPostgresDeployment will return the postgres deployment
+func (p *Postgres) GetPostgresDeployment() (*components.Deployment, error) {
 	postgresEnvs := p.getPostgresEnvconfigs()
 	postgresVolumes := p.getPostgresVolumes()
 	postgresVolumeMounts := p.getPostgresVolumeMounts()
@@ -124,7 +124,7 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 	// increase TerminationGracePeriod to better handle pg shutdown
 	pod.Spec.TerminationGracePeriodSeconds = &p.TerminationGracePeriodSeconds
 
-	postgres := util.CreateReplicationController(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
+	postgres := util.CreateDeployment(&horizonapi.DeploymentConfig{Namespace: p.Namespace,
 		Name: p.Name, Replicas: util.IntToInt32(1)}, pod, p.Labels, p.Labels)
 
 	return postgres, nil

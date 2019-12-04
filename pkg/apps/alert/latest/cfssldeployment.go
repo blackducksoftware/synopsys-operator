@@ -31,24 +31,24 @@ import (
 	"github.com/juju/errors"
 )
 
-// getCfsslReplicationController returns a new Replication Controller for a Cffsl
-func (a *SpecConfig) getCfsslReplicationController() (*components.ReplicationController, error) {
+// getCfsslDeployment returns a new Deployment for a Cffsl
+func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
-	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
+	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
 		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
 		Namespace: a.alert.Spec.Namespace,
 	})
-	replicationController.AddSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
+	deployment.AddMatchLabelsSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
 
 	pod, err := a.getCfsslPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pod: %v", err)
 	}
-	replicationController.AddPod(pod)
+	deployment.AddPod(pod)
 
-	replicationController.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
-	return replicationController, nil
+	deployment.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
+	return deployment, nil
 }
 
 // getCfsslPod returns a new Pod for a Cffsl
