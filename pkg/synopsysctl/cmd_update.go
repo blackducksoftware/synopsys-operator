@@ -584,7 +584,7 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 // updateBlackDuckMasterKeyCmd create new Black Duck master key for source code upload in the cluster
 var updateBlackDuckMasterKeyCmd = &cobra.Command{
 	Use:           "masterkey BLACK_DUCK_NAME DIRECTORY_PATH_OF_STORED_MASTER_KEY NEW_SEAL_KEY -n NAMESPACE",
-	Example:       "synopsysctl update blackduck masterkey <new seal key> <Black Duck name> <directory path of the stored master key> -n <namespace>",
+	Example:       "synopsysctl update blackduck masterkey <Black Duck name> <directory path of the stored master key> <new seal key> -n <namespace>",
 	Short:         "Update the master key of the Black Duck instance that is used for source code upload",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -610,7 +610,7 @@ var updateBlackDuckMasterKeyCmd = &cobra.Command{
 // updateBlackDuckMasterKeyNativeCmd create new Black Duck master key for source code upload in the cluster
 var updateBlackDuckMasterKeyNativeCmd = &cobra.Command{
 	Use:           "native BLACK_DUCK_NAME DIRECTORY_PATH_OF_STORED_MASTER_KEY NEW_SEAL_KEY -n NAMESPACE",
-	Example:       "synopsysctl update blackduck masterkey native <new seal key> <Black Duck name> <directory path of the stored master key> -n <namespace>",
+	Example:       "synopsysctl update blackduck masterkey native <Black Duck name> <directory path of the stored master key> <new seal key> -n <namespace>",
 	Short:         "Update the master key of the Black Duck instance that is used for source code upload",
 	SilenceUsage:  true,
 	SilenceErrors: true,
