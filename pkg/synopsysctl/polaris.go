@@ -224,6 +224,7 @@ func ensurePolaris(polarisObj *polaris.Polaris, isUpdate bool) error {
 	return nil
 }
 
+// CheckVersionExists will check whether the Polaris version exist in the GitHub URL
 func CheckVersionExists(baseURL string, version string) error {
 	versions, err := polaris.GetVersions(baseURL)
 	if err != nil {
@@ -236,6 +237,7 @@ func CheckVersionExists(baseURL string, version string) error {
 	return nil
 }
 
+// IsInStringSlice search for a string in a given slice
 func IsInStringSlice(slice []string, search string) bool {
 	for _, v := range slice {
 		if v == search {

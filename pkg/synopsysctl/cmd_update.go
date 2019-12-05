@@ -581,94 +581,136 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 	},
 }
 
-// updateBlackDuckRootKeyCmd create new Black Duck root key for source code upload in the cluster
-var updateBlackDuckRootKeyCmd = &cobra.Command{
-	Use:           "masterkey NEW_SEAL_KEY DIRECTORY_PATH_OF_STORED_MASTER_KEY",
-	Example:       "synopsysctl update blackduck masterkey <new seal key> <directory path of the stored master keys> -n <synopsys-operator-namespace>",
-	Short:         "Update the master key for all Black Duck instances for source code upload functionality for the given synopsys operator instance",
+// updateBlackDuckMasterKeyCmd create new Black Duck master key for source code upload in the cluster
+var updateBlackDuckMasterKeyCmd = &cobra.Command{
+	Use:           "masterkey BLACK_DUCK_NAME DIRECTORY_PATH_OF_STORED_MASTER_KEY NEW_SEAL_KEY -n NAMESPACE",
+	Example:       "synopsysctl update blackduck masterkey <new seal key> <Black Duck name> <directory path of the stored master key> -n <namespace>",
+	Short:         "Update the master key of the Black Duck instance that is used for source code upload",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
+		if len(args) != 3 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 2 arguments")
+			return fmt.Errorf("this command takes 3 arguments")
 		}
 
-		if len(namespace) == 0 {
-			cmd.Help()
-			return fmt.Errorf("synopsys operator namespace is required")
-		}
-
-		if len(args[0]) != 32 {
+		if len(args[2]) != 32 {
 			return fmt.Errorf("new seal key should be of length 32")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		_, crdnamespace, crdScope, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
+		if err := updateMasterKey(namespace, args[0], args[1], args[2], false); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+// updateBlackDuckMasterKeyNativeCmd create new Black Duck master key for source code upload in the cluster
+var updateBlackDuckMasterKeyNativeCmd = &cobra.Command{
+	Use:           "native BLACK_DUCK_NAME DIRECTORY_PATH_OF_STORED_MASTER_KEY NEW_SEAL_KEY -n NAMESPACE",
+	Example:       "synopsysctl update blackduck masterkey native <new seal key> <Black Duck name> <directory path of the stored master key> -n <namespace>",
+	Short:         "Update the master key of the Black Duck instance that is used for source code upload",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 3 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 3 arguments")
+		}
+
+		if len(args[2]) != 32 {
+			return fmt.Errorf("new seal key should be of length 32")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := updateMasterKey(namespace, args[0], args[1], args[2], true); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+// updateMasterKey updates the master key and encoded with new seal key
+func updateMasterKey(namespace string, name string, oldMasterKeyFilePath string, newSealKey string, isNative bool) error {
+
+	// getting the seal key secret to retrieve the seal key
+	secret, err := util.GetSecret(kubeClient, namespace, fmt.Sprintf("%s-blackduck-upload-cache", name))
+	if err != nil {
+		return fmt.Errorf("unable to find Seal key secret (%s-blackduck-upload-cache) in namespace '%s' due to %+v", name, namespace, err)
+	}
+
+	// retrieve the Black Duck configmap
+	cm, err := util.GetConfigMap(kubeClient, namespace, fmt.Sprintf("%s-blackduck-config", name))
+	if err != nil {
+		return fmt.Errorf("unable to find Black Duck config map (%s-blackduck-config) in namespace '%s' due to %+v", name, namespace, err)
+	}
+
+	log.Infof("updating Black Duck '%s's master key in namespace '%s'...", name, namespace)
+
+	// read the old master key
+	fileName := filepath.Join(oldMasterKeyFilePath, fmt.Sprintf("%s-%s.key", namespace, name))
+	masterKey, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return fmt.Errorf("error reading the master key from file '%s' due to %+v", fileName, err)
+	}
+
+	// Filter the upload cache pod to get the root key using the seal key
+	uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, util.GetResourceName(name, util.BlackDuckName, "uploadcache"))
+	if err != nil {
+		return fmt.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", namespace, err)
+	}
+
+	// Create the exec into Kubernetes pod request
+	req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
+	uploadCache := "uploadcache"
+	if isVersionGreaterThanorEqualTo, err := util.IsVersionGreaterThanOrEqualTo(cm.Data["HUB_VERSION"], 2019, time.August, 0); err == nil && isVersionGreaterThanorEqualTo {
+		uploadCache = util.GetResourceName(name, util.BlackDuckName, "uploadcache")
+	}
+
+	_, err = util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://%s:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(newSealKey)), masterKey, uploadCache)})
+	if err != nil {
+		return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", namespace, err)
+	}
+
+	log.Infof("successfully updated the master key in the upload cache container of Black Duck '%s' in namespace '%s'", name, namespace)
+
+	if isNative {
+		// update the new seal key
+		secret.Data["SEAL_KEY"] = []byte(newSealKey)
+		_, err = util.UpdateSecret(kubeClient, namespace, secret)
+		if err != nil {
+			return fmt.Errorf("unable to update Seal key secret (%s-blackduck-upload-cache) in namespace '%s' due to %+v", name, namespace, err)
+		}
+
+		log.Infof("successfully updated the seal key secret for Black Duck '%s' in namespace '%s'", name, namespace)
+
+		// delete the upload cache pod
+		err = util.DeletePod(kubeClient, namespace, uploadCachePod.Name)
+		if err != nil {
+			return fmt.Errorf("unable to delete an upload cache pod in namespace '%s' due to %+v", namespace, err)
+		}
+
+		log.Infof("successfully deleted an upload cache pod for Black Duck '%s' in namespace '%s' to reflect the new seal key. Wait for upload cache pod to restart to resume the source code upload", name, namespace)
+	} else {
+		_, crdnamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, name)
 		if err != nil {
 			return err
 		}
-
-		operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, util.BlackDuckCRDName, crdScope, namespace)
+		currBlackDuck, err := util.GetBlackduck(blackDuckClient, crdnamespace, name, metav1.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", name, namespace, err)
 		}
-
-		newSealKey := args[0]
-		filePath := args[1]
-
-		blackDucks, err := util.ListBlackduck(blackDuckClient, crdnamespace, metav1.ListOptions{})
+		currBlackDuck.Spec.SealKey = util.Base64Encode([]byte(newSealKey))
+		_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck)
 		if err != nil {
-			return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", operatorNamespace, err)
+			return fmt.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", name, namespace, err)
 		}
-
-		secret, err := util.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
-		if err != nil {
-			return fmt.Errorf("unable to find Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
-		}
-
-		for _, blackDuck := range blackDucks.Items {
-			blackDuckName := blackDuck.Name
-			blackDuckNamespace := blackDuck.Spec.Namespace
-			log.Infof("updating Black Duck '%s's master key in namespace '%s'...", blackDuckName, blackDuckNamespace)
-
-			fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
-			masterKey, err := ioutil.ReadFile(fileName)
-			if err != nil {
-				return fmt.Errorf("error reading the master key from file '%s' due to %+v", fileName, err)
-			}
-
-			// Filter the upload cache pod to get the root key using the seal key
-			uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache"))
-			if err != nil {
-				return fmt.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", blackDuckNamespace, err)
-			}
-
-			// Create the exec into Kubernetes pod request
-			req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
-			uploadCache := "uploadcache"
-			if isVersionGreaterThanorEqualTo, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.August, 0); err == nil && isVersionGreaterThanorEqualTo {
-				uploadCache = util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache")
-			}
-
-			_, err = util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://%s:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(newSealKey)), masterKey, uploadCache)})
-			if err != nil {
-				return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", blackDuckNamespace, err)
-			}
-
-			log.Infof("successfully submitted updates to Black Duck '%s's master key in namespace '%s'", blackDuckName, operatorNamespace)
-		}
-
-		secret.Data["SEAL_KEY"] = []byte(newSealKey)
-
-		_, err = util.UpdateSecret(kubeClient, operatorNamespace, secret)
-		if err != nil {
-			return fmt.Errorf("unable to update Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
-		}
-
-		return nil
-	},
+		log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'. Wait for upload cache pod to restart to resume the source code upload", name, namespace)
+	}
+	return nil
 }
 
 func updateBlackDuckAddEnviron(bd *blackduckapi.Blackduck, environ string) (*blackduckapi.Blackduck, error) {
@@ -1311,8 +1353,11 @@ func init() {
 	addNativeFormatFlag(updateBlackDuckNativeCmd)
 	updateBlackDuckCmd.AddCommand(updateBlackDuckNativeCmd)
 
-	// updateBlackDuckRootKeyCmd
-	updateBlackDuckCmd.AddCommand(updateBlackDuckRootKeyCmd)
+	// updateBlackDuckMasterKeyCmd
+	updateBlackDuckCmd.AddCommand(updateBlackDuckMasterKeyCmd)
+
+	// updateBlackDuckMasterKeyNativeCmd
+	updateBlackDuckMasterKeyCmd.AddCommand(updateBlackDuckMasterKeyNativeCmd)
 
 	// updateBlackDuckAddEnvironCmd
 	addMockFlag(updateBlackDuckAddEnvironCmd)
