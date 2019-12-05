@@ -80,6 +80,7 @@ type CRSpecBuilderFromCobraFlags struct {
 	Registry                      string
 	RegistryNamespace             string
 	PullSecrets                   []string
+	SealKey                       string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -200,7 +201,9 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.NodeAffinityFilePath, "node-affinity-file-path", ctl.NodeAffinityFilePath, "Absolute path to a file containing a list of node affinities")
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
-
+	if master {
+		cmd.Flags().StringVar(&ctl.SealKey, "seal-key", ctl.SealKey, "Seal key to encrypt the master key when Source code upload is enabled and it should be of length 32")
+	}
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
 }
@@ -242,6 +245,11 @@ func (ctl *CRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *pflag.Flag
 	if FlagWasSet(flagset, "migration-mode") {
 		if val, _ := flagset.GetBool("migration-mode"); !val {
 			return fmt.Errorf("--migration-mode cannot be set to false")
+		}
+	}
+	if FlagWasSet(flagset, "seal-key") {
+		if len(ctl.SealKey) != 32 {
+			return fmt.Errorf("seal key should be of length 32")
 		}
 	}
 	return nil
@@ -459,6 +467,8 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.blackDuckSpec.RegistryConfiguration = &api.RegistryConfiguration{}
 			}
 			ctl.blackDuckSpec.RegistryConfiguration.PullSecrets = ctl.PullSecrets
+		case "seal-key":
+			ctl.blackDuckSpec.SealKey = util.Base64Encode([]byte(ctl.SealKey))
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}

@@ -109,7 +109,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
 
 	//Secrets
-	// nginx certificatea
+	// nginx certificate
 	cert, key, _ := hc.getTLSCertKeyOrCreate(blackduck)
 	if !hc.config.DryRun {
 		secret, err := util.GetSecret(hc.kubeClient, hc.config.Namespace, "blackduck-secret")
@@ -117,7 +117,17 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 			log.Errorf("unable to find Synopsys Operator blackduck-secret in %s namespace due to %+v", hc.config.Namespace, err)
 			return nil, err
 		}
-		componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(cert, key, secret.Data["SEAL_KEY"])...)
+
+		// if Black Duck instance level Seal Key is provided, then use it else use the operator level seal key
+		sealKey := secret.Data["SEAL_KEY"]
+		if len(blackduck.Spec.SealKey) > 0 {
+			sealKeyStr, err := util.Base64Decode(blackduck.Spec.SealKey)
+			if err != nil {
+				return nil, fmt.Errorf("%v: unable to decode seal key due to: %+v", blackduck.Spec.Namespace, err)
+			}
+			sealKey = []byte(sealKeyStr)
+		}
+		componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(cert, key, sealKey)...)
 	} else {
 		componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(cert, key, []byte{})...)
 	}
