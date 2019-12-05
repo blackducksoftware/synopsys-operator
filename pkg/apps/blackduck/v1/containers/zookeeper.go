@@ -28,7 +28,7 @@ import (
 )
 
 // GetZookeeperDeployment will return the zookeeper deployment
-func (c *Creater) GetZookeeperDeployment(imageName string) (*components.ReplicationController, error) {
+func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Deployment, error) {
 
 	volumeMounts := c.getZookeeperVolumeMounts()
 
@@ -68,8 +68,8 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 
-	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"), Replicas: util.IntToInt32(1)},
+	return util.CreateDeploymentFromContainer(
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("zookeeper"))
 }
 

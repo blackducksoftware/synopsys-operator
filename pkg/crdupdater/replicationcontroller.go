@@ -141,7 +141,6 @@ func (r *ReplicationController) remove() error {
 // replicationControllerComparator used to compare Replication controller attributes
 type replicationControllerComparator struct {
 	Image          string
-	Replicas       *int32
 	MinCPU         *resource.Quantity
 	MaxCPU         *resource.Quantity
 	MinMem         *resource.Quantity
@@ -153,11 +152,6 @@ type replicationControllerComparator struct {
 // patch patches the replication controller
 func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, error) {
 	replicationController := rc.(*components.ReplicationController)
-
-	// if the replicas changed, then set the isUpdateReplica to true
-	if *r.oldReplicationControllers[replicationController.GetName()].Spec.Replicas != *r.newReplicationControllers[replicationController.GetName()].Spec.Replicas {
-		return r.patchRC(r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()], true)
-	}
 
 	// if there is any configuration change, irrespective of comparing any changes, patch the replication controller
 	if isPatched && !r.config.dryRun {
@@ -172,7 +166,6 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 				(!reflect.DeepEqual(
 					replicationControllerComparator{
 						Image:          oldContainer.Image,
-						Replicas:       r.oldReplicationControllers[replicationController.GetName()].Spec.Replicas,
 						MinCPU:         oldContainer.Resources.Requests.Cpu(),
 						MaxCPU:         oldContainer.Resources.Limits.Cpu(),
 						MinMem:         oldContainer.Resources.Requests.Memory(),
@@ -182,7 +175,6 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 					},
 					replicationControllerComparator{
 						Image:          newContainer.Image,
-						Replicas:       r.newReplicationControllers[replicationController.GetName()].Spec.Replicas,
 						MinCPU:         newContainer.Resources.Requests.Cpu(),
 						MaxCPU:         newContainer.Resources.Limits.Cpu(),
 						MinMem:         newContainer.Resources.Requests.Memory(),
@@ -209,6 +201,12 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 	if isChanged {
 		return r.patchRC(r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()], false)
 	}
+
+	// if the replicas changed, then set the isUpdateReplica to true
+	if *r.oldReplicationControllers[replicationController.GetName()].Spec.Replicas != *r.newReplicationControllers[replicationController.GetName()].Spec.Replicas {
+		return r.patchRC(r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()], true)
+	}
+
 	return false, nil
 }
 
