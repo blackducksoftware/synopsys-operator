@@ -362,6 +362,10 @@ func (v BlackducksResource) postSubmit(c buffalo.Context, blackduck *blackduckap
 		}
 	}
 
+	if len(blackduck.Spec.SealKey) > 0 {
+		blackduck.Spec.SealKey = util.Base64Encode([]byte(blackduck.Spec.SealKey))
+	}
+
 	// Change back to nil if the configuration is empty
 	if *blackduck.Spec.ExternalPostgres == (blackduckapi.PostgresExternalDBConfig{}) {
 		blackduck.Spec.ExternalPostgres = nil
