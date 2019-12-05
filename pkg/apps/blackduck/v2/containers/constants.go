@@ -22,24 +22,32 @@ under the License.
 package containers
 
 const (
-	// SHARED VALUES
-	cfsslMemoryLimit           = "640M"
-	logstashMemoryLimit        = "1G"
-	registrationMemoryLimit    = "1G"
-	zookeeperMemoryLimit       = "640M"
-	authenticationMemoryLimit  = "1024M"
-	authenticationHubMaxMemory = "512m"
-	documentationMemoryLimit   = "512M"
-	binaryScannerMemoryLimit   = "2048M"
-	rabbitmqMemoryLimit        = "1024M"
-	uploadCacheMemoryLimit     = "512M"
 
-	registrationMinCPUUsage  = "1"
-	zookeeperMinCPUUsage     = "1"
-	jobRunnerMinCPUUsage     = "1"
-	jobRunnerMaxCPUUsage     = "1"
-	binaryScannerMinCPUUsage = "1"
-	binaryScannerMaxCPUUsage = "1"
+	// SOURCE: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+	// cpu: 1000m means 1 CPU
+	// mem: Mi means (2**20)
+	// hubMaxMemory: this is the environment variable HUB_MAX_MEMORY passed to the container and eventually passed to JVM
+
+	// [FIX ME]: NONE OF THIS IS TESTED/INSTRUMENTED/PERFORMANCE VERIFIED, BASICALLY SOME DUDES JUST BALL PARKED SOME NUMBERS
+
+	// SHARED VALUES
+	cfsslMemoryLimit           = "640Mi"
+	logstashMemoryLimit        = "1Gi"
+	registrationMemoryLimit    = "1Gi"
+	zookeeperMemoryLimit       = "640Mi"
+	authenticationMemoryLimit  = "1024Mi"
+	authenticationHubMaxMemory = "512m"
+	documentationMemoryLimit   = "512Mi"
+	binaryScannerMemoryLimit   = "2048Mi"
+	rabbitmqMemoryLimit        = "1024Mi"
+	uploadCacheMemoryLimit     = "512Mi"
+
+	registrationMinCPUUsage  = "1000m"
+	zookeeperMinCPUUsage     = "1000m"
+	jobRunnerMinCPUUsage     = "1000m"
+	jobRunnerMaxCPUUsage     = "1000m"
+	binaryScannerMinCPUUsage = "1000m"
+	binaryScannerMaxCPUUsage = "1000m"
 
 	// Ports
 	cfsslPort          = int32(8888)
@@ -61,82 +69,82 @@ const (
 	uploadCachePort2  = int32(9444)
 
 	// Small Flavor
-	smallWebServerMemoryLimit = "512M"
+	smallWebServerMemoryRequestsAndLimits = "512Mi"
 
-	smallSolrMemoryLimit = "640M"
+	smallSolrMemoryRequestsAndLimits = "640Mi"
 
-	smallWebappCPULimit     = "1"
-	smallWebappMemoryLimit  = "2560M"
-	smallWebappHubMaxMemory = "2048m"
+	smallWebappLogstashCpuRequests             = "1000m"  // 1000m means 1 CPU
+	smallWebappLogstashMemoryRequestsAndLimits = "2560Mi" // currently, we are using the same for both requests and limits; Mi means (2**20)
+	smallWebappLogstashHubMaxMemoryEnvVar      = "2048m"  // this is the environment variable HUB_MAX_MEMORY passed to the container and eventually passed to JVM
 
-	smallScanReplicas     = 1
-	smallScanMemoryLimit  = "2560M"
-	smallScanHubMaxMemory = "2048m"
+	smallScanReplicas                = 1
+	smallScanMemoryRequestsAndLimits = "2560Mi"
+	smallScanHubMaxMemoryEnvVar      = "2048m"
 
-	smallJobRunnerReplicas     = 1
-	smallJobRunnerMemoryLimit  = "4608M"
-	smallJobRunnerHubMaxMemory = "4096m"
+	smallJobRunnerReplicas           = 1
+	smallJobRunnerMemoryLimit        = "4608Mi" // currently, we are using the same for both requests and limits; Mi means (2**20)
+	smallJobRunnerHubMaxMemoryEnvVar = "4096m"  // this is the environment variable HUB_MAX_MEMORY passed to the container and eventually passed to JVM
 
-	smallPostgresCPULimit    = "1"
-	smallPostgresMemoryLimit = "3072M"
+	smallPostgresCpuRequests             = "1000m"  // 1000m means 1 CPU
+	smallPostgresMemoryRequestsAndLimits = "3072Mi" // currently, we are using the same for both requests and limits; Mi means (2**20)
 
 	// Medium Flavor
-	mediumWebServerMemoryLimit = "2048M"
+	mediumWebServerMemoryRequestsAndLimits = "2048Mi"
 
-	mediumSolrMemoryLimit = "1024M"
+	mediumSolrMemoryRequestsAndLimits = "1024Mi"
 
-	mediumWebappCPULimit     = "2"
-	mediumWebappMemoryLimit  = "5120M"
-	mediumWebappHubMaxMemory = "4096m"
+	mediumWebappLogstashCpuRequests             = "2000m"
+	mediumWebappLogstashMemoryRequestsAndLimits = "5120Mi"
+	mediumWebappLogstashHubMaxMemoryEnvVar      = "4096m"
 
-	mediumScanReplicas     = 2
-	mediumScanMemoryLimit  = "5120M"
-	mediumScanHubMaxMemory = "4096m"
+	mediumScanReplicas                = 2
+	mediumScanMemoryRequestsAndLimits = "5120Mi"
+	mediumScanHubMaxMemoryEnvVar      = "4096m"
 
-	mediumJobRunnerReplicas     = 4
-	mediumJobRunnerMemoryLimit  = "7168M"
-	mediumJobRunnerHubMaxMemory = "6144m"
+	mediumJobRunnerReplicas                = 4
+	mediumJobRunnerMemoryRequestsAndLimits = "7168Mi"
+	mediumJobRunnerHubMaxMemoryEnvVar      = "6144m"
 
-	mediumPostgresCPULimit    = "2"
-	mediumPostgresMemoryLimit = "8192M"
+	mediumPostgresCpuRequests             = "2000m"
+	mediumPostgresMemoryRequestsAndLimits = "8192Mi"
 
 	// Large Flavor
-	largeWebServerMemoryLimit = "2048M"
+	largeWebServerMemoryRequestsAndLimits = "2048Mi"
 
-	largeSolrMemoryLimit = "1024M"
+	largeSolrMemoryRequestsAndLimits = "1024Mi"
 
-	largeWebappCPULimit     = "2"
-	largeWebappMemoryLimit  = "9728M"
-	largeWebappHubMaxMemory = "8192m"
+	largeWebappLogstashCpuRequests             = "2000m"
+	largeWebappLogstashMemoryRequestsAndLimits = "9728Mi"
+	largeWebappLogstashHubMaxMemoryEnvVar      = "8192m"
 
-	largeScanReplicas     = 3
-	largeScanMemoryLimit  = "9728M"
-	largeScanHubMaxMemory = "8192m"
+	largeScanReplicas                = 3
+	largeScanMemoryRequestsAndLimits = "9728Mi"
+	largeScanHubMaxMemoryEnvVar      = "8192m"
 
-	largeJobRunnerReplicas     = 6
-	largeJobRunnerMemoryLimit  = "13824M"
-	largeJobRunnerHubMaxMemory = "12288m"
+	largeJobRunnerReplicas                = 6
+	largeJobRunnerMemoryRequestsAndLimits = "13824Mi"
+	largeJobRunnerHubMaxMemoryEnvVar      = "12288m"
 
-	largePostgresCPULimit    = "2"
-	largePostgresMemoryLimit = "12288M"
+	largePostgresCpuRequests             = "2000m"
+	largePostgresMemoryRequestsAndLimits = "12288Mi"
 
 	// XLarge Flavor
-	xLargeWebServerMemoryLimit = "2048M"
+	xLargeWebServerMemoryRequestsAndLimits = "2048Mi"
 
-	xLargeSolrMemoryLimit = "1024M"
+	xLargeSolrMemoryRequestsAndLimits = "1024Mi"
 
-	xLargeWebappCPULimit     = "3"
-	xLargeWebappMemoryLimit  = "19728M"
-	xLargeWebappHubMaxMemory = "8192m"
+	xLargeWebappLogstashCpuRequests             = "3000m"
+	xLargeWebappLogstashMemoryRequestsAndLimits = "19728Mi"
+	xLargeWebappLogstashHubMaxMemoryEnvVar      = "8192m"
 
-	xLargeScanReplicas     = 5
-	xLargeScanMemoryLimit  = "9728M"
-	xLargeScanHubMaxMemory = "8192m"
+	xLargeScanReplicas                = 5
+	xLargeScanMemoryRequestsAndLimits = "9728Mi"
+	xLargeScanHubMaxMemoryEnvVar      = "8192m"
 
-	xLargeJobRunnerReplicas     = 10
-	xLargeJobRunnerMemoryLimit  = "13824M"
-	xLargeJobRunnerHubMaxMemory = "12288m"
+	xLargeJobRunnerReplicas                = 10
+	xLargeJobRunnerMemoryRequestsAndLimits = "13824Mi"
+	xLargeJobRunnerHubMaxMemoryEnvVar      = "12288m"
 
-	xLargePostgresCPULimit    = "3"
-	xLargePostgresMemoryLimit = "12288M"
+	xLargePostgresCpuRequests             = "3000m"
+	xLargePostgresMemoryRequestsAndLimits = "12288Mi"
 )
