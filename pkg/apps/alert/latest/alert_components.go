@@ -51,11 +51,11 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	// Add alert components
 	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
 
-	rc, err := a.getAlertReplicationController()
+	dc, err := a.getAlertDeployment()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Alert Replication Controller: %s", err)
+		return nil, fmt.Errorf("failed to create Alert Deployment: %s", err)
 	}
-	components.ReplicationControllers = append(components.ReplicationControllers, rc)
+	components.Deployments = append(components.Deployments, dc)
 
 	service := a.getAlertClusterService()
 	components.Services = append(components.Services, service)
@@ -95,11 +95,11 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 
 	// Add cfssl if running in stand alone mode
 	if *a.alert.Spec.StandAlone {
-		rc, err := a.getCfsslReplicationController()
+		dc, err := a.getCfsslDeployment()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create Cfssl Replication Controller: %v", err)
+			return nil, fmt.Errorf("failed to create Cfssl Deployment: %v", err)
 		}
-		components.ReplicationControllers = append(components.ReplicationControllers, rc)
+		components.Deployments = append(components.Deployments, dc)
 		components.Services = append(components.Services, a.getCfsslService())
 	}
 
