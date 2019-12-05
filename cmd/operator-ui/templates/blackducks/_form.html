@@ -25,6 +25,7 @@
 
     <%= f.CheckboxTag("Spec.Environs-USE_BINARY_UPLOADS", {value: false, label:"Use Binary Uploads", onchange:"updateEnvironFromCB('USE_BINARY_UPLOADS', 'int', false)"}) %>
     <%= f.CheckboxTag("Spec.Environs-ENABLE_SOURCE_UPLOADS", {value: false, label: "Enable Source Uploads", onchange:"updateEnvironFromCB('ENABLE_SOURCE_UPLOADS', 'bool', false)"}) %>
+    <%= f.InputTag("Spec.SealKey", {value: blackduck.Spec.SealKey, label: "Seal key to encrypt the master key when Source code upload is enabled (32 characters)", minlength: "32", maxlength: "32"}) %>
     <%= f.CheckboxTag("Spec.LivenessProbes", {value: blackduck.Spec.LivenessProbes, label: "Liveness Probes"}) %>
     <%= f.CheckboxTag("Spec.PersistentStorage", {value: blackduck.Spec.PersistentStorage, label: "Persistent Storage", onchange: "checkPVC()"}) %>
     <%= f.SelectTag("Spec.DbPrototype", {options: blackduck.View.Clones, value: blackduck.Spec.DbPrototype, label: "Clone DB"}) %>
@@ -260,6 +261,7 @@
     }
     if (document.getElementById("blackduck-Name") != null && document.getElementById("blackduck-Name").value != "") {
       document.getElementById("blackduck-Name").setAttribute("readonly", "readonly")
+      document.getElementById("blackduck-Spec.SealKey").setAttribute("readonly", "readonly")
       document.getElementById("blackduck-Spec.DbPrototype").setAttribute("readonly", "readonly")
       if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
         document.getElementById("blackduck-Spec.PersistentStorage").setAttribute("readonly", "readonly")
@@ -393,8 +395,6 @@
         containerTags.add(opt);
       }
     };
-
-
   }
 
   function toggleDbCheckbox(element) {
