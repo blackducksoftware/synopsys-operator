@@ -446,40 +446,6 @@ var updateAlertCmd = &cobra.Command{
 	},
 }
 
-// updateAlertNativeCmd prints the Kubernetes resources with updates to an Alert instance
-var updateAlertNativeCmd = &cobra.Command{
-	Use:           "native NAME",
-	Example:       "synopsysctl update alert native <name> --port 80\nsynopsysctl update alert native <name> -n <namespace> --port 80\nsynopsysctl update alert native <name> -o yaml",
-	Short:         "Print the Kubernetes resources with updates to an Alert instance",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName := args[0]
-		alertNamespace, crdnamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
-		if err != nil {
-			return err
-		}
-		currAlert, err := util.GetAlert(alertClient, crdnamespace, alertName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-		}
-		newAlert, err := updateAlert(currAlert, cmd.Flags())
-		if err != nil {
-			return err
-		}
-
-		log.Debugf("generating updates to the Kubernetes resources for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		return PrintResource(*newAlert, nativeFormat, true)
-	},
-}
-
 /*
 Update Black Duck Commands
 */
@@ -545,39 +511,6 @@ var updateBlackDuckCmd = &cobra.Command{
 		}
 		log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		return nil
-	},
-}
-
-// updateBlackDuckNativeCmd prints the Kubernetes resources with updates to a Black Duck instance
-var updateBlackDuckNativeCmd = &cobra.Command{
-	Use:           "native NAME",
-	Example:       "synopsyctl update blackduck native <name> --size medium\nsynopsyctl update blackduck native <name> -n <namespace> --size medium\nsynopsyctl update blackduck native <name> --size medium -o yaml",
-	Short:         "Print the Kubernetes resources with updates to a Black Duck instance",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return fmt.Errorf("this command takes 1 or more arguments")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName := args[0]
-		blackDuckNamespace, crdnamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
-		if err != nil {
-			return err
-		}
-		currBlackDuck, err := util.GetBlackduck(blackDuckClient, crdnamespace, blackDuckName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-		}
-		newBlackDuck, err := updateBlackDuck(currBlackDuck, cmd.Flags())
-		if err != nil {
-			return err
-		}
-
-		log.Debugf("generating updates to the Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		return PrintResource(*newBlackDuck, nativeFormat, true)
 	},
 }
 
@@ -971,40 +904,6 @@ var updateOpsSightCmd = &cobra.Command{
 	},
 }
 
-// updateOpsSightNativeCmd prints the Kubernetes resources with updates to an OpsSight instance
-var updateOpsSightNativeCmd = &cobra.Command{
-	Use:           "native NAME",
-	Example:       "synopsyctl update opssight native <name> --blackduck-max-count 2\nsynopsyctl update opssight native <name> --blackduck-max-count 2 -n <namespace>\nsynopsyctl update opssight native <name> --blackduck-max-count 2 -o yaml",
-	Short:         "Print the Kubernetes resources with updates to an OpsSight instance",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName := args[0]
-		opsSightNamespace, crdnamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
-		if err != nil {
-			return err
-		}
-		currOpsSight, err := util.GetOpsSight(opsSightClient, crdnamespace, opsSightName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-		}
-		newOpsSight, err := updateOpsSight(currOpsSight, cmd.Flags())
-		if err != nil {
-			return err
-		}
-
-		log.Debugf("generating updates to the Kubernetes resources for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-		return PrintResource(*newOpsSight, nativeFormat, true)
-	},
-}
-
 func updateOpsSightExternalHost(ops *opssightapi.OpsSight, scheme, domain, port, user, pass, scanLimit string) (*opssightapi.OpsSight, error) {
 	hostPort, err := strconv.ParseInt(port, 0, 64)
 	if err != nil {
@@ -1337,10 +1236,6 @@ func init() {
 	addMockFlag(updateAlertCmd)
 	updateCmd.AddCommand(updateAlertCmd)
 
-	updateAlertCobraHelper.AddCRSpecFlagsToCommand(updateAlertNativeCmd, false)
-	addNativeFormatFlag(updateAlertNativeCmd)
-	updateAlertCmd.AddCommand(updateAlertNativeCmd)
-
 	/* Update Black Duck Comamnds */
 
 	// updateBlackDuckCmd
@@ -1348,10 +1243,6 @@ func init() {
 	updateBlackDuckCobraHelper.AddCRSpecFlagsToCommand(updateBlackDuckCmd, false)
 	addMockFlag(updateBlackDuckCmd)
 	updateCmd.AddCommand(updateBlackDuckCmd)
-
-	updateBlackDuckCobraHelper.AddCRSpecFlagsToCommand(updateBlackDuckNativeCmd, false)
-	addNativeFormatFlag(updateBlackDuckNativeCmd)
-	updateBlackDuckCmd.AddCommand(updateBlackDuckNativeCmd)
 
 	// updateBlackDuckMasterKeyCmd
 	updateBlackDuckCmd.AddCommand(updateBlackDuckMasterKeyCmd)
@@ -1377,10 +1268,6 @@ func init() {
 	updateOpsSightCobraHelper.AddCRSpecFlagsToCommand(updateOpsSightCmd, false)
 	addMockFlag(updateOpsSightCmd)
 	updateCmd.AddCommand(updateOpsSightCmd)
-
-	updateOpsSightCobraHelper.AddCRSpecFlagsToCommand(updateOpsSightNativeCmd, false)
-	addNativeFormatFlag(updateOpsSightNativeCmd)
-	updateOpsSightCmd.AddCommand(updateOpsSightNativeCmd)
 
 	// updateOpsSightExternalHostCmd
 	addMockFlag(updateOpsSightExternalHostCmd)
