@@ -249,6 +249,10 @@ func checkPasswords(flagset *pflag.FlagSet) {
 	}
 }
 
+func checkSealKey(flagset *pflag.FlagSet) {
+	cobra.MarkFlagRequired(flagset, "seal-key")
+}
+
 var createBlackDuckPreRun = func(cmd *cobra.Command, args []string) error {
 	// Set the base spec
 	if !cmd.Flags().Lookup("template").Changed {
@@ -453,6 +457,7 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		if blackDuckNativeDatabase {
 			checkPasswords(cmd.Flags())
 		}
+		checkSealKey(cmd.Flags())
 		return nil
 	},
 	PreRunE: createBlackDuckPreRun,
