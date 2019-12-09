@@ -289,26 +289,50 @@ func (ctl *CRSpecBuilderFromCobraFlags) addEnvironsFlagValues(flagset *pflag.Fla
 	}
 
 	// Overwrite the flag-environs values with extra environ flags (extra environ flags take priority)
-	valuesFromExtraEnvirons := []string{}
-	if changed := flagset.Changed("enable-binary-analysis"); changed {
+	baWasSet := flagset.Changed("enable-binary-analysis")
+	scAnalysisWasSet := flagset.Changed("enable-source-code-upload")
+	updatedBAEnviron := false
+	updatedSCAnalysisEnviron := false
+	for i, value := range valuesFromEnvironsFlag {
+		values := strings.SplitN(value, ":", 2)
+		mapKey := strings.TrimSpace(values[0])
+		if baWasSet && mapKey == "USE_BINARY_UPLOADS" {
+			if ctl.EnableBinaryAnalysis {
+				valuesFromEnvironsFlag[i] = "USE_BINARY_UPLOADS:1"
+			} else {
+				valuesFromEnvironsFlag[i] = "USE_BINARY_UPLOADS:0"
+			}
+			updatedBAEnviron = true
+		}
+		if scAnalysisWasSet && mapKey == "ENABLE_SOURCE_UPLOADS" {
+			if ctl.EnableSourceCodeUpload {
+				valuesFromEnvironsFlag[i] = "ENABLE_SOURCE_UPLOADS:true"
+			} else {
+				valuesFromEnvironsFlag[i] = "ENABLE_SOURCE_UPLOADS:false"
+			}
+			updatedSCAnalysisEnviron = true
+		}
+	}
+	if baWasSet && !updatedBAEnviron {
 		if ctl.EnableBinaryAnalysis {
-			valuesFromExtraEnvirons = append(valuesFromExtraEnvirons, "USE_BINARY_UPLOADS:1")
+			valuesFromEnvironsFlag = append(valuesFromEnvironsFlag, "USE_BINARY_UPLOADS:1")
 		} else {
-			valuesFromExtraEnvirons = append(valuesFromExtraEnvirons, "USE_BINARY_UPLOADS:0")
+			valuesFromEnvironsFlag = append(valuesFromEnvironsFlag, "USE_BINARY_UPLOADS:0")
 		}
 	}
-	if changed := flagset.Changed("enable-source-code-upload"); changed {
+	if scAnalysisWasSet && !updatedSCAnalysisEnviron {
 		if ctl.EnableSourceCodeUpload {
-			valuesFromExtraEnvirons = append(valuesFromExtraEnvirons, "ENABLE_SOURCE_UPLOADS:true")
+			valuesFromEnvironsFlag = append(valuesFromEnvironsFlag, "ENABLE_SOURCE_UPLOADS:true")
 		} else {
-			valuesFromExtraEnvirons = append(valuesFromExtraEnvirons, "ENABLE_SOURCE_UPLOADS:false")
+			valuesFromEnvironsFlag = append(valuesFromEnvironsFlag, "ENABLE_SOURCE_UPLOADS:false")
 		}
 	}
-	finalValuesFromFlags := util.MergeEnvSlices(valuesFromExtraEnvirons, valuesFromEnvironsFlag)
 
 	// Overwrite any environs in the current spec with the new environ values from the flags (flag values take priority)
-	finalEnvironValues := util.MergeEnvSlices(finalValuesFromFlags, ctl.blackDuckSpec.Environs)
-	if len(finalEnvironValues) > 0 { // only initialize the field if values are found
+	finalEnvironValues := util.MergeEnvSlices(valuesFromEnvironsFlag, ctl.blackDuckSpec.Environs)
+
+	// do not initialize on empty - unless it previously had values
+	if len(finalEnvironValues) > 0 || (len(finalEnvironValues) == 0 && len(ctl.blackDuckSpec.Environs) > 0) {
 		ctl.blackDuckSpec.Environs = finalEnvironValues
 	}
 	return nil
