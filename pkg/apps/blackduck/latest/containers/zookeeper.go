@@ -24,16 +24,18 @@ package containers
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetZookeeperDeployment will return the zookeeper deployment
 func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Deployment, error) {
+	podName := "zookeeper"
 
 	volumeMounts := c.getZookeeperVolumeMounts()
 
 	zookeeperContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: imageName,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: podName, Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: zookeeperMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: volumeMounts,
@@ -56,21 +58,20 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Deployme
 	podConfig := &util.PodConfig{
 		Volumes:             c.getZookeeperVolumes(),
 		Containers:          []*util.Container{zookeeperContainerConfig},
-		Labels:              c.GetVersionLabel("zookeeper"),
-		NodeAffinityConfigs: c.GetNodeAffinityConfigs("zookeeper"),
+		Labels:              c.GetVersionLabel(podName),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs(podName),
+		ServiceAccount:      util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "service-account"),
 	}
 
 	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	if !c.config.IsOpenshift {
-		podConfig.FSGID = util.IntToInt64(0)
-	}
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-zookeeper", 1000, c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"), Replicas: util.IntToInt32(1)},
-		podConfig, c.GetLabel("zookeeper"))
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: util.IntToInt32(1)},
+		podConfig, c.GetLabel(podName))
 }
 
 // getZookeeperVolumes will return the zookeeper volumes

@@ -24,18 +24,21 @@ package containers
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetAuthenticationDeployment will return the authentication deployment
 func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Deployment, error) {
+	podName := "authentication"
+
 	volumeMounts := c.getAuthenticationVolumeMounts()
 	var authEnvs []*horizonapi.EnvConfig
 	authEnvs = append(authEnvs, c.getHubDBConfigEnv())
 	authEnvs = append(authEnvs, c.getHubConfigEnv())
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.AuthenticationHubMaxMemory})
 	hubAuthContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: imageName,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: podName, Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   authEnvs,
 		VolumeMounts: volumeMounts,
@@ -63,21 +66,20 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Dep
 	podConfig := &util.PodConfig{
 		Volumes:             c.getAuthenticationVolumes(),
 		Containers:          []*util.Container{hubAuthContainerConfig},
-		Labels:              c.GetVersionLabel("authentication"),
-		NodeAffinityConfigs: c.GetNodeAffinityConfigs("authentication"),
+		Labels:              c.GetVersionLabel(podName),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs(podName),
+		ServiceAccount:      util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "service-account"),
 	}
 
 	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	if !c.config.IsOpenshift {
-		podConfig.FSGID = util.IntToInt64(0)
-	}
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-authentication", 1000, c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
-		podConfig, c.GetLabel("authentication"))
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: util.IntToInt32(1)},
+		podConfig, c.GetLabel(podName))
 }
 
 // getAuthenticationVolumes will return the authentication volumes

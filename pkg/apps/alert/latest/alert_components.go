@@ -36,11 +36,12 @@ import (
 type SpecConfig struct {
 	alert          *alertapi.Alert
 	isClusterScope bool
+	isOpenshift    bool
 }
 
 // NewSpecConfig will create the Alert SpecConfig
-func NewSpecConfig(alert *alertapi.Alert, isClusterScope bool) *SpecConfig {
-	return &SpecConfig{alert: alert, isClusterScope: isClusterScope}
+func NewSpecConfig(alert *alertapi.Alert, isClusterScope bool, isOpenshift bool) *SpecConfig {
+	return &SpecConfig{alert: alert, isClusterScope: isClusterScope, isOpenshift: isOpenshift}
 }
 
 // GetComponents will return the list of components for alert
@@ -51,11 +52,14 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	// Add alert components
 	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
 
-	dc, err := a.getAlertDeployment()
+	sa := a.getServiceAccounts()
+	components.ServiceAccounts = append(components.ServiceAccounts, sa...)
+
+	dep, err := a.getAlertDeployment()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Alert Deployment: %s", err)
 	}
-	components.Deployments = append(components.Deployments, dc)
+	components.Deployments = append(components.Deployments, dep)
 
 	service := a.getAlertClusterService()
 	components.Services = append(components.Services, service)

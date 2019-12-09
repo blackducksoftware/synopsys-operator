@@ -57,7 +57,6 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 		"BROKER_URL":                  fmt.Sprintf("amqps://%s/protecodesc", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq")),
 		"HUB_REGISTRATION_HOST":       util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"),
 		"HUB_SCAN_HOST":               util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "scan"),
-		"HUB_SOLR_HOST":               util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "solr"),
 		"BLACKDUCK_UPLOAD_CACHE_HOST": util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"),
 		"HUB_UPLOAD_CACHE_HOST":       util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"),
 		"HUB_WEBAPP_HOST":             util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webapp"),

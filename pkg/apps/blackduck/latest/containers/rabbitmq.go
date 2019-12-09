@@ -24,15 +24,18 @@ package containers
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetRabbitmqDeployment will return the rabbitmq deployment
 func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Deployment, error) {
+	podName := "rabbitmq"
+
 	volumeMounts := c.getRabbitmqVolumeMounts()
 
 	rabbitmqContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: imageName,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: podName, Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RabbitmqMemoryLimit, MaxMem: c.hubContainerFlavor.RabbitmqMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
@@ -43,16 +46,19 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Deploymen
 	podConfig := &util.PodConfig{
 		Volumes:             c.getRabbitmqVolumes(),
 		Containers:          []*util.Container{rabbitmqContainerConfig},
-		Labels:              c.GetVersionLabel("rabbitmq"),
-		NodeAffinityConfigs: c.GetNodeAffinityConfigs("rabbitmq"),
+		Labels:              c.GetVersionLabel(podName),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs(podName),
+		ServiceAccount:      util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "service-account"),
 	}
 
 	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "rabbitmq", 1000, c.config.IsOpenshift)
+
 	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: util.IntToInt32(1)},
 		podConfig, c.GetLabel("rabbitmq"))
 }
 

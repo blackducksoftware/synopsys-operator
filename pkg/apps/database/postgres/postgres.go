@@ -60,6 +60,8 @@ type Postgres struct {
 	IsOpenshift                   bool
 	Labels                        map[string]string
 	ImagePullSecrets              []string
+	SecurityContext               *util.SecurityContext
+	ServiceAccount                string
 }
 
 // GetPostgresDeployment will return the postgres deployment
@@ -107,13 +109,15 @@ func (p *Postgres) GetPostgresDeployment() (*components.Deployment, error) {
 		Labels:     p.Labels,
 	}
 
+	if len(p.ServiceAccount) != 0 {
+		podConfig.ServiceAccount = p.ServiceAccount
+	}
+
 	if len(p.ImagePullSecrets) > 0 {
 		podConfig.ImagePullSecrets = p.ImagePullSecrets
 	}
 
-	if !p.IsOpenshift {
-		podConfig.FSGID = util.IntToInt64(0)
-	}
+	util.SetSecurityContextInPodConfig(podConfig, p.SecurityContext, p.IsOpenshift)
 
 	pod, err := util.CreatePod(podConfig)
 

@@ -78,3 +78,36 @@ func getFullContainerNameFromImageRegistryConf(baseContainer string, images []st
 	}
 	return ""
 }
+
+// GetSecurityContext returns the security context if it exists in 'securityContextsMap'
+func GetSecurityContext(securityContextsMap map[string]api.SecurityContext, securityContextID string) *api.SecurityContext {
+	if securityContextsMap == nil {
+		return nil
+	}
+	securityContext, exists := securityContextsMap[securityContextID]
+	if !exists {
+		return nil
+	}
+	commonSecurityContext := securityContext
+	return &commonSecurityContext
+}
+
+// ConfigurePodConfigSecurityContext configures the Security Context values into the PodConfig
+// if the securityContext for the 'securityContextID' is in 'securityContextsMap' then it's values are set
+// otherwise FSGID is set to 0 for Kubernetes
+func ConfigurePodConfigSecurityContext(podConfig *util.PodConfig, securityContextsMap map[string]api.SecurityContext, securityContextID string, defaultValue int, isOpenshift bool) {
+	if isOpenshift { // TODO: Support SecurityContexts for Openshift in the next release
+		return
+	}
+	securityContext := GetSecurityContext(securityContextsMap, securityContextID)
+	if securityContext == nil {
+		// Set default Security Contexts
+		securityContext = &api.SecurityContext{
+			FsGroup:    util.IntToInt64(defaultValue),
+			RunAsUser:  util.IntToInt64(defaultValue),
+			RunAsGroup: util.IntToInt64(defaultValue),
+		}
+	}
+	utilContext := util.SecurityContext(*securityContext)
+	util.SetSecurityContextInPodConfig(podConfig, &utilContext, isOpenshift)
+}

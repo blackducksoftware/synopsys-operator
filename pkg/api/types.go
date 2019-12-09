@@ -108,3 +108,10 @@ func (in *RegistryConfiguration) DeepCopy() *RegistryConfiguration {
 	in.DeepCopyInto(out)
 	return out
 }
+
+// SecurityContext will contain the specifications of a security contexts
+type SecurityContext struct {
+	FsGroup    *int64 `json:"fsGroup"`
+	RunAsUser  *int64 `json:"runAsUser"`
+	RunAsGroup *int64 `json:"runAsGroup"`
+}

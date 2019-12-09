@@ -24,14 +24,17 @@ package containers
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetCfsslDeployment will return the cfssl deployment
 func (c *Creater) GetCfsslDeployment(imageName string) (*components.Deployment, error) {
+	podName := "cfssl"
+
 	cfsslVolumeMounts := c.getCfsslolumeMounts()
 	cfsslContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: imageName,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: podName, Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.CfsslMemoryLimit, MaxMem: c.hubContainerFlavor.CfsslMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: cfsslVolumeMounts,
@@ -54,21 +57,20 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.Deployment, 
 	podConfig := &util.PodConfig{
 		Volumes:             c.getCfsslVolumes(),
 		Containers:          []*util.Container{cfsslContainerConfig},
-		Labels:              c.GetVersionLabel("cfssl"),
-		NodeAffinityConfigs: c.GetNodeAffinityConfigs("cfssl"),
+		Labels:              c.GetVersionLabel(podName),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs(podName),
+		ServiceAccount:      util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "service-account"),
 	}
 
 	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	if !c.config.IsOpenshift {
-		podConfig.FSGID = util.IntToInt64(0)
-	}
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-cfssl", 1000, c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl"), Replicas: util.IntToInt32(1)},
-		podConfig, c.GetLabel("cfssl"))
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: util.IntToInt32(1)},
+		podConfig, c.GetLabel(podName))
 }
 
 // getCfsslVolumes will return the cfssl volumes

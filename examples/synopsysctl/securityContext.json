@@ -1,0 +1,82 @@
+{
+    "alert": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "alert-cfssl": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-cfssl": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-postgres": {
+        "fsGroup": 26,
+        "runAsUser": 26,
+        "runAsGroup": 26
+    },
+    "blackduck-nginx": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-documentation": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-solr": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-registration": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-zookeeper": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-jobrunner": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-scan": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-authentication": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-webapp": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "blackduck-upload-cache": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "appcheck-worker": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    },
+    "rabbitmq": {
+        "fsGroup": 1234,
+        "runAsUser": 1234,
+        "runAsGroup": 1234
+    }
+}

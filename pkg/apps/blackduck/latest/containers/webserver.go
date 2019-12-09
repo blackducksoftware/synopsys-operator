@@ -24,13 +24,16 @@ package containers
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetWebserverDeployment will return the webserver deployment
 func (c *Creater) GetWebserverDeployment(imageName string) (*components.Deployment, error) {
+	podName := "webserver"
+
 	webServerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: imageName,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: podName, Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit,
 			MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
@@ -54,21 +57,20 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Deployme
 	podConfig := &util.PodConfig{
 		Volumes:             c.getWebserverVolumes(),
 		Containers:          []*util.Container{webServerContainerConfig},
-		Labels:              c.GetVersionLabel("webserver"),
-		NodeAffinityConfigs: c.GetNodeAffinityConfigs("webserver"),
+		Labels:              c.GetVersionLabel(podName),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs(podName),
+		ServiceAccount:      util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "service-account"),
 	}
 
 	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	if !c.config.IsOpenshift {
-		podConfig.FSGID = util.IntToInt64(0)
-	}
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-nginx", 1000, c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"), Replicas: util.IntToInt32(1)},
-		podConfig, c.GetLabel("webserver"))
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: util.IntToInt32(1)},
+		podConfig, c.GetLabel(podName))
 }
 
 // getWebserverVolumes will return the authentication volumes

@@ -22,20 +22,27 @@ under the License.
 package containers
 
 import (
+	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetWebappLogstashDeployment will return the webapp and logstash deployment
 func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashImageName string) (*components.Deployment, error) {
+	podName := "webapp"
+	containerName := "logstash"
+	label := fmt.Sprintf("%s-%s", podName, containerName)
+
 	webappEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.WebappHubMaxMemory})
 
 	webappVolumeMounts := c.getWebappVolumeMounts()
 
 	webappContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: webAppImageName,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: podName, Image: webAppImageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs:   webappEnvs,
 		VolumeMounts: webappVolumeMounts,
@@ -64,7 +71,7 @@ func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashIm
 	logstashVolumeMounts := c.getLogstashVolumeMounts()
 
 	logstashContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: logstashImageName,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: containerName, Image: logstashImageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.LogstashMemoryLimit, MaxMem: c.hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: logstashVolumeMounts,
@@ -86,21 +93,20 @@ func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashIm
 	podConfig := &util.PodConfig{
 		Volumes:             c.getWebappLogtashVolumes(),
 		Containers:          []*util.Container{webappContainerConfig, logstashContainerConfig},
-		Labels:              c.GetVersionLabel("webapp-logstash"),
-		NodeAffinityConfigs: c.GetNodeAffinityConfigs("webapp-logstash"),
+		Labels:              c.GetVersionLabel(label),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs(label),
+		ServiceAccount:      util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "service-account"),
 	}
 
 	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	if !c.config.IsOpenshift {
-		podConfig.FSGID = util.IntToInt64(0)
-	}
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-webapp", 1000, c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
-		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webapp-logstash"), Replicas: util.IntToInt32(1)},
-		podConfig, c.GetLabel("webapp-logstash"))
+		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, label), Replicas: util.IntToInt32(1)},
+		podConfig, c.GetLabel(label))
 }
 
 // getWebappLogtashVolumes will return the webapp and logstash volumes

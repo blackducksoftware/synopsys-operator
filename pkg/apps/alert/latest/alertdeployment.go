@@ -54,10 +54,18 @@ func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
 
 // getAlertPod returns a new Pod for an Alert
 func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
-	pod := components.NewPod(horizonapi.PodConfig{
-		Name: util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
-	})
-	pod.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
+	podConfig := &util.PodConfig{
+		Name:           util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
+		Labels:         map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"},
+		ServiceAccount: util.GetResourceName(a.alert.Name, util.AlertName, "service-account"),
+	}
+
+	appsutil.ConfigurePodConfigSecurityContext(podConfig, a.alert.Spec.SecurityContexts, "alert", 1000, a.isOpenshift)
+
+	pod, err := util.CreatePod(podConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Alert Pod: %+v", err)
+	}
 
 	container, err := a.getAlertContainer()
 	if err != nil {
@@ -90,7 +98,6 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 		pod.AddImagePullSecrets(a.alert.Spec.RegistryConfiguration.PullSecrets)
 	}
 
-	pod.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
 	return pod, nil
 }
 

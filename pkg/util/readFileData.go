@@ -34,3 +34,9 @@ func ReadFileData(filepath string) (string, error) {
 	}
 	return string(data), nil
 }
+
+// ReadFromFile will read the file
+func ReadFromFile(filePath string) ([]byte, error) {
+	file, err := ioutil.ReadFile(filePath)
+	return file, err
+}

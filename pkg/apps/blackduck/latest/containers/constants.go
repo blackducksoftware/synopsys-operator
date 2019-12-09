@@ -53,7 +53,6 @@ const (
 	cfsslPort          = int32(8888)
 	webserverPort      = int32(8443)
 	documentationPort  = int32(8443)
-	solrPort           = int32(8983)
 	registrationPort   = int32(8443)
 	zookeeperPort      = int32(2181)
 	jobRunnerPort      = int32(3001)
@@ -70,8 +69,6 @@ const (
 
 	// Small Flavor
 	smallWebServerMemoryRequestsAndLimits = "512Mi"
-
-	smallSolrMemoryRequestsAndLimits = "640Mi"
 
 	smallWebappLogstashCpuRequests             = "1000m"  // 1000m means 1 CPU
 	smallWebappLogstashMemoryRequestsAndLimits = "2560Mi" // currently, we are using the same for both requests and limits; Mi means (2**20)
@@ -91,8 +88,6 @@ const (
 	// Medium Flavor
 	mediumWebServerMemoryRequestsAndLimits = "2048Mi"
 
-	mediumSolrMemoryRequestsAndLimits = "1024Mi"
-
 	mediumWebappLogstashCpuRequests             = "2000m"
 	mediumWebappLogstashMemoryRequestsAndLimits = "5120Mi"
 	mediumWebappLogstashHubMaxMemoryEnvVar      = "4096m"
@@ -111,8 +106,6 @@ const (
 	// Large Flavor
 	largeWebServerMemoryRequestsAndLimits = "2048Mi"
 
-	largeSolrMemoryRequestsAndLimits = "1024Mi"
-
 	largeWebappLogstashCpuRequests             = "2000m"
 	largeWebappLogstashMemoryRequestsAndLimits = "9728Mi"
 	largeWebappLogstashHubMaxMemoryEnvVar      = "8192m"
@@ -130,8 +123,6 @@ const (
 
 	// XLarge Flavor
 	xLargeWebServerMemoryRequestsAndLimits = "2048Mi"
-
-	xLargeSolrMemoryRequestsAndLimits = "1024Mi"
 
 	xLargeWebappLogstashCpuRequests             = "3000m"
 	xLargeWebappLogstashMemoryRequestsAndLimits = "19728Mi"

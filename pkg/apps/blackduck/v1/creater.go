@@ -71,6 +71,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	}
 
 	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
+		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
 		_, errors := commonConfig.CRUDComponents()
@@ -78,6 +79,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return fmt.Errorf("stop blackduck: %+v", errors)
 		}
 	} else {
+		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
