@@ -182,7 +182,7 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.NodeAffinityFilePath, "node-affinity-file-path", ctl.NodeAffinityFilePath, "Absolute path to a file containing a list of node affinities")
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
-	cmd.Flags().StringVar(&ctl.SealKey, "seal-key", ctl.SealKey, "Seal key to encrypt the master key when Source code upload is enabled")
+	cmd.Flags().StringVar(&ctl.SealKey, "seal-key", ctl.SealKey, "Seal key to encrypt the master key when Source code upload is enabled and it should be of length 32")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
