@@ -457,8 +457,6 @@ func updateBlackDuck(bd *blackduckapi.Blackduck, flagset *pflag.FlagSet) (*black
 		return nil, err
 	}
 	newSpec := blackDuckInterface.(blackduckapi.BlackduckSpec)
-	// merge environs
-	newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, bd.Spec.Environs)
 	bd.Spec = newSpec
 	return bd, nil
 }
