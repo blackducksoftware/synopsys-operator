@@ -35,9 +35,9 @@ var imageTags = map[string]map[string]string{
 		"blackduck-logstash":       "1.0.5",
 		"blackduck-nginx":          "1.0.14",
 		"blackduck-zookeeper":      "1.0.3",
-		"blackduck-upload-cache":   "1.0.11",
+		"blackduck-upload-cache":   "1.0.12",
 		"appcheck-worker":          "2019.09-2",
-		"rabbitmq":                 "1.0.2",
+		"rabbitmq":                 "1.0.3",
 	},
 }
 
