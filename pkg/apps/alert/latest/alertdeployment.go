@@ -35,21 +35,19 @@ import (
 // getAlertDeployment returns a new deployment for an Alert
 func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
-	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
+	deploymentConfig := horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
 		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
 		Namespace: a.alert.Spec.Namespace,
-	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
+	}
+	labels := map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"}
 
 	pod, err := a.getAlertPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Alert Pod: %s", err)
 	}
 
-	deployment.AddPod(pod)
-	deployment.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
-	return deployment, nil
+	return util.CreateDeployment(&deploymentConfig, pod, pod.GetLabels(), labels), nil
 }
 
 // getAlertPod returns a new Pod for an Alert
