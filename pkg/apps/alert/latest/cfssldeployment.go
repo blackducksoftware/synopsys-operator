@@ -34,21 +34,19 @@ import (
 // getCfsslDeployment returns a new Deployment for a Cffsl
 func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
-	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
+	deploymentConfig := horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
 		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
 		Namespace: a.alert.Spec.Namespace,
-	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
+	}
+	labels := map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"}
 
 	pod, err := a.getCfsslPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pod: %v", err)
 	}
-	deployment.AddPod(pod)
 
-	deployment.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
-	return deployment, nil
+	return util.CreateDeployment(&deploymentConfig, pod, pod.GetLabels(), labels), nil
 }
 
 // getCfsslPod returns a new Pod for a Cffsl
