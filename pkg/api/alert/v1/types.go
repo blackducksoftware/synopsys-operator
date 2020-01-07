@@ -41,21 +41,21 @@ type Alert struct {
 
 // AlertSpec is the spec for a Alert resource
 type AlertSpec struct {
-	Namespace            string                         `json:"namespace,omitempty"`
-	Version              string                         `json:"version,omitempty"`
-	ExposeService        string                         `json:"exposeService"`
-	StandAlone           *bool                          `json:"standAlone"`
-	Port                 *int32                         `json:"port"`
-	EncryptionPassword   string                         `json:"EncryptionPassword"`
-	EncryptionGlobalSalt string                         `json:"EncryptionGlobalSalt"`
-	Environs             []string                       `json:"environs,omitempty"`
-	PersistentStorage    bool                           `json:"persistentStorage"`
-	PVCName              string                         `json:"pvcName"`
-	PVCStorageClass      string                         `json:"pvcStorageClass"`
-	SecurityContexts     map[string]api.SecurityContext `json:"securityContexts,omitempty"`
-	Certificate          string                         `json:"certificate,omitempty"`
-	CertificateKey       string                         `json:"certificateKey,omitempty"`
-	JavaKeyStore         string                         `json:"javaKeyStore,omitempty"`
+	Namespace            string   `json:"namespace,omitempty"`
+	Version              string   `json:"version,omitempty"`
+	ExposeService        string   `json:"exposeService"`
+	StandAlone           *bool    `json:"standAlone"`
+	Port                 *int32   `json:"port"`
+	EncryptionPassword   string   `json:"EncryptionPassword"`
+	EncryptionGlobalSalt string   `json:"EncryptionGlobalSalt"`
+	Environs             []string `json:"environs,omitempty"`
+	PersistentStorage    bool     `json:"persistentStorage"`
+	PVCName              string   `json:"pvcName"`
+	PVCStorageClass      string   `json:"pvcStorageClass"`
+	// SecurityContexts     map[string]api.SecurityContext `json:"securityContexts,omitempty"`
+	Certificate    string `json:"certificate,omitempty"`
+	CertificateKey string `json:"certificateKey,omitempty"`
+	JavaKeyStore   string `json:"javaKeyStore,omitempty"`
 
 	// Should be passed like: e.g "1300Mi"
 	PVCSize     string `json:"pvcSize"`
