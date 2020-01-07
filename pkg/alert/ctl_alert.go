@@ -22,7 +22,7 @@ under the License.
 package alert
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
 	"strings"
 
@@ -43,29 +43,29 @@ import (
 // When flags are used the correspoding value in this struct will by set. You can then
 // generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
 type CRSpecBuilderFromCobraFlags struct {
-	alertSpec               *alertapi.AlertSpec
-	Version                 string
-	StandAlone              string
-	ExposeService           string
-	Port                    int32
-	EncryptionPassword      string
-	EncryptionGlobalSalt    string
-	Environs                []string
-	PersistentStorage       string
-	PVCName                 string
-	PVCStorageClass         string
-	PVCSize                 string
-	AlertMemory             string
-	CfsslMemory             string
-	DesiredState            string
-	Registry                string
-	RegistryNamespace       string
-	PullSecrets             []string
-	ImageRegistries         []string
-	CertificateFilePath     string
-	CertificateKeyFilePath  string
-	JavaKeyStoreFilePath    string
-	SecurityContextFilePath string
+	alertSpec              *alertapi.AlertSpec
+	Version                string
+	StandAlone             string
+	ExposeService          string
+	Port                   int32
+	EncryptionPassword     string
+	EncryptionGlobalSalt   string
+	Environs               []string
+	PersistentStorage      string
+	PVCName                string
+	PVCStorageClass        string
+	PVCSize                string
+	AlertMemory            string
+	CfsslMemory            string
+	DesiredState           string
+	Registry               string
+	RegistryNamespace      string
+	PullSecrets            []string
+	ImageRegistries        []string
+	CertificateFilePath    string
+	CertificateKeyFilePath string
+	JavaKeyStoreFilePath   string
+	// SecurityContextFilePath string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -139,7 +139,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to the PEM certificate to use for Alert")
 	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to the PEM certificate key for Alert")
 	cmd.Flags().StringVar(&ctl.JavaKeyStoreFilePath, "java-keystore-file-path", ctl.JavaKeyStoreFilePath, "Absolute path to the Java Keystore to use for Alert")
-	cmd.Flags().StringVar(&ctl.SecurityContextFilePath, "security-context-file-path", ctl.SecurityContextFilePath, "Absolute path to a file containing a map of pod names to security contexts runAsUser, fsGroup, and runAsGroup")
+	// cmd.Flags().StringVar(&ctl.SecurityContextFilePath, "security-context-file-path", ctl.SecurityContextFilePath, "Absolute path to a file containing a map of pod names to security contexts runAsUser, fsGroup, and runAsGroup")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("alert-desired-state", "alert-desired-state flag is deprecated and will be removed by the next release")
@@ -254,19 +254,19 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				log.Fatalf("failed to read Java keystore file: %+v", err)
 			}
 			ctl.alertSpec.JavaKeyStore = data
-		case "security-context-file-path":
-			data, err := util.ReadFileData(ctl.SecurityContextFilePath)
-			if err != nil {
-				log.Errorf("failed to read security context file: %+v", err)
-				return
-			}
-			SecurityContexts := map[string]api.SecurityContext{}
-			err = json.Unmarshal([]byte(data), &SecurityContexts)
-			if err != nil {
-				log.Errorf("failed to unmarshal security contexts: %+v", err)
-				return
-			}
-			ctl.alertSpec.SecurityContexts = SecurityContexts
+		// case "security-context-file-path":
+		// 	data, err := util.ReadFileData(ctl.SecurityContextFilePath)
+		// 	if err != nil {
+		// 		log.Errorf("failed to read security context file: %+v", err)
+		// 		return
+		// 	}
+		// 	SecurityContexts := map[string]api.SecurityContext{}
+		// 	err = json.Unmarshal([]byte(data), &SecurityContexts)
+		// 	if err != nil {
+		// 		log.Errorf("failed to unmarshal security contexts: %+v", err)
+		// 		return
+		// 	}
+		// 	ctl.alertSpec.SecurityContexts = SecurityContexts
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
