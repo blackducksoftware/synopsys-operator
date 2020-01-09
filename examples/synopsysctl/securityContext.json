@@ -64,7 +64,7 @@
         "runAsUser": 1234,
         "runAsGroup": 1234
     },
-    "blackduck-upload-cache": {
+    "blackduck-uploadcache": {
         "fsGroup": 1234,
         "runAsUser": 1234,
         "runAsGroup": 1234

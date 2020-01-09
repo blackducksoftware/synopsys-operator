@@ -95,19 +95,15 @@ func GetSecurityContext(securityContextsMap map[string]api.SecurityContext, secu
 // ConfigurePodConfigSecurityContext configures the Security Context values into the PodConfig
 // if the securityContext for the 'securityContextID' is in 'securityContextsMap' then it's values are set
 // otherwise FSGID is set to 0 for Kubernetes
-func ConfigurePodConfigSecurityContext(podConfig *util.PodConfig, securityContextsMap map[string]api.SecurityContext, securityContextID string, defaultValue int, isOpenshift bool) {
-	if isOpenshift { // TODO: Support SecurityContexts for Openshift in the next release
+func ConfigurePodConfigSecurityContext(podConfig *util.PodConfig, securityContextsMap map[string]api.SecurityContext, securityContextID string, isOpenshift bool) {
+	if isOpenshift { // TODO: Support SecurityContexts for Openshift
 		return
 	}
-	securityContext := GetSecurityContext(securityContextsMap, securityContextID)
-	if securityContext == nil {
-		// Set default Security Contexts
-		securityContext = &api.SecurityContext{
-			FsGroup:    util.IntToInt64(defaultValue),
-			RunAsUser:  util.IntToInt64(defaultValue),
-			RunAsGroup: util.IntToInt64(defaultValue),
-		}
+	if securityContext := GetSecurityContext(securityContextsMap, securityContextID); securityContext != nil {
+		utilContext := util.SecurityContext(*securityContext)
+		util.SetSecurityContextInPodConfig(podConfig, &utilContext, isOpenshift)
+	} else {
+		util.SetSecurityContextInPodConfig(podConfig, nil, isOpenshift)
 	}
-	utilContext := util.SecurityContext(*securityContext)
-	util.SetSecurityContextInPodConfig(podConfig, &utilContext, isOpenshift)
+
 }
