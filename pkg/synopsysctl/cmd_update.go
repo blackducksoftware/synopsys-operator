@@ -35,6 +35,7 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	bdappsutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
@@ -450,7 +451,7 @@ var updateAlertCmd = &cobra.Command{
 Update Black Duck Commands
 */
 
-func updateBlackDuck(bd *blackduckapi.Blackduck, flagset *pflag.FlagSet) (*blackduckapi.Blackduck, error) {
+func updateBlackDuckSpec(bd *blackduckapi.Blackduck, flagset *pflag.FlagSet) (*blackduckapi.Blackduck, error) {
 	updateBlackDuckCobraHelper.SetCRSpec(bd.Spec)
 	blackDuckInterface, err := updateBlackDuckCobraHelper.GenerateCRSpecFromFlags(flagset)
 	if err != nil {
@@ -485,7 +486,8 @@ var updateBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
-		currBlackDuck, err = updateBlackDuck(currBlackDuck, cmd.Flags())
+		oldVersion := currBlackDuck.Spec.Version
+		currBlackDuck, err = updateBlackDuckSpec(currBlackDuck, cmd.Flags())
 		if err != nil {
 			return err
 		}
@@ -502,6 +504,30 @@ var updateBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		// set the Ownership of BlackDuck files when updating from a version that doesn't have security contexts
+		if cmd.Flags().Lookup("version").Changed {
+			oldVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(oldVersion, 2019, time.December, 0)
+			if err != nil {
+				return err
+			}
+			newVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(currBlackDuck.Spec.Version, 2019, time.December, 0)
+			if err != nil {
+				return err
+			}
+			if !oldVersionIsGreaterThanOrEqualv2019x12x0 && newVersionIsGreaterThanOrEqualv2019x12x0 {
+				var groupOwnership int64 = 1000 // SecurityContext default value
+				bdSecurityContexts := bdappsutil.GetSecurityContext(currBlackDuck.Spec.SecurityContexts, "blackduck-webapp")
+				if bdSecurityContexts != nil {
+					if bdSecurityContexts.RunAsGroup != nil {
+						groupOwnership = *bdSecurityContexts.RunAsGroup
+					}
+				}
+				err := setBlackDuckFileOwnership(blackDuckNamespace, blackDuckName, groupOwnership, fmt.Sprintf("component=webapp-logstash,name=%s", blackDuckName))
+				if err != nil {
+					return err
+				}
+			}
+		}
 		// Update Black Duck
 		_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck)
 		if err != nil {
@@ -510,6 +536,25 @@ var updateBlackDuckCmd = &cobra.Command{
 		log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		return nil
 	},
+}
+
+// setBlackDuckFileOwnership sets the Owner of the files in the BlackDuck pods specified by the podSelector label
+func setBlackDuckFileOwnership(namespace string, name string, ownership int64, podSelector string) error {
+	log.Infof("migrating group ownership for Black Duck '%s''s files in namespace '%s'", name, namespace)
+
+	pods, err := util.ListPodsWithLabels(kubeClient, namespace, podSelector)
+	if err != nil {
+		return err
+	}
+	for _, pod := range pods.Items {
+		kubectlCmd := []string{"exec", "-n", namespace, pod.Name, "-c", "webapp", "--", "chown", "-R", fmt.Sprintf("%+v", ownership), "/opt/blackduck/."}
+		_, err = RunKubeCmd(restconfig, kubeClient, kubectlCmd...)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // updateBlackDuckMasterKeyCmd create new Black Duck master key for source code upload in the cluster

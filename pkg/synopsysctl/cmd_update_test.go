@@ -73,7 +73,7 @@ func TestUpdatingEnvironValues(t *testing.T) {
 		flagset.Set("environs", test.environsFlagValue)
 		bd := blackduckapi.Blackduck{}
 		bd.Spec.Environs = test.environsInitiallyInSpec
-		updatedBd, err := updateBlackDuck(&bd, flagset)
+		updatedBd, err := updateBlackDuckSpec(&bd, flagset)
 		if err != nil {
 			t.Errorf("%+v", err)
 		}

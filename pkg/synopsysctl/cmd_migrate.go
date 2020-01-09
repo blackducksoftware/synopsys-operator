@@ -430,7 +430,7 @@ func migrateBlackDuck(namespace string, crdNamespace string) error {
 		blackDuck.Spec.UserPassword = defaultPassword
 		blackDuck.Spec.PostgresPassword = defaultPassword
 
-		// update Alert Spec version
+		// update Black Duck Spec version
 		if len(blackDuck.Spec.Version) == 0 && strings.EqualFold(blackDuck.Status.State, "running") {
 			rc, err := util.GetReplicationController(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "scan"))
 			if err != nil {
@@ -472,12 +472,12 @@ func migrateBlackDuck(namespace string, crdNamespace string) error {
 			return err
 		}
 
-		isVersionGreaterThanorEqual, err := util.IsVersionGreaterThanOrEqualTo(fromVersion, 2019, time.June, 1)
+		isVersionGreaterThanOrEqualv2019x6x1, err := util.IsVersionGreaterThanOrEqualTo(fromVersion, 2019, time.June, 1)
 		if err != nil {
 			return err
 		}
 
-		if !isVersionGreaterThanorEqual && blackDuck.Spec.PersistentStorage {
+		if !isVersionGreaterThanOrEqualv2019x6x1 && blackDuck.Spec.PersistentStorage {
 			var rabbitmqRCName, zookeeperRCName, uploadCacheRCName, uploadCacheKeyPVCName, uploadCacheDataPVCName string
 			if value, ok := blackDuck.Annotations["synopsys.com/created.by"]; ok && "pre-2019.6.0" == value {
 				rabbitmqRCName = "rabbitmq"
