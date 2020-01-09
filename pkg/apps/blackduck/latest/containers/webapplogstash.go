@@ -102,7 +102,7 @@ func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashIm
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-webapp", 1000, c.config.IsOpenshift)
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-webapp", c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
 		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, label), Replicas: util.IntToInt32(1)},

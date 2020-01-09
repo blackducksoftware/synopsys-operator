@@ -51,7 +51,7 @@ func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.Depl
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "appcheck-worker", 1000, c.config.IsOpenshift)
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "appcheck-worker", c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
 		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: util.IntToInt32(1)},

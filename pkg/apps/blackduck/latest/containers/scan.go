@@ -101,7 +101,7 @@ func (c *Creater) GetScanDeployment(imageName string) (*components.Deployment, e
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-scan", 1000, c.config.IsOpenshift)
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-scan", c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
 		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: c.hubContainerFlavor.ScanReplicas},

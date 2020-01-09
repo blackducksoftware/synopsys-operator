@@ -27,6 +27,8 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
@@ -60,7 +62,7 @@ type Postgres struct {
 	IsOpenshift                   bool
 	Labels                        map[string]string
 	ImagePullSecrets              []string
-	SecurityContext               *util.SecurityContext
+	SecurityContext               map[string]api.SecurityContext
 	ServiceAccount                string
 }
 
@@ -117,7 +119,7 @@ func (p *Postgres) GetPostgresDeployment() (*components.Deployment, error) {
 		podConfig.ImagePullSecrets = p.ImagePullSecrets
 	}
 
-	util.SetSecurityContextInPodConfig(podConfig, p.SecurityContext, p.IsOpenshift)
+	apputil.ConfigurePodConfigSecurityContext(podConfig, p.SecurityContext, "blackduck-postgres", p.IsOpenshift)
 
 	pod, err := util.CreatePod(podConfig)
 
