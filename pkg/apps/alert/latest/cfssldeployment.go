@@ -57,7 +57,7 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 		ServiceAccount: util.GetResourceName(a.alert.Name, util.AlertName, "service-account"),
 	}
 
-	appsutil.ConfigurePodConfigSecurityContext(podConfig, a.alert.Spec.SecurityContexts, "alert-cfssl", 1000, a.isOpenshift)
+	// appsutil.ConfigurePodConfigSecurityContext(podConfig, a.alert.Spec.SecurityContexts, "alert-cfssl", 1000, a.isOpenshift)
 
 	pod, err := util.CreatePod(podConfig)
 	if err != nil {
