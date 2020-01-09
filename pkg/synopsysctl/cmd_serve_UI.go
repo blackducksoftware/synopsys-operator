@@ -57,13 +57,14 @@ var serveUICmd = &cobra.Command{
 	RunE:  ServeUICmd,
 }
 
-func init() {
-	// Add the serve-ui command to synopsysctl
-	rootCmd.AddCommand(serveUICmd)
+// TODO: Uncomment to add the UI
+// func init() {
+// 	// Add the serve-ui command to synopsysctl
+// 	rootCmd.AddCommand(serveUICmd)
 
-	// Flags for serveUICmd
-	serveUICmd.Flags().StringVarP(&serverPort, "port", "p", serverPort, "Port to access the User Interface")
-}
+// 	// Flags for serveUICmd
+// 	serveUICmd.Flags().StringVarP(&serverPort, "port", "p", serverPort, "Port to access the User Interface")
+// }
 
 // ServeUICmd is the RunE cobra command
 // This function starts a server on localhost that serves a User Interface
