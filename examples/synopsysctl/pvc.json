@@ -1,12 +1,34 @@
 [
     {
-        "name": "name1",
-        "size": "10Gi",
-        "storageClass": "storageclass1"
+        "name": "blackduck-postgres",
+        "size": "1Gi"
     },
     {
-        "name": "name2",
-        "size": "10Gi",
-        "storageClass": "storageclass2"
+        "name": "blackduck-cfssl",
+        "size": "1Gi"
+    },
+    {
+        "name": "blackduck-registration",
+        "size": "1Gi"
+    },
+    {
+        "name": "blackduck-zookeeper",
+        "size": "1Gi"
+    },
+    {
+        "name": "blackduck-authentication",
+        "size": "1Gi"
+    },
+    {
+        "name": "blackduck-webapp",
+        "size": "1Gi"
+    },
+    {
+        "name": "blackduck-logstash",
+        "size": "1Gi"
+    },
+    {
+        "name": "blackduck-uploadcache-data",
+        "size": "1Gi"
     }
 ]
