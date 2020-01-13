@@ -27,9 +27,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
-	apputil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
@@ -78,19 +76,7 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 		IsOpenshift:            c.config.IsOpenshift,
 		ImagePullSecrets:       imagePullSecrets,
 		ServiceAccount:         util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "service-account"),
-	}
-
-	if !c.config.IsOpenshift { // TODO: Support SecurityContexts for Openshift in the next release
-		postgresSecurityContext := apputil.GetSecurityContext(c.blackDuck.Spec.SecurityContexts, "blackduck-postgres")
-		if postgresSecurityContext == nil {
-			postgresSecurityContext = &api.SecurityContext{
-				FsGroup:    util.IntToInt64(26),
-				RunAsUser:  util.IntToInt64(26),
-				RunAsGroup: util.IntToInt64(26),
-			}
-		}
-		utilPostgresSecurityContext := util.SecurityContext(*postgresSecurityContext)
-		postgresConfig.SecurityContext = &utilPostgresSecurityContext
+		SecurityContext:        c.blackDuck.Spec.SecurityContexts,
 	}
 
 	return postgresConfig
