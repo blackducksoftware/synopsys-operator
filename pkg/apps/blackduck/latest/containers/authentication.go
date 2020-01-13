@@ -75,7 +75,7 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Dep
 		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
-	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-authentication", 1000, c.config.IsOpenshift)
+	apputil.ConfigurePodConfigSecurityContext(podConfig, c.blackDuck.Spec.SecurityContexts, "blackduck-authentication", c.config.IsOpenshift)
 
 	return util.CreateDeploymentFromContainer(
 		&horizonapi.DeploymentConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, podName), Replicas: util.IntToInt32(1)},

@@ -515,17 +515,16 @@ var updateBlackDuckCmd = &cobra.Command{
 				return err
 			}
 			if !oldVersionIsGreaterThanOrEqualv2019x12x0 && newVersionIsGreaterThanOrEqualv2019x12x0 {
-				var groupOwnership int64 = 1000 // SecurityContext default value
 				bdSecurityContexts := bdappsutil.GetSecurityContext(currBlackDuck.Spec.SecurityContexts, "blackduck-webapp")
 				if bdSecurityContexts != nil {
 					if bdSecurityContexts.RunAsGroup != nil {
-						groupOwnership = *bdSecurityContexts.RunAsGroup
+						err := setBlackDuckFileOwnership(blackDuckNamespace, blackDuckName, *bdSecurityContexts.RunAsGroup, fmt.Sprintf("component=webapp-logstash,name=%s", blackDuckName))
+						if err != nil {
+							return err
+						}
 					}
 				}
-				err := setBlackDuckFileOwnership(blackDuckNamespace, blackDuckName, groupOwnership, fmt.Sprintf("component=webapp-logstash,name=%s", blackDuckName))
-				if err != nil {
-					return err
-				}
+
 			}
 		}
 		// Update Black Duck
