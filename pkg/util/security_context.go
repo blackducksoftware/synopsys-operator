@@ -33,10 +33,7 @@ func SetSecurityContextInPodConfig(podConfig *PodConfig, securityContext *Securi
 	if securityContext != nil {
 		podConfig.RunAsUser = securityContext.RunAsUser
 		podConfig.RunAsGroup = securityContext.RunAsGroup
-
-		if !isOpenshift {
-			podConfig.FSGID = securityContext.FsGroup
-		}
+		podConfig.FSGID = securityContext.FsGroup
 	} else {
 		// if not openshift and the user doesn't specify a securityContext, then FSGID still needs to be set to 0
 		if !isOpenshift {

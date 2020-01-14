@@ -27,15 +27,22 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	bdappsutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
+	"github.com/pkg/errors"
+
+	// bdappsutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
+	appsutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
@@ -45,6 +52,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -486,7 +495,7 @@ var updateBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
-		oldVersion := currBlackDuck.Spec.Version
+		oldBlackDuck := *currBlackDuck
 		currBlackDuck, err = updateBlackDuckSpec(currBlackDuck, cmd.Flags())
 		if err != nil {
 			return err
@@ -504,56 +513,171 @@ var updateBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		// set the Ownership of BlackDuck files when updating from a version that doesn't have security contexts
-		if cmd.Flags().Lookup("version").Changed {
-			oldVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(oldVersion, 2019, time.December, 0)
+
+		// Update the File Owernship in Persistent Volumes if Secuirty Context changes are needed
+		oldVersion := oldBlackDuck.Spec.Version
+		oldState := oldBlackDuck.Spec.DesiredState
+		oldVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(oldVersion, 2019, time.December, 0)
+		if err != nil {
+			return err
+		}
+		newVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(currBlackDuck.Spec.Version, 2019, time.December, 0)
+		if err != nil {
+			return err
+		}
+		bdUpdatedToHaveSecurityContexts := cmd.Flags().Lookup("version").Changed && (!oldVersionIsGreaterThanOrEqualv2019x12x0 && newVersionIsGreaterThanOrEqualv2019x12x0) // case: Secuirty Contexts are set in an old version and then upgrade to a version that requires changes
+		bdSecurityContextsWereChanged := cmd.Flags().Lookup("security-context-file-path").Changed && newVersionIsGreaterThanOrEqualv2019x12x0                               // case: Security Contexts are set and the version requires changes
+		if bdUpdatedToHaveSecurityContexts || bdSecurityContextsWereChanged {
+			// Get a list of Persistent Volumes based on Persistent Volume Claims
+			pvcList, err := util.ListPVCs(kubeClient, blackDuckNamespace, fmt.Sprintf("app=blackduck,component=pvc,name=%s", blackDuckName))
 			if err != nil {
-				return err
+				return errors.Wrap(err, fmt.Sprintf("failed to list PVCs to update the group ownership"))
 			}
-			newVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(currBlackDuck.Spec.Version, 2019, time.December, 0)
-			if err != nil {
-				return err
+			// Map the Persistent Volume to the respective Security Context file Ownership value - if security contexts are not provided then this map will be empty
+			pvcNameToFileOwnershipMap := map[string]int64{}
+			pvcNameToSecurityContextNameMap := map[string]string{
+				"blackduck-postgres":         "blackduck-postgres",
+				"blackduck-cfssl":            "blackduck-cfssl",
+				"blackduck-registration":     "blackduck-registration",
+				"blackduck-zookeeper":        "blackduck-zookeeper",
+				"blackduck-authentication":   "blackduck-authentication",
+				"blackduck-webapp":           "blackduck-webapp",
+				"blackduck-logstash":         "blackduck-webapp",
+				"blackduck-uploadcache-data": "blackduck-uploadcache",
 			}
-			if !oldVersionIsGreaterThanOrEqualv2019x12x0 && newVersionIsGreaterThanOrEqualv2019x12x0 {
-				bdSecurityContexts := bdappsutil.GetSecurityContext(currBlackDuck.Spec.SecurityContexts, "blackduck-webapp")
-				if bdSecurityContexts != nil {
-					if bdSecurityContexts.RunAsGroup != nil {
-						err := setBlackDuckFileOwnership(blackDuckNamespace, blackDuckName, *bdSecurityContexts.RunAsGroup, fmt.Sprintf("component=webapp-logstash,name=%s", blackDuckName))
+			for _, pvc := range pvcList.Items {
+				r, _ := regexp.Compile("blackduck-.*")
+				pvcNameKey := r.FindString(pvc.Name) // removes the "<blackduckName>-" from the PvcName
+				sc := appsutil.GetSecurityContext(currBlackDuck.Spec.SecurityContexts, pvcNameToSecurityContextNameMap[pvcNameKey])
+				if sc != nil {
+					if sc.RunAsUser != nil {
+						pvcNameToFileOwnershipMap[pvc.Name] = *sc.RunAsUser
+					}
+				}
+			}
+			// If security contexts werer provided, update the Persistent Volumes that have a file Ownership value set
+			if len(pvcNameToFileOwnershipMap) > 0 {
+				log.Infof("updating file ownership in Persistent Volumes...")
+				// Stop the Black Duck instance before modifying file ownership in Persistent Volumes
+				if currBlackDuck.Spec.DesiredState != "STOP" {
+					stoppedBlackDuck := oldBlackDuck
+					stoppedBlackDuck.Spec.DesiredState = "STOP"
+					_, err = util.UpdateBlackduck(blackDuckClient, &stoppedBlackDuck)
+					if err != nil {
+						return errors.Wrap(err, "failed to get Black Duck while setting file owernship")
+					}
+					log.Infof("waiting for Black Duck to stop...")
+					waitCount := 0
+					for {
+						// ... wait for the Black Duck to stop
+						pods, err := util.ListPodsWithLabels(kubeClient, blackDuckNamespace, fmt.Sprintf("app=blackduck,name=%s", blackDuckName))
 						if err != nil {
-							return err
+							return errors.Wrap(err, "failed to list pods to stop BlackDuck for setting group ownership")
+						}
+						if len(pods.Items) == 0 {
+							break
+						}
+						time.Sleep(time.Second * 5)
+						waitCount = waitCount + 1
+						if waitCount%5 == 0 {
+							log.Debugf("waiting for Black Duck to stop - %d pods remaining", len(pods.Items))
 						}
 					}
 				}
-
+				// Create Jobs to set the file owernship in each Persistent Volume
+				log.Infof("creating jobs to set the file owernship in each Persistent Volume")
+				var wg sync.WaitGroup
+				wg.Add(len(pvcNameToFileOwnershipMap))
+				for pvcName, ownership := range pvcNameToFileOwnershipMap {
+					log.Infof("creating file owernship job to set ownership value to '%d' in PV '%s'", ownership, pvcName)
+					go setBlackDuckFileOwnershipJob(blackDuckNamespace, blackDuckName, pvcName, ownership, &wg)
+				}
+				log.Infof("waiting for file owernship jobs to finish...")
+				wg.Wait()
+				if len(pvcNameToFileOwnershipMap) != len(pvcList.Items) {
+					log.Warnf("a Job was not created for each Persistent Volume")
+				}
+				// Get new BlackDuck (after update to STOP), set Desired State to the original value, and reapply the user's updates
+				log.Debugf("restarting Black Duck...")
+				currBlackDuck, err = util.GetBlackduck(blackDuckClient, crdnamespace, blackDuckName, metav1.GetOptions{})
+				if err != nil {
+					return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
+				}
+				currBlackDuck.Spec.DesiredState = oldState
+				currBlackDuck, err = updateBlackDuckSpec(currBlackDuck, cmd.Flags())
+				if err != nil {
+					return err
+				}
 			}
 		}
-		// Update Black Duck
+		// Update Black Duck with User's Changes
 		_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck)
 		if err != nil {
-			return fmt.Errorf("error updating Black Duck '%s' due to %+v", currBlackDuck.Name, err)
+			return errors.Wrap(err, fmt.Sprintf("error updating Black Duck '%s'", currBlackDuck.Name))
 		}
 		log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }
 
-// setBlackDuckFileOwnership sets the Owner of the files in the BlackDuck pods specified by the podSelector label
-func setBlackDuckFileOwnership(namespace string, name string, ownership int64, podSelector string) error {
-	log.Infof("migrating group ownership for Black Duck '%s''s files in namespace '%s'", name, namespace)
-
-	pods, err := util.ListPodsWithLabels(kubeClient, namespace, podSelector)
-	if err != nil {
-		return err
+// setBlackDuckFileOwnershipJob that sets the Owner of the files
+func setBlackDuckFileOwnershipJob(namespace string, name string, pvcName string, ownership int64, wg *sync.WaitGroup) error {
+	volumeClaim := components.NewPVCVolume(horizonapi.PVCVolumeConfig{PVCName: pvcName})
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("set-file-ownership-%s", pvcName),
+			Namespace: namespace,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    "set-file-ownership-container",
+							Image:   busyBoxImage,
+							Command: []string{"chown", "-R", fmt.Sprintf("%d", ownership), "/setfileownership"},
+							VolumeMounts: []corev1.VolumeMount{
+								{Name: pvcName, MountPath: "/setfileownership"},
+							},
+						},
+					},
+					RestartPolicy: corev1.RestartPolicyNever,
+					Volumes: []corev1.Volume{
+						{Name: pvcName, VolumeSource: volumeClaim.VolumeSource},
+					},
+				},
+			},
+		},
 	}
-	for _, pod := range pods.Items {
-		kubectlCmd := []string{"exec", "-n", namespace, pod.Name, "-c", "webapp", "--", "chown", "-R", fmt.Sprintf("%+v", ownership), "/opt/blackduck/."}
-		_, err = RunKubeCmd(restconfig, kubeClient, kubectlCmd...)
-		if err != nil {
-			return err
+	defer wg.Done()
+
+	job, err := kubeClient.BatchV1().Jobs(namespace).Create(job)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create job for setting group ownership due to %s", err))
+	}
+
+	timeout := time.NewTimer(30 * time.Minute)
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	defer timeout.Stop()
+
+	for {
+		select {
+		case <-timeout.C:
+			return fmt.Errorf("failed to set the group ownership of files for PV '%s' in namespace '%s'", pvcName, namespace)
+
+		case <-ticker.C:
+			job, err = kubeClient.BatchV1().Jobs(job.Namespace).Get(job.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			if job.Status.Succeeded > 0 {
+				log.Infof("successfully set the group ownership of files for PV '%s' in namespace '%s'", pvcName, namespace)
+				kubeClient.BatchV1().Jobs(job.Namespace).Delete(job.Name, &metav1.DeleteOptions{})
+				return nil
+			}
 		}
 	}
-
-	return nil
 }
 
 // updateBlackDuckMasterKeyCmd create new Black Duck master key for source code upload in the cluster
