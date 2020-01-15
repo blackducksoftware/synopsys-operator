@@ -514,7 +514,7 @@ var updateBlackDuckCmd = &cobra.Command{
 			return err
 		}
 
-		// Update the File Owernship in Persistent Volumes if Secuirty Context changes are needed
+		// Update the File Owernship in Persistent Volumes if Security Context changes are needed
 		oldVersion := oldBlackDuck.Spec.Version
 		oldState := oldBlackDuck.Spec.DesiredState
 		oldVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(oldVersion, 2019, time.December, 0)
@@ -525,9 +525,15 @@ var updateBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		bdUpdatedToHaveSecurityContexts := cmd.Flags().Lookup("version").Changed && (!oldVersionIsGreaterThanOrEqualv2019x12x0 && newVersionIsGreaterThanOrEqualv2019x12x0) // case: Secuirty Contexts are set in an old version and then upgrade to a version that requires changes
+		if !newVersionIsGreaterThanOrEqualv2019x12x0 && cmd.Flags().Changed("security-context-file-path") {
+			return fmt.Errorf("security contexts from --security-context-file-path cannot be set for versions before 2019.12.0, you're using version %s", currBlackDuck.Spec.Version)
+		}
+		if util.IsOpenshift(kubeClient) && cmd.Flags().Changed("security-context-file-path") {
+			return fmt.Errorf("cannot set security contexts with --security-context-file-path in an Openshift environment")
+		}
+		bdUpdatedToHaveSecurityContexts := cmd.Flags().Lookup("version").Changed && (!oldVersionIsGreaterThanOrEqualv2019x12x0 && newVersionIsGreaterThanOrEqualv2019x12x0) // case: Security Contexts are set in an old version and then upgrade to a version that requires changes
 		bdSecurityContextsWereChanged := cmd.Flags().Lookup("security-context-file-path").Changed && newVersionIsGreaterThanOrEqualv2019x12x0                               // case: Security Contexts are set and the version requires changes
-		if bdUpdatedToHaveSecurityContexts || bdSecurityContextsWereChanged {
+		if (bdUpdatedToHaveSecurityContexts || bdSecurityContextsWereChanged) && !util.IsOpenshift(kubeClient) {
 			// Get a list of Persistent Volumes based on Persistent Volume Claims
 			pvcList, err := util.ListPVCs(kubeClient, blackDuckNamespace, fmt.Sprintf("app=blackduck,component=pvc,name=%s", blackDuckName))
 			if err != nil {
@@ -555,7 +561,7 @@ var updateBlackDuckCmd = &cobra.Command{
 					}
 				}
 			}
-			// If security contexts werer provided, update the Persistent Volumes that have a file Ownership value set
+			// If security contexts were provided, update the Persistent Volumes that have a file Ownership value set
 			if len(pvcNameToFileOwnershipMap) > 0 {
 				log.Infof("updating file ownership in Persistent Volumes...")
 				// Stop the Black Duck instance before modifying file ownership in Persistent Volumes
