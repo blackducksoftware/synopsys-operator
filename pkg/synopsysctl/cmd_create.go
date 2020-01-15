@@ -425,7 +425,10 @@ var createBlackDuckCmd = &cobra.Command{
 			return fmt.Errorf("failed to check Black Duck version: %s", err)
 		}
 		if !versionSupportsSecurityContexts && cmd.Flags().Changed("security-context-file-path") {
-			log.Warnf("security contexts from --security-context-file-path are ignored for versions before 2019.12.0, you're using version %s", blackDuck.Spec.Version)
+			return fmt.Errorf("security contexts from --security-context-file-path cannot be set for versions before 2019.12.0, you're using version %s", blackDuck.Spec.Version)
+		}
+		if util.IsOpenshift(kubeClient) && cmd.Flags().Changed("security-context-file-path") {
+			return fmt.Errorf("cannot set security contexts with --security-context-file-path in an Openshift environment")
 		}
 
 		if isBlackDuckVersionSupportMultipleInstance, _ := util.IsBlackDuckVersionSupportMultipleInstance(blackDuck.Spec.Version); !isBlackDuckVersionSupportMultipleInstance {
@@ -485,6 +488,18 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
 		if err != nil {
 			return err
+		}
+
+		// Security Contexts check
+		newVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.December, 0)
+		if err != nil {
+			return err
+		}
+		if !newVersionIsGreaterThanOrEqualv2019x12x0 && cmd.Flags().Changed("security-context-file-path") {
+			return fmt.Errorf("security contexts from --security-context-file-path cannot be set for versions before 2019.12.0, you're using version %s", blackDuck.Spec.Version)
+		}
+		if util.IsOpenshift(kubeClient) && cmd.Flags().Changed("security-context-file-path") {
+			return fmt.Errorf("cannot set security contexts with --security-context-file-path in an Openshift environment")
 		}
 
 		log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
