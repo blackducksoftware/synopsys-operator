@@ -498,9 +498,6 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		if !newVersionIsGreaterThanOrEqualv2019x12x0 && cmd.Flags().Changed("security-context-file-path") {
 			return fmt.Errorf("security contexts from --security-context-file-path cannot be set for versions before 2019.12.0, you're using version %s", blackDuck.Spec.Version)
 		}
-		if util.IsOpenshift(kubeClient) && cmd.Flags().Changed("security-context-file-path") {
-			return fmt.Errorf("cannot set security contexts with --security-context-file-path in an Openshift environment")
-		}
 
 		log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 		app, err := getDefaultApp(nativeClusterType)
