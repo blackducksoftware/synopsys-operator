@@ -532,8 +532,35 @@ var updateBlackDuckCmd = &cobra.Command{
 			return fmt.Errorf("cannot set security contexts with --security-context-file-path in an Openshift environment")
 		}
 		bdUpdatedToHaveSecurityContexts := cmd.Flags().Lookup("version").Changed && (!oldVersionIsGreaterThanOrEqualv2019x12x0 && newVersionIsGreaterThanOrEqualv2019x12x0) // case: Security Contexts are set in an old version and then upgrade to a version that requires changes
+		bdUpdatedToHaveSecurityContextsAndNoPersistentStorage := bdUpdatedToHaveSecurityContexts && !currBlackDuck.Spec.PersistentStorage                                   // case: Black Duck will be restarted during update and no changes to PVs are needed
 		bdSecurityContextsWereChanged := cmd.Flags().Lookup("security-context-file-path").Changed && newVersionIsGreaterThanOrEqualv2019x12x0                               // case: Security Contexts are set and the version requires changes
-		if (bdUpdatedToHaveSecurityContexts || bdSecurityContextsWereChanged) && !util.IsOpenshift(kubeClient) {
+		if (bdUpdatedToHaveSecurityContexts || bdSecurityContextsWereChanged) && !bdUpdatedToHaveSecurityContextsAndNoPersistentStorage && !util.IsOpenshift(kubeClient) {
+			log.Infof("stopping Black Duck to apply Security Context changes")
+			if currBlackDuck.Spec.DesiredState != "STOP" {
+				stoppedBlackDuck := oldBlackDuck
+				stoppedBlackDuck.Spec.DesiredState = "STOP"
+				_, err = util.UpdateBlackduck(blackDuckClient, &stoppedBlackDuck)
+				if err != nil {
+					return errors.Wrap(err, "failed to get Black Duck while setting file owernship")
+				}
+				log.Infof("waiting for Black Duck to stop...")
+				waitCount := 0
+				for {
+					// ... wait for the Black Duck to stop
+					pods, err := util.ListPodsWithLabels(kubeClient, blackDuckNamespace, fmt.Sprintf("app=blackduck,name=%s", blackDuckName))
+					if err != nil {
+						return errors.Wrap(err, "failed to list pods to stop BlackDuck for setting group ownership")
+					}
+					if len(pods.Items) == 0 {
+						break
+					}
+					time.Sleep(time.Second * 5)
+					waitCount = waitCount + 1
+					if waitCount%5 == 0 {
+						log.Debugf("waiting for Black Duck to stop - %d pods remaining", len(pods.Items))
+					}
+				}
+			}
 			// Get a list of Persistent Volumes based on Persistent Volume Claims
 			pvcList, err := util.ListPVCs(kubeClient, blackDuckNamespace, fmt.Sprintf("app=blackduck,component=pvc,name=%s", blackDuckName))
 			if err != nil {
@@ -564,32 +591,6 @@ var updateBlackDuckCmd = &cobra.Command{
 			// If security contexts were provided, update the Persistent Volumes that have a file Ownership value set
 			if len(pvcNameToFileOwnershipMap) > 0 {
 				log.Infof("updating file ownership in Persistent Volumes...")
-				// Stop the Black Duck instance before modifying file ownership in Persistent Volumes
-				if currBlackDuck.Spec.DesiredState != "STOP" {
-					stoppedBlackDuck := oldBlackDuck
-					stoppedBlackDuck.Spec.DesiredState = "STOP"
-					_, err = util.UpdateBlackduck(blackDuckClient, &stoppedBlackDuck)
-					if err != nil {
-						return errors.Wrap(err, "failed to get Black Duck while setting file owernship")
-					}
-					log.Infof("waiting for Black Duck to stop...")
-					waitCount := 0
-					for {
-						// ... wait for the Black Duck to stop
-						pods, err := util.ListPodsWithLabels(kubeClient, blackDuckNamespace, fmt.Sprintf("app=blackduck,name=%s", blackDuckName))
-						if err != nil {
-							return errors.Wrap(err, "failed to list pods to stop BlackDuck for setting group ownership")
-						}
-						if len(pods.Items) == 0 {
-							break
-						}
-						time.Sleep(time.Second * 5)
-						waitCount = waitCount + 1
-						if waitCount%5 == 0 {
-							log.Debugf("waiting for Black Duck to stop - %d pods remaining", len(pods.Items))
-						}
-					}
-				}
 				// Create Jobs to set the file owernship in each Persistent Volume
 				log.Infof("creating jobs to set the file owernship in each Persistent Volume")
 				var wg sync.WaitGroup
@@ -603,17 +604,17 @@ var updateBlackDuckCmd = &cobra.Command{
 				if len(pvcNameToFileOwnershipMap) != len(pvcList.Items) {
 					log.Warnf("a Job was not created for each Persistent Volume")
 				}
-				// Get new BlackDuck (after update to STOP), set Desired State to the original value, and reapply the user's updates
-				log.Debugf("restarting Black Duck...")
-				currBlackDuck, err = util.GetBlackduck(blackDuckClient, crdnamespace, blackDuckName, metav1.GetOptions{})
-				if err != nil {
-					return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-				}
-				currBlackDuck.Spec.DesiredState = oldState
-				currBlackDuck, err = updateBlackDuckSpec(currBlackDuck, cmd.Flags())
-				if err != nil {
-					return err
-				}
+			}
+			// Get new BlackDuck (after update to STOP), set Desired State to the original value, and reapply the user's updates
+			log.Debugf("restarting Black Duck...")
+			currBlackDuck, err = util.GetBlackduck(blackDuckClient, crdnamespace, blackDuckName, metav1.GetOptions{})
+			if err != nil {
+				return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
+			}
+			currBlackDuck.Spec.DesiredState = oldState
+			currBlackDuck, err = updateBlackDuckSpec(currBlackDuck, cmd.Flags())
+			if err != nil {
+				return err
 			}
 		}
 		// Update Black Duck with User's Changes
