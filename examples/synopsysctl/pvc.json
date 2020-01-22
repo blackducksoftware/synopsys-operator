@@ -1,34 +1,50 @@
 [
     {
         "name": "blackduck-postgres",
-        "size": "1Gi"
+        "size": "1Gi",
+        "storageClass": "default",
+        "volumeName": "blackduck-postgres-pv"
     },
     {
         "name": "blackduck-cfssl",
-        "size": "1Gi"
+        "size": "1Gi",
+        "storageClass": "default",
+        "volumeName": "blackduck-cfssl-pv"
     },
     {
         "name": "blackduck-registration",
-        "size": "1Gi"
+        "size": "1Gi",
+        "storageClass": "default",
+        "volumeName": "blackduck-registration-pv"
     },
     {
         "name": "blackduck-zookeeper",
-        "size": "1Gi"
+        "size": "1Gi",
+        "storageClass": "default",
+        "volumeName": "blackduck-zookeeper-pv"
     },
     {
         "name": "blackduck-authentication",
-        "size": "1Gi"
+        "size": "1Gi",
+        "storageClass": "default",
+        "volumeName": "blackduck-authentication-pv"
     },
     {
         "name": "blackduck-webapp",
-        "size": "1Gi"
+        "size": "1Gi",
+        "storageClass": "default",
+        "volumeName": "blackduck-webapp-pv"
     },
     {
         "name": "blackduck-logstash",
-        "size": "1Gi"
+        "size": "1Gi",
+        "storageClass": "default",
+        "volumeName": "blackduck-logstash-pv"
     },
     {
         "name": "blackduck-uploadcache-data",
-        "size": "1Gi"
+        "size": "1Gi",
+        "storageClass": "default",
+        "volumeName": "blackduck-uploadcache-data-pv"
     }
 ]
