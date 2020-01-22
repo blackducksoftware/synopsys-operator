@@ -25,12 +25,12 @@ import "fmt"
 
 var imageTags = map[string]map[string]string{
 	"2019.10.2": {
-		"blackduck-authentication": "2019.10.1",
-		"blackduck-documentation":  "2019.10.1",
-		"blackduck-jobrunner":      "2019.10.1",
-		"blackduck-registration":   "2019.10.1",
-		"blackduck-scan":           "2019.10.1",
-		"blackduck-webapp":         "2019.10.1",
+		"blackduck-authentication": "2019.10.2",
+		"blackduck-documentation":  "2019.10.2",
+		"blackduck-jobrunner":      "2019.10.2",
+		"blackduck-registration":   "2019.10.2",
+		"blackduck-scan":           "2019.10.2",
+		"blackduck-webapp":         "2019.10.2",
 		"blackduck-cfssl":          "1.0.0",
 		"blackduck-logstash":       "1.0.4",
 		"blackduck-nginx":          "1.0.9",
