@@ -42,10 +42,10 @@ const (
 	rabbitmqMemoryLimit        = "1024Mi"
 	uploadCacheMemoryLimit     = "512Mi"
 
-	registrationMinCPUUsage  = "1000m"
-	zookeeperMinCPUUsage     = "1000m"
-	jobRunnerMinCPUUsage     = "1000m"
-	jobRunnerMaxCPUUsage     = "1000m"
+	registrationMinCPUUsage  = ""
+	zookeeperMinCPUUsage     = ""
+	jobRunnerMinCPUUsage     = ""
+	jobRunnerMaxCPUUsage     = ""
 	binaryScannerMinCPUUsage = "1000m"
 	binaryScannerMaxCPUUsage = "1000m"
 
@@ -88,7 +88,7 @@ const (
 	// Medium Flavor
 	mediumWebServerMemoryRequestsAndLimits = "2048Mi"
 
-	mediumWebappLogstashCpuRequests             = "2000m"
+	mediumWebappLogstashCpuRequests             = "1000m"
 	mediumWebappLogstashMemoryRequestsAndLimits = "5120Mi"
 	mediumWebappLogstashHubMaxMemoryEnvVar      = "4096m"
 
@@ -96,7 +96,7 @@ const (
 	mediumScanMemoryRequestsAndLimits = "5120Mi"
 	mediumScanHubMaxMemoryEnvVar      = "4096m"
 
-	mediumJobRunnerReplicas                = 4
+	mediumJobRunnerReplicas                = 3
 	mediumJobRunnerMemoryRequestsAndLimits = "7168Mi"
 	mediumJobRunnerHubMaxMemoryEnvVar      = "6144m"
 
@@ -106,7 +106,7 @@ const (
 	// Large Flavor
 	largeWebServerMemoryRequestsAndLimits = "2048Mi"
 
-	largeWebappLogstashCpuRequests             = "2000m"
+	largeWebappLogstashCpuRequests             = "1000m"
 	largeWebappLogstashMemoryRequestsAndLimits = "9728Mi"
 	largeWebappLogstashHubMaxMemoryEnvVar      = "8192m"
 
@@ -114,7 +114,7 @@ const (
 	largeScanMemoryRequestsAndLimits = "9728Mi"
 	largeScanHubMaxMemoryEnvVar      = "8192m"
 
-	largeJobRunnerReplicas                = 6
+	largeJobRunnerReplicas                = 3
 	largeJobRunnerMemoryRequestsAndLimits = "13824Mi"
 	largeJobRunnerHubMaxMemoryEnvVar      = "12288m"
 
