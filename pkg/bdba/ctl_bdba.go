@@ -459,7 +459,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 		case "minio-acceskey":
 			existingSecret := GetExistingSecret(client, ctl.spec.Namespace, ctl.spec.Name + "-minio")
 			if existingSecret == nil {
-				randomString, _ := GenerateRandomString(32) // Generate aws key AKIA + 16. A-Z 2-7
+				randomString, _ := GenerateRandomAWSAccessKey()
 				ctl.spec.MinioAccessKey = randomString
 			}
 		case "minio-secret-key":
