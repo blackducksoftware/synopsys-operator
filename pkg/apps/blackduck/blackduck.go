@@ -110,7 +110,7 @@ func (b *Blackduck) ensureVersion(bd *blackduckapi.Blackduck) error {
 	if len(bd.Spec.Version) == 0 {
 		// TODO: fix the sort logic for Black Duck version
 		// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-		bd.Spec.Version = "2019.12.0"
+		bd.Spec.Version = "2019.12.1"
 	} else {
 		// If the verion is provided, check that it's supported
 		for _, v := range versions {
