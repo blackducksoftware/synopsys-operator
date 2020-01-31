@@ -28,31 +28,97 @@ type BDBA struct {
 	Version   string `json:"version"`
 
 	Hostname    string `json:"hostname"`
-	IngressHost string `json:"ingressHost"`
+	RabbitMQK8SDomain string `json:"rabbitmqK8sDomain"`
 
-	MinioAccessKey string `json:"minioAccessKey"`
-	MinioSecretKey string `json:"minioSecretKey"`
+	// Storage
+	PSQLStorageClass string `json:"psqlStorageClass"`
+	PSQLSize string `json:"psqlSize"`
+	PSQLExistingClaim string `json:"psqlExistingClaim"`
+	MinioStorageClass string `json:"minioStorageClass"`
+	MinioSize string `json:"minioSize"`
+	MinioExistingClaim string `json:"minioExistingClaim"`
+	RabbitMQStorageClass string `json:"rabbitmqStorageClass"`
+	RabbitMQSize string `json:"rabbitmqSize"`
+	RabbitMQExistingClaim string `json:"rabbitmqExistingClaim"`
 
-	WorkerReplicas int `json:"workerReplicas"`
+	// Licensing
+	LicensingUsername string `json:"licensingUsername"`
+	LicensingPassword string `json:"licensingPassword"`
+	LicensingUpstream string `json:"licensingUpstream"`
 
+	// Rabbitmq configuration
+
+	// Web frontend configuration
+	SessionCookieAge int `json:"sessionCookieAge"`
+	FrontendReplicas int `json:"frontendReplicas"`
+	HideLicenses      bool `json:"hideLicenses"`
+	OfflineMode bool `json:"offlineMode"`
 	AdminEmail string `json:"adminEmail"`
+	ErrorAdminEmail string `json:"errorAdminEmail"`
+	RootURL string `json:"rootURL"`
+
+	// SMTP configuration
+	EmailEnabled bool `json:"emailEnabled"`
+	EmailSMTPHost string `json:"emailSMTPHost"`
+	EmailSMTPPort int `json:"emailSMTPPort"`
+	EmailSMTPUser string `json:"emailSMTPUser"`
+	EmailSMTPPassword string `json:"emailSMTPPassword"`
+	EmailFrom string `json:"emailFrom"`
+	EmailSecurity string `json:"emailSecurity"`
+	EmailVerify bool `json:"emailVerify"`
+
+	// LDAP Authentication
+	LDAPEnabled bool `json:"ldapEnabled"`
+	LDAPServerURI string `json:"ldapServerURI"`
+	LDAPUserDNTemplate string `json:"ldapUserDNTemplate"`
+	LDAPBindAsAuthenticating bool `json:"ldapBindAsAuthenticating"`
+	LDAPBindDN string `json:"ldapBindDN"`
+	LDAPBindPassword string `json:"ldapBindPassword"`
+	LDAPStartTLS bool `json:"ldapStartTLS"`
+	LDAPVerify bool `json:"ldapVerify"`
+	LDAPRootCASecret string `json:"ldapRootCASecret"`
+	LDAPRootCAFile string `json:"ldapRootCAFile"`
+	LDAPRequireGroup string `json:"ldapRequireGroup"`
+	LDAPUserSearch string `json:"ldapUserSearch"`
+	LDAPUserSearchScope string `json:"ldapUserSearchScope"`
+	LDAPGroupSearch string `json:"ldapGroupSearch"`
+	LDAPGroupSearchScope string `json:"ldapGroupSearchScope"`
+	LDAPNestedSearch bool `json:"ldapNestedSearch"`
+
+	// Logging
+	FrontendLogging bool `json:"frontendLogging"`
+	WorkerLogging bool `json:"workerLogging"`
+
+	// Worker scaling
+	WorkerReplicas int `json:"workerReplicas"`
+	WorkerConcurrency int `json:"workerConcurrency"` // TODO: Patcher
+
+	// Networking and security
+	RootCASecret string `json:"rootCASecret"`
+	HTTPProxy string `json:"httpProxy"`
+	HTTPNoProxy string `json:"httpNoProxy"`
+
+	// Ingress
+	IngressEnabled bool `json:"ingressEnabled"`
+	IngressHost string `json:"ingressHost"`
+	IngressTLSEnabled bool `json:"ingressTLSEnabled"`
+	IngressTLSSecretName string `json:"ingressTLSSecretName"`
 
 	BrokerURL string `json:"brokerURL"`
 
-	PGPPassword string `json:"pgpPassword"`
+	// External PG
+	PGHost string `json:"pgHost"`
+	PGPort string `json:"pgPort"`
+	PGUser string `json:"pgUser"`
+	PGDataBase string `json:"pgDataBase"`
 
-	RabbitMQULimitNoFiles string `json:"rabbitMQULimitNoFiles"`
+	// Secrets
+	DjangoSecretKey string `json:"djangoSecretKey"`
+	RabbitMQPassword string `json:"rabbitMQPassword"`
+	RabbitMQErlangCookie string `json:"rabbitMQErlangCookie"`
+	PGPassword string `json:"pgpPassword"`
+	MinioAccessKey string `json:"minioAccessKey"`
+	MinioSecretKey string `json:"minioSecretKey"`
 
-	HideLicenses      string `json:"hideLicenses"`
-	LicensingPassword string `json:"licensingPassword"`
-	LicensingUsername string `json:"licensingUsername"`
-
-	InsecureCookies  string `json:"insecureCookies"`
-	SessionCookieAge string `json:"sessionCookieAge"`
-
-	URL       string `json:"url"`
-	Actual    string `json:"actual"`
-	Expected  string `json:"expected"`
-	StartFlag string `json:"startFlag"`
-	Result    string `json:"result"`
+	KubeConfig string `json:"kubeConfig"`
 }

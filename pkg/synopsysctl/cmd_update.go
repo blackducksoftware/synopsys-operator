@@ -1294,7 +1294,7 @@ var updatePolarisCmd = &cobra.Command{
 }
 
 func updateBDBA(bdbaObj bdba.BDBA, flagset *pflag.FlagSet) (*bdba.BDBA, error) {
-	if err := updatePolarisCobraHelper.SetCRSpec(bdbaObj); err != nil {
+	if err := updateBDBACobraHelper.SetCRSpec(bdbaObj); err != nil {
 		return nil, err
 	}
 
@@ -1400,6 +1400,16 @@ func init() {
 
 	addNativeFormatFlag(updateBlackDuckSetImageRegistryNativeCmd)
 	updateBlackDuckSetImageRegistryCmd.AddCommand(updateBlackDuckSetImageRegistryNativeCmd)
+
+	/* Update BDBA Commands */
+
+	// updateBDBACmd
+	updateBDBACmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	updateBDBACobraHelper.AddCRSpecFlagsToCommand(updateBDBACmd, false)
+	addMockFlag(updateBDBACmd)
+	addbaseURLFlag(updateBDBACmd)
+	addNativeFormatFlag(updateBDBACmd)
+	updateCmd.AddCommand(updateBDBACmd)
 
 	/* Update OpsSight Comamnds */
 
