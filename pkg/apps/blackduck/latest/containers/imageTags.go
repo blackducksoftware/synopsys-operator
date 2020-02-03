@@ -24,6 +24,21 @@ package containers
 import "fmt"
 
 var imageTags = map[string]map[string]string{
+	"2020.2.0": {
+		"blackduck-authentication": "2020.2.0",
+		"blackduck-documentation":  "2020.2.0",
+		"blackduck-jobrunner":      "2020.2.0",
+		"blackduck-registration":   "2020.2.0",
+		"blackduck-scan":           "2020.2.0",
+		"blackduck-webapp":         "2020.2.0",
+		"blackduck-cfssl":          "1.0.1",
+		"blackduck-logstash":       "1.0.5",
+		"blackduck-nginx":          "1.0.17",
+		"blackduck-zookeeper":      "1.0.3",
+		"blackduck-upload-cache":   "1.0.12",
+		"appcheck-worker":          "2019.12",
+		"rabbitmq":                 "1.0.3",
+	},
 	"2019.12.1": {
 		"blackduck-authentication": "2019.12.1",
 		"blackduck-documentation":  "2019.12.1",

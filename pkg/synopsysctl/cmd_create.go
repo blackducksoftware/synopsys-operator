@@ -395,7 +395,7 @@ var createBlackDuckCmd = &cobra.Command{
 				// versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
 				// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
 				// TODO: fix the sort logic for Black Duck version
-				blackDuck.Spec.Version = "2019.12.1"
+				blackDuck.Spec.Version = "2020.2.0"
 			}
 			versionSupportsSecurityContexts, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.December, 0)
 			if err != nil {
@@ -418,7 +418,7 @@ var createBlackDuckCmd = &cobra.Command{
 			// versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
 			// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
 			// TODO: fix the sort logic for Black Duck version
-			blackDuck.Spec.Version = "2019.12.1"
+			blackDuck.Spec.Version = "2020.2.0"
 		}
 		versionSupportsSecurityContexts, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.December, 0)
 		if err != nil {
