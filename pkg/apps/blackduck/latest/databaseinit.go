@@ -55,6 +55,7 @@ func InitDatabase(name string, createHub *blackduckapi.BlackduckSpec, isClusterS
 		"GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA st to blackduck_user;",
 		"ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;",
 		"ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;",
+		"REVOKE ALL ON SCHEMA st FROM blackduck_reporter;",
 		"ALTER DATABASE bds_hub SET standard_conforming_strings TO OFF;",
 	})
 	if err != nil {
