@@ -29,9 +29,9 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
 	log "github.com/sirupsen/logrus"
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	extv1beta1 "k8s.io/api/extensions/v1beta1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -58,12 +58,12 @@ func getPatchedRuntimeObjects(yamlManifests string, bdba BDBA) (map[string]runti
 	return rtoMap, nil
 }
 
-func quoteInt(i int) (string) {
-	return "\""+strconv.Itoa(i)+"\""
+func quoteInt(i int) string {
+	return "\"" + strconv.Itoa(i) + "\""
 }
 
-func quoteBool(i bool) (string) {
-	return "\""+strconv.FormatBool(i)+"\""
+func quoteBool(i bool) string {
+	return "\"" + strconv.FormatBool(i) + "\""
 }
 
 func patchYamlManifestPlaceHolders(yamlManifests string, bdba BDBA) string {
@@ -160,7 +160,6 @@ type RuntimeObjectPatcher struct {
 	mapOfUniqueIDToRuntimeObject map[string]runtime.Object
 }
 
-
 func setSecret(secret *corev1.Secret, secretKeyName string, secretKey string) {
 	secret.Data[secretKeyName] = []byte(secretKey)
 }
@@ -192,13 +191,13 @@ func (p *RuntimeObjectPatcher) patchNamespace() error {
 
 // patchTLS will remove TLS if it's not enabled
 func (p *RuntimeObjectPatcher) patchTLS() error {
-	var tlsIngress = "true";
+	var tlsIngress = "true"
 
 	if p.bdba.IngressTLSEnabled != true {
 		log.Debug("Patching TLS")
-		tlsIngress = "false";
+		tlsIngress = "false"
 		for k, v := range p.mapOfUniqueIDToRuntimeObject {
-		switch v.(type) {
+			switch v.(type) {
 			case *extv1beta1.Ingress:
 				p.mapOfUniqueIDToRuntimeObject[k].(*extv1beta1.Ingress).Spec.TLS = nil
 			}
@@ -210,7 +209,7 @@ func (p *RuntimeObjectPatcher) patchTLS() error {
 		case *corev1.ConfigMap:
 			var configMap = p.mapOfUniqueIDToRuntimeObject[k].(*corev1.ConfigMap)
 			if strings.Contains(configMap.Name, "bdba-user-configmap") {
-				configMap.Data["TLS_INGRESS"] = tlsIngress;
+				configMap.Data["TLS_INGRESS"] = tlsIngress
 			}
 		}
 	}
@@ -225,7 +224,7 @@ func createLDAPVolumeEntry(p *RuntimeObjectPatcher) corev1.Volume {
 		},
 	}
 	return corev1.Volume{
-		Name: "ldapca-store",
+		Name:         "ldapca-store",
 		VolumeSource: vsource,
 	}
 }
@@ -233,8 +232,8 @@ func createLDAPVolumeEntry(p *RuntimeObjectPatcher) corev1.Volume {
 func createLDAPVolumeMountEntry() corev1.VolumeMount {
 	return corev1.VolumeMount{
 		MountPath: "/ldap/ssl/",
-		Name: "ldapca-store",
-		ReadOnly: true,
+		Name:      "ldapca-store",
+		ReadOnly:  true,
 	}
 }
 

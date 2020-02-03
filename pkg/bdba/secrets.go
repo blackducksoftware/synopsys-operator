@@ -22,50 +22,50 @@
 package bdba
 
 import (
-	"strings"
-	math_rand "math/rand"
 	crypto_rand "crypto/rand"
 	"encoding/binary"
+	math_rand "math/rand"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // GenerateRandomString will generate a string of given length
 func GenerateRandomString(n int) (string, error) {
 	var b [8]byte
-    _, err := crypto_rand.Read(b[:])
-    if err != nil {
-        return "", err
+	_, err := crypto_rand.Read(b[:])
+	if err != nil {
+		return "", err
 	}
 	math_rand.Seed(int64(binary.LittleEndian.Uint64(b[:])))
 	var letterRunes = []rune("_-!0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	randomString := make([]rune, n)
-    for i := range randomString {
+	for i := range randomString {
 		r := math_rand.Intn(len(letterRunes))
-        randomString[i] = letterRunes[r]
-    }
-    return string(randomString), nil
+		randomString[i] = letterRunes[r]
+	}
+	return string(randomString), nil
 }
 
 // GenerateRandomAWSAccessKey will generate a random AWS key
 func GenerateRandomAWSAccessKey() (string, error) {
 	const n = 16
 	var b [8]byte
-    _, err := crypto_rand.Read(b[:])
-    if err != nil {
-        return "", err
+	_, err := crypto_rand.Read(b[:])
+	if err != nil {
+		return "", err
 	}
 	math_rand.Seed(int64(binary.LittleEndian.Uint64(b[:])))
 	var letterRunes = []rune("234567ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	randomString := make([]rune, n)
-    for i := range randomString {
+	for i := range randomString {
 		r := math_rand.Intn(len(letterRunes))
-        randomString[i] = letterRunes[r]
-    }
-    return "AKIA" + string(randomString), nil
+		randomString[i] = letterRunes[r]
+	}
+	return "AKIA" + string(randomString), nil
 }
 
 // GetExistingSecret will get an existing deployed secret with a given name
