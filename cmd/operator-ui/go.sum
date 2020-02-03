@@ -51,6 +51,8 @@ github.com/blackducksoftware/horizon v0.0.0-20190625151958-16cafa9109a3 h1:noI1R
 github.com/blackducksoftware/horizon v0.0.0-20190625151958-16cafa9109a3/go.mod h1:zprIpuTlP5utWbWF58V+/SOx9kbWm8PbXLUBwUvPh+0=
 github.com/blackducksoftware/synopsys-operator v0.0.0-20191209201255-c13ec65c0cef h1:29E7IYvgT/hfUyOotS7C6qrwswzhsQR16EUHOvx9pGY=
 github.com/blackducksoftware/synopsys-operator v0.0.0-20191209201255-c13ec65c0cef/go.mod h1:WPvs3voil+9AwI7/4IL8Qw/u39alQz9k7QUcH2sy1dk=
+github.com/blackducksoftware/synopsys-operator v0.0.0-20200131185555-95684647314d h1:mxFkCGJyD2ERrl2IUIFysAogg/1sMGVdlq/Cd0Y4vzQ=
+github.com/blackducksoftware/synopsys-operator v0.0.0-20200131185555-95684647314d/go.mod h1:WPvs3voil+9AwI7/4IL8Qw/u39alQz9k7QUcH2sy1dk=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/census-instrumentation/opencensus-proto v0.2.1 h1:glEXhBS5PSLLv4IXzLA5yPRVX4bilULVyxxbrfOtDAk=
