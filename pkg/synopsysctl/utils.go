@@ -45,6 +45,7 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -275,6 +276,42 @@ func RunKubeEditorCmd(restConfig *rest.Config, kubeClient *kubernetes.Clientset,
 		return err
 	}
 	//time.Sleep(1 * time.Second) TODO why did Jay put this here???
+	return nil
+}
+
+// KubectlApplyRuntimeObjects creates runtime objects by converting them to bytes
+// and passing them through the kubectl command
+func KubectlApplyRuntimeObjects(objects map[string]runtime.Object) error {
+	var content []byte
+	for _, obj := range objects {
+		secretBytes, err := json.Marshal(obj)
+		if err != nil {
+			return err
+		}
+		content = append(content, secretBytes...)
+	}
+	out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "apply", "--validate=false", "-f", "-")
+	if err != nil {
+		return fmt.Errorf("failed to deploy Runtime Object: %+v : %+v", out, err)
+	}
+	return nil
+}
+
+// KubectlDeleteRuntimeObjects deletes runtime objects by converting them to bytes
+// and passing them through the kubectl command
+func KubectlDeleteRuntimeObjects(objects map[string]runtime.Object) error {
+	var content []byte
+	for _, obj := range objects {
+		secretBytes, err := json.Marshal(obj)
+		if err != nil {
+			return err
+		}
+		content = append(content, secretBytes...)
+	}
+	out, err := RunKubeCmdWithStdin(restconfig, kubeClient, string(content), "delete", "-f", "-")
+	if err != nil {
+		return fmt.Errorf("failed to delete Runtime Object: %+v : %+v", out, err)
+	}
 	return nil
 }
 

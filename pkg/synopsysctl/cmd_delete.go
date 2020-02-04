@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
+	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -277,7 +278,48 @@ func askYesNo(reader io.Reader) (bool, error) {
 	}
 }
 
+// deletePolarisReportingCmd deletes a Polaris-Reporting instance
+var deletePolarisReportingCmd = &cobra.Command{
+	Use:           "polaris-reporting",
+	Example:       "synopsysctl delete polaris-reportinng -n <namespace>",
+	Short:         "Delete a Polaris-Reporting instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get Secret For the GCP Key
+		gcpServiceAccountSecrets, err := polarisreporting.GetPolarisReportingSecrets(namespace, "EMPTY_DATA")
+		if err != nil {
+			return fmt.Errorf("failed to generate GCP Service Account Secrets: %+v", err)
+		}
+
+		// Deploy the Secret
+		err = KubectlDeleteRuntimeObjects(gcpServiceAccountSecrets)
+		if err != nil {
+			return fmt.Errorf("failed to update the gcpServiceAccount Secrets: %s", err)
+		}
+
+		// Deploy Polaris-Reporting Resources
+		out, err := util.RunHelm3("uninstall", []string{polarisReportingName, "-n", namespace}, map[string]string{})
+		if err != nil {
+			return fmt.Errorf("failed to delete Polaris-Reporting resources: %+v", out)
+		}
+
+		log.Infof("Polaris-Reporting has been successfully Deleted!")
+		return nil
+	},
+}
+
 func init() {
+	// deletePolarisReportingCobraHelper = *polarisreporting.NewArgsFromCobraFlags()
+
 	//(PassCmd) deleteCmd.DisableFlagParsing = true // lets deleteCmd pass flags to kube/oc
 	rootCmd.AddCommand(deleteCmd)
 
@@ -298,4 +340,9 @@ func init() {
 	deletePolarisCmd.Flags().BoolVarP(&promptAnswerYes, "yes", "y", promptAnswerYes, "Automatic yes to prompts")
 	addbaseURLFlag(deletePolarisCmd)
 	deleteCmd.AddCommand(deletePolarisCmd)
+
+	// Add Delete Polaris-Reporting Command
+	deletePolarisReportingCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(deletePolarisReportingCmd.Flags(), "namespace")
+	deleteCmd.AddCommand(deletePolarisReportingCmd)
 }
