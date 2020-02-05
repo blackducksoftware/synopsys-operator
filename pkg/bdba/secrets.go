@@ -52,7 +52,7 @@ func GenerateRandomString(n int) (string, error) {
 
 // GenerateRandomAWSAccessKey will generate a random AWS key
 func GenerateRandomAWSAccessKey() (string, error) {
-	const n = 16
+	const n = 14
 	var b [8]byte
 	_, err := crypto_rand.Read(b[:])
 	if err != nil {
@@ -60,12 +60,16 @@ func GenerateRandomAWSAccessKey() (string, error) {
 	}
 	math_rand.Seed(int64(binary.LittleEndian.Uint64(b[:])))
 	var letterRunes = []rune("234567ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	var fifthRunes = []rune("IJ")
+	var lastRunes = []rune("AQ")
 	randomString := make([]rune, n)
 	for i := range randomString {
 		r := math_rand.Intn(len(letterRunes))
 		randomString[i] = letterRunes[r]
 	}
-	return "AKIA" + string(randomString), nil
+	var randomFifth = fifthRunes[math_rand.Intn(len(fifthRunes))]
+	var randomLast = lastRunes[math_rand.Intn(len(lastRunes))]
+	return "AKIA" + string(randomFifth) + string(randomString) + string(randomLast), nil
 }
 
 // GetExistingSecret will get an existing deployed secret with a given name

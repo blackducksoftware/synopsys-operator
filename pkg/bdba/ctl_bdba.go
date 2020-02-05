@@ -168,14 +168,14 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) err
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of BDBA")
-	cmd.Flags().StringVar(&ctl.Name, "name", ctl.Name, "TODO")
+	cmd.Flags().StringVar(&ctl.Name, "name", ctl.Name, "Name of the deployment")
 
-	cmd.Flags().StringVar(&ctl.MinioAccessKey, "minio-acceskey", ctl.MinioAccessKey, "TODO")
-	cmd.Flags().StringVar(&ctl.MinioSecretKey, "minio-secret-key", ctl.MinioSecretKey, "TODO")
-	cmd.Flags().StringVar(&ctl.RabbitMQK8SDomain, "rabbitmq-k8s-domain", ctl.RabbitMQK8SDomain, "TODO")
+	cmd.Flags().StringVar(&ctl.MinioAccessKey, "minio-acceskey", ctl.MinioAccessKey, "Minio accesskey")
+	cmd.Flags().StringVar(&ctl.MinioSecretKey, "minio-secret-key", ctl.MinioSecretKey, "Minio secret key")
+	cmd.Flags().StringVar(&ctl.RabbitMQK8SDomain, "rabbitmq-k8s-domain", ctl.RabbitMQK8SDomain, "Internal k8s cluster domain")
 
-	cmd.Flags().StringVar(&ctl.DjangoSecretKey, "django-secret-key", ctl.DjangoSecretKey, "TODO")
-	cmd.Flags().StringVar(&ctl.RabbitMQPassword, "rabbitmq-password", ctl.RabbitMQPassword, "TODO")
+	cmd.Flags().StringVar(&ctl.DjangoSecretKey, "django-secret-key", ctl.DjangoSecretKey, "Secret key for Django")
+	cmd.Flags().StringVar(&ctl.RabbitMQPassword, "rabbitmq-password", ctl.RabbitMQPassword, "Password for RabbitMQ")
 
 	// Storage
 	cmd.Flags().StringVar(&ctl.PSQLStorageClass, "psql-storage-class", ctl.PSQLStorageClass, "StorageClass for postgresql")
@@ -249,13 +249,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().BoolVar(&ctl.IngressTLSEnabled, "ingress-tls-enabled", ctl.IngressTLSEnabled, "Enable TLS")
 	cmd.Flags().StringVar(&ctl.IngressTLSSecretName, "ingress-tls-secret-name", ctl.IngressTLSSecretName, "TLS secret for certificate")
 
-	cmd.Flags().StringVar(&ctl.PGPassword, "pg-password", ctl.PGPassword, "TODO")
-
 	// External PG
-	cmd.Flags().StringVar(&ctl.PGHost, "pg-host", ctl.PGHost, "TODO")
-	cmd.Flags().StringVar(&ctl.PGPort, "pg-port", ctl.PGPort, "TODO")
-	cmd.Flags().StringVar(&ctl.PGUser, "pg-user", ctl.PGUser, "TODO")
-	cmd.Flags().StringVar(&ctl.PGDataBase, "pg-database", ctl.PGDataBase, "TODO")
+	cmd.Flags().StringVar(&ctl.PGHost, "pg-host", ctl.PGHost, "Hostname of external postgresql")
+	cmd.Flags().StringVar(&ctl.PGPort, "pg-port", ctl.PGPort, "Port of external postgresql")
+	cmd.Flags().StringVar(&ctl.PGUser, "pg-user", ctl.PGUser, "Username in external postgresql")
+	cmd.Flags().StringVar(&ctl.PGPassword, "pg-password", ctl.PGPassword, "Password in external postgresql")
+	cmd.Flags().StringVar(&ctl.PGDataBase, "pg-database", ctl.PGDataBase, "Database name of external postgresql")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
