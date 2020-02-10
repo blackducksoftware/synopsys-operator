@@ -63,6 +63,13 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 		"HUB_WEBSERVER_HOST":          util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"),
 		"HUB_ZOOKEEPER_HOST":          util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"),
 	}
+
+	if c.config.IsOpenshift {
+		blackduckServiceData["BLACKDUCK_ORCHESTRATION_TYPE"] = "OPENSHIFT"
+	} else {
+		blackduckServiceData["BLACKDUCK_ORCHESTRATION_TYPE"] = "KUBERNETES"
+	}
+
 	hubData = util.MergeEnvMaps(blackduckServiceData, hubData)
 
 	for _, value := range c.blackDuck.Spec.Environs {
