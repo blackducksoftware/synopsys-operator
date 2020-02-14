@@ -28,6 +28,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Flags for using mock mode - doesn't deploy
+var mockFormat string
+var nativeFormat = "json"
+
+const (
+	clusterTypeKubernetes = "KUBERNETES"
+	clusterTypeOpenshift  = "OPENSHIFT"
+)
+
+var nativeClusterType = clusterTypeKubernetes
+
+var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/master"
+
 func verifyClusterType(cType string) error {
 	if strings.EqualFold(strings.ToUpper(cType), clusterTypeKubernetes) || strings.EqualFold(strings.ToUpper(cType), clusterTypeOpenshift) {
 		return nil
@@ -43,11 +56,6 @@ func addNativeFormatFlag(cmd *cobra.Command) {
 func addbaseURLFlag(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&baseURL, "yaml-url", "", baseURL, "Polaris base YAML server url")
 	cmd.Flags().MarkHidden("yaml-url")
-}
-
-func addChartLocationPathFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&baseURL, "chart-location-path", "", baseURL, "Absolute path to the Helm Chart Tarball")
-	cmd.Flags().MarkHidden("chart-location-path")
 }
 
 func addMockFlag(cmd *cobra.Command) {

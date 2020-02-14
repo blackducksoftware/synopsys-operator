@@ -37,20 +37,3 @@ const defaultBusyBoxImage string = "docker.io/busybox:1.28"
 
 // flag for all namespaces
 const allNamespacesFlag string = "--all-namespaces"
-
-// Flags for using mock mode - doesn't deploy
-var mockFormat string
-var nativeFormat = "json"
-
-const (
-	clusterTypeKubernetes = "KUBERNETES"
-	clusterTypeOpenshift  = "OPENSHIFT"
-)
-
-var nativeClusterType = clusterTypeKubernetes
-
-var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/master"
-
-var polarisReportingChartRepository = "https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com/charts/polaris-helmchart-reporting-0.0.69.tgz"
-
-var polarisReportingName = "polaris-reporting"

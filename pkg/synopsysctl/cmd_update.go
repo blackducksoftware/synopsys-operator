@@ -39,7 +39,6 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 	"github.com/pkg/errors"
 
 	// bdappsutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
@@ -63,7 +62,6 @@ var updateAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updatePolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
-var updatePolarisReportingCobraHelper polarisreporting.HelmValuesFromCobraFlags
 
 var updateMockFormat = "json"
 
@@ -1383,74 +1381,12 @@ var updatePolarisCmd = &cobra.Command{
 	},
 }
 
-// updatePolarisReportingCmd updates a Polaris-Reporting instance
-var updatePolarisReportingCmd = &cobra.Command{
-	Use:           "polaris-reporting",
-	Example:       "",
-	Short:         "Update a Polaris-Reporting instance",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		// Check the Number of Arguments
-		if len(args) != 0 {
-			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// Get the flags to set Helm values
-		helmValuesMap, err := updatePolarisReportingCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
-
-		// Update the Helm Chart Location
-		chartLocationFlag := cmd.Flag("chart-location-path")
-		if chartLocationFlag.Changed {
-			polarisReportingChartRepository = chartLocationFlag.Value.String()
-		} else {
-			versionFlag := cmd.Flag("version")
-			if versionFlag.Changed {
-				polarisReportingChartRepository = fmt.Sprintf("https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com/charts/polaris-helmchart-reporting-%s.tgz", versionFlag.Value.String())
-			}
-		}
-
-		// Get Secret For the GCP Key
-		gcpServiceAccountPath := cmd.Flag("gcp-service-account-path").Value.String()
-		gcpServiceAccountData, err := util.ReadFileData(gcpServiceAccountPath)
-		if err != nil {
-			return fmt.Errorf("failed to read gcp service account file at location: '%s', error: %+v", gcpServiceAccountPath, err)
-		}
-		gcpServiceAccountSecrets, err := polarisreporting.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
-		if err != nil {
-			return fmt.Errorf("failed to generate GCP Service Account Secrets: %+v", err)
-		}
-
-		// Deploy the Secret
-		err = KubectlApplyRuntimeObjects(gcpServiceAccountSecrets)
-		if err != nil {
-			return fmt.Errorf("failed to update the gcpServiceAccount Secrets: %s", err)
-		}
-
-		// Deploy Polaris-Reporting Resources
-		out, err := util.RunHelm3("upgrade", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace, "--reuse-values"}, helmValuesMap)
-		if err != nil {
-			return fmt.Errorf("failed to update Polaris-Reporting resources: %+v", out)
-		}
-
-		log.Infof("Polaris-Reporting has been successfully Updated in namespace '%s'!", namespace)
-		return nil
-	},
-}
-
 func init() {
 	// initialize global resource ctl structs for commands to use
 	updateBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	updateOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	updatePolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
-	updatePolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
 
 	rootCmd.AddCommand(updateCmd)
 
@@ -1525,11 +1461,4 @@ func init() {
 	updatePolarisCobraHelper.AddCRSpecFlagsToCommand(updatePolarisCmd, false)
 	addbaseURLFlag(updatePolarisCmd)
 	updateCmd.AddCommand(updatePolarisCmd)
-
-	// Polaris-Reporting
-	updatePolarisReportingCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	cobra.MarkFlagRequired(updatePolarisReportingCmd.PersistentFlags(), "namespace")
-	updatePolarisReportingCobraHelper.AddCobraFlagsToCommand(updatePolarisReportingCmd, false)
-	addChartLocationPathFlag(updatePolarisReportingCmd)
-	updateCmd.AddCommand(updatePolarisReportingCmd)
 }
