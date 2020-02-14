@@ -24,17 +24,18 @@ package containers
 // GetHubKnobs returns the default environs
 func GetHubKnobs() map[string]string {
 	return map[string]string{
-		"IPV4_ONLY":                         "0",
-		"USE_ALERT":                         "0",
-		"USE_BINARY_UPLOADS":                "0",
-		"RABBIT_MQ_PORT":                    "5671",
-		"BROKER_USE_SSL":                    "yes",
-		"SCANNER_CONCURRENCY":               "1",
-		"HTTPS_VERIFY_CERTS":                "yes",
-		"RABBITMQ_DEFAULT_VHOST":            "protecodesc",
-		"RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT": "false",
-		"ENABLE_SOURCE_UPLOADS":             "false",
-		"DATA_RETENTION_IN_DAYS":            "180",
-		"MAX_TOTAL_SOURCE_SIZE_MB":          "4000",
+		"IPV4_ONLY":                             "0",
+		"USE_ALERT":                             "0",
+		"USE_BINARY_UPLOADS":                    "0",
+		"RABBIT_MQ_PORT":                        "5671",
+		"BROKER_USE_SSL":                        "yes",
+		"SCANNER_CONCURRENCY":                   "1",
+		"HTTPS_VERIFY_CERTS":                    "yes",
+		"RABBITMQ_DEFAULT_VHOST":                "protecodesc",
+		"RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT":     "false",
+		"ENABLE_SOURCE_UPLOADS":                 "false",
+		"DATA_RETENTION_IN_DAYS":                "180",
+		"MAX_TOTAL_SOURCE_SIZE_MB":              "4000",
+		"SAML_ASSERTION_SIGNATURE_VERIFICATION": "true",
 	}
 }
