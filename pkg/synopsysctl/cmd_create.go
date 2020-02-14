@@ -32,6 +32,7 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
+	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
@@ -58,6 +59,7 @@ var createAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createPolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var createPolarisReportingCobraHelper polarisreporting.HelmValuesFromCobraFlags
 
 // Default Base Specs for Create
 var baseAlertSpec string
@@ -649,7 +651,7 @@ var createOpsSightNativeCmd = &cobra.Command{
 var createPolarisCmd = &cobra.Command{
 	Use: "polaris",
 	Example: "\nRequried flags for setup with external database:\n\n 	synopsysctl create polaris --namespace 'onprem' --version '2019.11' --gcp-service-account-path '<PATH>/gcp-service-account-file.json' --polaris-license-path '<PATH>/polaris-license-file.json' --coverity-license-path '<PATH>/coverity-license-file.xml' --fqdn 'example.polaris.com' --smtp-host 'example.smtp.com' --smtp-port 25 --smtp-username 'example' --smtp-password 'example' --smtp-sender-email 'example.email.com' --postgres-host 'example.postgres.com' --postgres-port 5432 --postgres-username 'example' --postgres-password 'example' --organization-description 'Your organization' --organization-admin-email 'example.email.com' --organization-admin-name 'example' --organization-admin-username 'example'",
-	Short:         "Create a Polaris instance \n\nPlease make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview]",
+	Short:         "Create a Polaris instance. (Please make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -718,7 +720,7 @@ var createPolarisCmd = &cobra.Command{
 var createPolarisNativeCmd = &cobra.Command{
 	Use:           "native",
 	Example:       "synopsysctl create polaris native",
-	Short:         "Print the Kubernetes resources for creating a Polaris instance \n\nPlease make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview]",
+	Short:         "Print the Kubernetes resources for creating a Polaris instance (Please make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -884,12 +886,141 @@ func validatePolaris(polarisConf polaris.Polaris) error {
 	return nil
 }
 
+// createPolarisReportingCmd creates a Polaris-Reporting instance
+var createPolarisReportingCmd = &cobra.Command{
+	Use:           "polaris-reporting",
+	Example:       "",
+	Short:         "Create a Polaris-Reporting instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get the flags to set Helm values
+		helmValuesMap, err := createPolarisReportingCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		// Update the Helm Chart Location
+		// TODO: allow user to specify --version and --chart-location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			polarisReportingChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				polarisReportingChartRepository = fmt.Sprintf("https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com/charts/polaris-helmchart-reporting-%s.tgz", versionFlag.Value.String())
+			}
+		}
+
+		// Check Helm Command with --dry-run before deploying any resources
+		out, err := util.RunHelm3("install", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace, "--dry-run"}, helmValuesMap)
+		if err != nil {
+			return fmt.Errorf("failed to create Polaris-Reporting resources: %+v; %+v", out, err)
+		}
+
+		// Get Secret For the GCP Key
+		gcpServiceAccountPath := cmd.Flag("gcp-service-account-path").Value.String()
+		gcpServiceAccountData, err := util.ReadFileData(gcpServiceAccountPath)
+		if err != nil {
+			return fmt.Errorf("failed to read gcp service account file at location: '%s', error: %+v", gcpServiceAccountPath, err)
+		}
+		gcpServiceAccountSecrets, err := polarisreporting.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
+		if err != nil {
+			return fmt.Errorf("failed to create GCP Service Account Secrets: %+v", err)
+		}
+
+		// Deploy the Secret
+		err = KubectlApplyRuntimeObjects(gcpServiceAccountSecrets)
+		if err != nil {
+			return fmt.Errorf("failed to deploy the gcpServiceAccount Secrets: %s", err)
+		}
+
+		// Deploy Polaris-Reporting Resources
+		out, err = util.RunHelm3("install", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace}, helmValuesMap)
+		if err != nil {
+			return fmt.Errorf("failed to create Polaris-Reporting resources: %+v; %+v", out, err)
+		}
+
+		log.Infof("Polaris-Reporting has been successfully Created!")
+		return nil
+	},
+}
+
+// createPolarisReportingNativeCmd prints Polaris-Reporting resources
+var createPolarisReportingNativeCmd = &cobra.Command{
+	Use:           "native",
+	Example:       "",
+	Short:         "Print Kubernetes resources for creating a Polaris-Reporting instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get the flags to set Helm values
+		helmValuesMap, err := createPolarisReportingCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			polarisReportingChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				polarisReportingChartRepository = fmt.Sprintf("https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com/charts/polaris-helmchart-reporting-%s.tgz", versionFlag.Value.String())
+			}
+		}
+
+		// Get Secret For the GCP Key
+		gcpServiceAccountPath := cmd.Flag("gcp-service-account-path").Value.String()
+		gcpServiceAccountData, err := util.ReadFileData(gcpServiceAccountPath)
+		if err != nil {
+			return fmt.Errorf("failed to read gcp service account file at location: '%s', error: %+v", gcpServiceAccountPath, err)
+		}
+		gcpServiceAccountSecrets, err := polarisreporting.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
+		if err != nil {
+			return fmt.Errorf("failed to create GCP Service Account Secrets: %+v", err)
+		}
+
+		// Print the Secret
+		for _, obj := range gcpServiceAccountSecrets {
+			PrintComponent(obj, "YAML") // helm only supports yaml
+		}
+
+		// Print Polaris-Reporting Resources
+		out, err := util.RunHelm3("template", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace}, helmValuesMap)
+		if err != nil {
+			return fmt.Errorf("failed to generate Polaris-Reporting resources: %+v", out)
+		}
+		fmt.Printf("%+v\n", out)
+
+		return nil
+	},
+}
+
 func init() {
 	// initialize global resource ctl structs for commands to use
 	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	createBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	createPolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
+	createPolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
 
 	rootCmd.AddCommand(createCmd)
 
@@ -939,5 +1070,16 @@ func init() {
 	addNativeFormatFlag(createPolarisNativeCmd)
 	addbaseURLFlag(createPolarisNativeCmd)
 	createPolarisCmd.AddCommand(createPolarisNativeCmd)
+
+	// Add Polaris-Reporting commands
+	createPolarisReportingCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(createPolarisReportingCmd.PersistentFlags(), "namespace")
+	createPolarisReportingCobraHelper.AddCobraFlagsToCommand(createPolarisReportingCmd, true)
+	addChartLocationPathFlag(createPolarisReportingCmd)
+	createCmd.AddCommand(createPolarisReportingCmd)
+
+	createPolarisReportingCobraHelper.AddCobraFlagsToCommand(createPolarisReportingNativeCmd, true)
+	addChartLocationPathFlag(createPolarisReportingNativeCmd)
+	createPolarisReportingCmd.AddCommand(createPolarisReportingNativeCmd)
 
 }
