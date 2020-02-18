@@ -33,7 +33,7 @@ import (
 // to Helm Chart fields and values
 // args: map of helm chart field to value
 type HelmValuesFromCobraFlags struct {
-	args     map[string]string
+	args     map[string]interface{}
 	flagTree FlagTree
 }
 
@@ -66,13 +66,13 @@ type FlagTree struct {
 // NewHelmValuesFromCobraFlags returns an initialized HelmValuesFromCobraFlags
 func NewHelmValuesFromCobraFlags() *HelmValuesFromCobraFlags {
 	return &HelmValuesFromCobraFlags{
-		args:     map[string]string{},
+		args:     map[string]interface{}{},
 		flagTree: FlagTree{},
 	}
 }
 
 // GetArgs returns the map of helm chart fields to values
-func (ctl *HelmValuesFromCobraFlags) GetArgs() map[string]string {
+func (ctl *HelmValuesFromCobraFlags) GetArgs() map[string]interface{} {
 	return ctl.args
 }
 
@@ -148,7 +148,7 @@ func (ctl *HelmValuesFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet
 
 // GenerateHelmFlagsFromCobraFlags checks each flag in synopsysctl and updates the map to
 // contain the corresponding helm chart field and value
-func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pflag.FlagSet) (map[string]string, error) {
+func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pflag.FlagSet) (map[string]interface{}, error) {
 	err := ctl.CheckValuesFromFlags(flagset)
 	if err != nil {
 		return nil, err

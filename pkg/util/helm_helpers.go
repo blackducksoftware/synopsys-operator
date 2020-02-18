@@ -28,60 +28,59 @@ import (
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
-
-	"helm.sh/helm/pkg/storage/driver"
-	"helm.sh/helm/v3/pkg/storage"
-
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli"
 	kubefake "helm.sh/helm/v3/pkg/kube/fake"
 	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/storage"
+	"helm.sh/helm/v3/pkg/storage/driver"
 )
 
-var settings = initSettings()
-
-func initSettings() *cli.EnvSettings {
-	conf := cli.New()
-	conf.RepositoryCache = "/tmp"
-	return conf
-}
+var settings = cli.New()
 
 // InstallChart https://github.com/openshift/console/blob/master/pkg/helm/actions/install_chart.go
 func InstallChart(ns, name, url string, vals map[string]interface{}, conf *action.Configuration) (*release.Release, error) {
-	cmd := action.NewInstall(conf)
+	fmt.Printf("Namespace: %+v\n", ns)
+	fmt.Printf("Name: %+v\n", name)
+	fmt.Printf("Url: %+v\n", url)
+	fmt.Printf("Vals: %+v\n", vals)
+	client := action.NewInstall(conf)
 
-	name, chart, err := cmd.NameAndChart([]string{name, url})
+	client.Version = ">0.0.0-0"
+
+	name, chart, err := client.NameAndChart([]string{name, url})
 	if err != nil {
 		return nil, err
 	}
-	cmd.ReleaseName = name
+	client.ReleaseName = name
 
-	cp, err := cmd.ChartPathOptions.LocateChart(chart, settings)
+	log.Debugf("Chart: %+v", chart)
+	log.Debugf("Settings: %+v", settings)
+
+	cp, err := client.ChartPathOptions.LocateChart(chart, settings)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Debugf("chart path: %s", cp)
 
 	ch, err := loader.Load(cp)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.Namespace = ns
-	release, err := cmd.Run(ch, vals)
+	client.Namespace = ns
+	release, err := client.Run(ch, vals)
 	if err != nil {
 		return nil, err
 	}
 	return release, nil
 }
 
-func tmp() error {
-	// memoryDriver := *driver.NewMemory()
-	// store := stoage.Storage{
-	// 	Driver: memoryDriver,
-	// 	Log:    func(_ string, _ ...interface{}) {},
-	// }
+// DeployWithHelm ...
+func DeployWithHelm(ns, name, url string, vals map[string]interface{}) error {
 	store := storage.Init(driver.NewMemory())
 	actionConfig := &action.Configuration{
 		Releases:     store,
@@ -89,30 +88,48 @@ func tmp() error {
 		Capabilities: chartutil.DefaultCapabilities,
 		Log:          func(format string, v ...interface{}) {},
 	}
-	actionConfig.Releases = store
-	_, _ = InstallChart("test-namespace", "test", "chartPath", nil, actionConfig)
+	rel, err := InstallChart(ns, name, url, vals, actionConfig)
+	if err != nil {
+		return fmt.Errorf("failed to install chart: %+v", err)
+	}
+	fmt.Printf("Release: %+v\n", rel)
+	fmt.Printf("Release Namespace: %+v\n", rel.Namespace)
+	fmt.Printf("Release Name: %+v\n", rel.Name)
+	fmt.Printf("Release Version: %+v\n", rel.Version)
+	fmt.Printf("Release Config: %+v\n", rel.Config)
+	fmt.Printf("Release Chart FullPath: %+v\n", rel.Chart.ChartFullPath())
+	fmt.Printf("Release Chart Path: %+v\n", rel.Chart.ChartPath)
+	fmt.Printf("Release Chart Values: %+v\n", rel.Chart.Values)
+	fmt.Printf("Release Chart Metadata: %+v\n", rel.Chart.Metadata)
 	return nil
 }
 
 // RunHelm3 executes a helm command
 // It takes in a helm command, arguments to the command, and values to set in the helm chart
-func RunHelm3(commandName string, args []string, setValuesMap map[string]string) (string, error) {
-	var helmExists bool
-	var err error
-	if helmExists, err = HelmV3Exists(); err != nil {
+func RunHelm3(commandName string, name, url, namespace string, args []string, vals map[string]interface{}) (string, error) {
+
+	err := DeployWithHelm(namespace, name, url, vals)
+	if err != nil {
 		return "", err
 	}
-	if !helmExists {
-		return "", fmt.Errorf("helm v3 is not installed in PATH")
-	}
-	cmdArgs := genHelm3Args(commandName, args, setValuesMap)
-	cmd := exec.Command("helm", cmdArgs...)
-	log.Debugf("%+v", cmd)
-	stdoutErr, err := cmd.CombinedOutput()
-	if err != nil {
-		return string(stdoutErr), fmt.Errorf("failed to run Helm command of args %+v with error %s", cmdArgs, err)
-	}
-	return string(stdoutErr), nil
+	return "", nil
+
+	// var helmExists bool
+	// var err error
+	// if helmExists, err = HelmV3Exists(); err != nil {
+	// 	return "", err
+	// }
+	// if !helmExists {
+	// 	return "", fmt.Errorf("helm v3 is not installed in PATH")
+	// }
+	// cmdArgs := genHelm3Args(commandName, args, setValuesMap)
+	// cmd := exec.Command("helm", cmdArgs...)
+	// log.Debugf("%+v", cmd)
+	// stdoutErr, err := cmd.CombinedOutput()
+	// if err != nil {
+	// 	return string(stdoutErr), fmt.Errorf("failed to run Helm command of args %+v with error %s", cmdArgs, err)
+	// }
+	// return string(stdoutErr), nil
 }
 
 func genHelm3Args(command string, args []string, setValuesMap map[string]string) []string {

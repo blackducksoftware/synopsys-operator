@@ -944,7 +944,7 @@ var createPolarisReportingCmd = &cobra.Command{
 		}
 
 		// Deploy Polaris-Reporting Resources
-		out, err := util.RunHelm3("install", polarisReportingName, namespace, polarisReportingChartRepository, []string{}, helmValuesMap)
+		out, err := util.RunHelm3("install", polarisReportingName, polarisReportingChartRepository, namespace, []string{}, helmValuesMap)
 		if err != nil {
 			return fmt.Errorf("failed to create Polaris-Reporting resources: %+v; %+v", out, err)
 		}
