@@ -920,10 +920,10 @@ var createPolarisReportingCmd = &cobra.Command{
 			}
 		}
 
-		// Check Helm Command with --dry-run before deploying any resources
-		out, err := util.RunHelm3("install", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace, "--dry-run"}, helmValuesMap)
+		// Check Dry Run before deploying any resources
+		err = util.CreateWithHelm3(polarisReportingName, namespace, polarisReportingChartRepository, helmValuesMap, kubeConfigPath, true)
 		if err != nil {
-			return fmt.Errorf("failed to create Polaris-Reporting resources: %+v; %+v", out, err)
+			return fmt.Errorf("failed to create Polaris-Reporting resources: %+v", err)
 		}
 
 		// Get Secret For the GCP Key
@@ -944,9 +944,9 @@ var createPolarisReportingCmd = &cobra.Command{
 		}
 
 		// Deploy Polaris-Reporting Resources
-		out, err = util.RunHelm3("install", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace}, helmValuesMap)
+		err = util.CreateWithHelm3(polarisReportingName, namespace, polarisReportingChartRepository, helmValuesMap, kubeConfigPath, false)
 		if err != nil {
-			return fmt.Errorf("failed to create Polaris-Reporting resources: %+v; %+v", out, err)
+			return fmt.Errorf("failed to create Polaris-Reporting resources: %+v", err)
 		}
 
 		log.Infof("Polaris-Reporting has been successfully Created!")
@@ -1004,11 +1004,10 @@ var createPolarisReportingNativeCmd = &cobra.Command{
 		}
 
 		// Print Polaris-Reporting Resources
-		out, err := util.RunHelm3("template", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace}, helmValuesMap)
+		err = util.TemplateWithHelm3(polarisReportingName, namespace, polarisReportingChartRepository, helmValuesMap)
 		if err != nil {
-			return fmt.Errorf("failed to generate Polaris-Reporting resources: %+v", out)
+			return fmt.Errorf("failed to generate Polaris-Reporting resources: %+v", err)
 		}
-		fmt.Printf("%+v\n", out)
 
 		return nil
 	},
