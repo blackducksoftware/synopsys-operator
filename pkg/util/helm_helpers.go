@@ -22,96 +22,309 @@ under the License.
 package util
 
 import (
+	"bytes"
 	"fmt"
-	"os/exec"
+	"net/http"
+	"path/filepath"
 	"regexp"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/kube"
+	"helm.sh/helm/v3/pkg/releaseutil"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/rest"
+	"k8s.io/klog"
 )
 
-// RunHelm3 executes a helm command
-// It takes in a helm command, arguments to the command, and values to set in the helm chart
-func RunHelm3(commandName string, args []string, setValuesMap map[string]string) (string, error) {
-	var helmExists bool
-	var err error
-	if helmExists, err = HelmV3Exists(); err != nil {
-		return "", err
-	}
-	if !helmExists {
-		return "", fmt.Errorf("helm v3 is not installed in PATH")
-	}
-	cmdArgs := genHelm3Args(commandName, args, setValuesMap)
-	cmd := exec.Command("helm", cmdArgs...)
-	log.Debugf("%+v", cmd)
-	stdoutErr, err := cmd.CombinedOutput()
+var settings = cli.New()
+
+// CreateWithHelm3 uses the helm NewInstall action to create a resource in the cluster
+// Modified from https://github.com/openshift/console/blob/cdf6b189b71e488033ecaba7d90258d9f9453478/pkg/helm/actions/install_chart.go
+// Helm Actions: https://github.com/helm/helm/tree/9bc7934f350233fa72a11d2d29065aa78ab62792/pkg/action
+func CreateWithHelm3(releaseName, namespace, chartURL string, vals map[string]interface{}, kubeConfig string, dryRun bool) error {
+	actionConfig, err := CreateHelmActionConfiguration(kubeConfig, "", namespace)
 	if err != nil {
-		return string(stdoutErr), fmt.Errorf("failed to run Helm command of args %+v with error %s", cmdArgs, err)
+		return err
 	}
-	return string(stdoutErr), nil
+
+	chart, err := LoadChart(chartURL, actionConfig)
+	if err != nil {
+		return err
+	}
+	validInstallableChart, err := isChartInstallable(chart)
+	if !validInstallableChart {
+		return fmt.Errorf("release at '%s' is not installable: %+v", chartURL, err)
+	}
+	if chart.Metadata.Deprecated {
+		log.Warnf("the release at '%s' is deprecated", chartURL)
+	}
+	// TODO: determine if we will check dependencies...
+	// if req := chart.Metadata.Dependencies; req != nil {
+	// 	// If CheckDependencies returns an error, we have unfulfilled dependencies.
+	// 	// As of Helm 2.4.0, this is treated as a stopping condition:
+	// 	// https://github.com/helm/helm/issues/2209
+	// 	if err := action.CheckDependencies(chart, req); err != nil {
+	// 		if client.DependencyUpdate {
+	// 			man := &downloader.Manager{
+	// 				Out:              out,
+	// 				ChartPath:        cp,
+	// 				Keyring:          client.ChartPathOptions.Keyring,
+	// 				SkipUpdate:       false,
+	// 				Getters:          p,
+	// 				RepositoryConfig: settings.RepositoryConfig,
+	// 				RepositoryCache:  settings.RepositoryCache,
+	// 			}
+	// 			if err := man.Update(); err != nil {
+	// 				return nil, err
+	// 			}
+	// 		} else {
+	// 			return nil, err
+	// 		}
+	// 	}
+	// }
+
+	client := action.NewInstall(actionConfig)
+	if client.Version == "" && client.Devel {
+		client.Version = ">0.0.0-0"
+	}
+	client.ReleaseName = releaseName
+	client.DryRun = dryRun
+	_, err = client.Run(chart, vals) // deploy the chart into the namespace from the actionConfig
+	if err != nil {
+		return fmt.Errorf("failed to Run NewInstall: %+v", err)
+	}
+	return nil
 }
 
-func genHelm3Args(command string, args []string, setValuesMap map[string]string) []string {
-	helmArgs := append([]string{command}, args...)
-	for name, value := range setValuesMap {
-		helmArgs = append(helmArgs, "--set", fmt.Sprintf("%s=%s", name, value))
+// UpdateWithHelm3 uses the helm NewUpgrade action to update a resource in the cluster
+func UpdateWithHelm3(releaseName, namespace, chartURL string, vals map[string]interface{}, kubeConfig string) error {
+	actionConfig, err := CreateHelmActionConfiguration(kubeConfig, "", namespace)
+	if err != nil {
+		return err
 	}
-	return helmArgs
+	if releaseExists := ReleaseExists(releaseName, namespace, kubeConfig); !releaseExists {
+		return fmt.Errorf("release '%s' does not exist", releaseName)
+	}
+
+	chart, err := LoadChart(chartURL, actionConfig)
+	if err != nil {
+		return fmt.Errorf("failed to load release at '%s' for updating: %s", chartURL, err)
+	}
+	validInstallableChart, err := isChartInstallable(chart)
+	if !validInstallableChart {
+		return fmt.Errorf("release at '%s' is not installable: %+v", chartURL, err)
+	}
+
+	client := action.NewUpgrade(actionConfig)
+	if client.Version == "" && client.Devel {
+		client.Version = ">0.0.0-0"
+	}
+	client.ReuseValues = true                     // rememeber the values that have been set previously
+	_, err = client.Run(releaseName, chart, vals) // updates the release in the namespace from the actionConfig
+	if err != nil {
+		return fmt.Errorf("failed to Run NewUpgrade: %+v", err)
+	}
+	return nil
 }
 
-// HelmV3Exists returns true if it can find the helm binary and it is v3
-func HelmV3Exists() (bool, error) {
-	helmExists, err := HelmIsInPath()
+// TemplateWithHelm3 prints the kube manifest files for a resource
+func TemplateWithHelm3(releaseName, namespace, chartURL string, vals map[string]interface{}) error {
+	actionConfig, err := CreateHelmActionConfiguration("", "", namespace)
 	if err != nil {
-		return false, fmt.Errorf("failed to look for Helm in PATH: %s", err)
+		return err
 	}
-	if !helmExists {
-		return false, nil
+	chart, err := LoadChart(chartURL, actionConfig)
+	validInstallableChart, err := isChartInstallable(chart)
+	if !validInstallableChart {
+		return err
 	}
-	isV3, err := HelmIsV3()
+	templateOutput, err := RenderManifests(releaseName, namespace, chart, vals, actionConfig)
 	if err != nil {
-		return false, fmt.Errorf("failed to determine if Helm is V3: %+v", err)
+		return fmt.Errorf("failed to render kube manifest files: %s", err)
 	}
-	if !isV3 {
-		return false, nil
-	}
-	return true, nil
+	fmt.Printf("%+v\n", templateOutput)
+	return nil
 }
 
-// HelmIsInPath returns true if it finds the helm binary in the
-// user's PATH
-func HelmIsInPath() (bool, error) {
-	_, err := exec.LookPath("helm")
+// RenderManifests converts a helm chart to a string of the kube manifest files
+// Modified from https://github.com/openshift/console/blob/cdf6b189b71e488033ecaba7d90258d9f9453478/pkg/helm/actions/template_test.go
+func RenderManifests(releaseName, namespace string, chart *chart.Chart, vals map[string]interface{}, actionConfig *action.Configuration) (string, error) {
+	var showFiles []string
+	response := make(map[string]string)
+	validate := false
+	includeCrds := true
+	emptyResponse := ""
+
+	client := action.NewInstall(actionConfig)
+	client.DryRun = true
+	client.ReleaseName = releaseName
+	client.Namespace = namespace
+	client.Replace = true // Skip the releaseName check
+	client.ClientOnly = !validate
+
+	rel, err := client.Run(chart, vals)
 	if err != nil {
-		return false, err
+		return emptyResponse, err
 	}
-	return true, nil
+
+	var manifests bytes.Buffer
+	var output bytes.Buffer
+
+	if includeCrds {
+		for _, f := range rel.Chart.CRDs() {
+			fmt.Fprintf(&manifests, "---\n# Source: %s\n%s\n", f.Name, f.Data)
+		}
+	}
+
+	fmt.Fprintln(&manifests, strings.TrimSpace(rel.Manifest))
+
+	if !client.DisableHooks {
+		for _, m := range rel.Hooks {
+			fmt.Fprintf(&manifests, "---\n# Source: %s\n%s\n", m.Path, m.Manifest)
+		}
+	}
+
+	// if we have a list of files to render, then check that each of the
+	// provided files exists in the chart.
+	if len(showFiles) > 0 {
+		splitManifests := releaseutil.SplitManifests(manifests.String())
+		manifestNameRegex := regexp.MustCompile("# Source: [^/]+/(.+)")
+		var manifestsToRender []string
+		for _, f := range showFiles {
+			missing := true
+			for _, manifest := range splitManifests {
+				submatch := manifestNameRegex.FindStringSubmatch(manifest)
+				if len(submatch) == 0 {
+					continue
+				}
+				manifestName := submatch[1]
+				// manifest.Name is rendered using linux-style filepath separators on Windows as
+				// well as macOS/linux.
+				manifestPathSplit := strings.Split(manifestName, "/")
+				manifestPath := filepath.Join(manifestPathSplit...)
+
+				// if the filepath provided matches a manifest path in the
+				// chart, render that manifest
+				if f == manifestPath {
+					manifestsToRender = append(manifestsToRender, manifest)
+					missing = false
+				}
+			}
+			if missing {
+				return "", fmt.Errorf("could not find template %s in chart", f)
+			}
+			for _, m := range manifestsToRender {
+				response[f] = m
+				fmt.Fprintf(&output, "---\n%s\n", m)
+			}
+		}
+	} else {
+		fmt.Fprintf(&output, "%s", manifests.String())
+	}
+	return output.String(), nil
 }
 
-// HelmIsV3 returns true if the helm binary on the user's system is v3
-func HelmIsV3() (bool, error) {
-	cmd := exec.Command("helm", "version", "--short")
-	stdoutErr, err := cmd.CombinedOutput()
+// DeleteWithHelm3 uses the helm NewUninstall action to delete a resource from the cluster
+func DeleteWithHelm3(releaseName, namespace, kubeConfig string) error {
+	actionConfig, err := CreateHelmActionConfiguration(kubeConfig, "", namespace)
 	if err != nil {
-		return false, fmt.Errorf("%s - %s", string(stdoutErr), err)
+		return err
 	}
-	version, err := ValidateHelmVersion(string(stdoutErr))
+	if releaseExists := ReleaseExists(releaseName, namespace, kubeConfig); !releaseExists {
+		return fmt.Errorf("release '%s' does not exist", releaseName)
+	}
+	client := action.NewUninstall(actionConfig)
+	_, err = client.Run(releaseName) // deletes the releaseName from the namespace in the actionConfig
 	if err != nil {
-		return false, fmt.Errorf("failed to validate Helm version: %s", err)
+		return fmt.Errorf("failed to Run NewUninstall: %+v", err)
 	}
-	if version != "3" {
-		return false, fmt.Errorf("Helm version is not v3")
-	}
-	return true, nil
+	return nil
 }
 
-// ValidateHelmVersion takes in output from "helm version --short" and verifies that it's
-// formatted correctly. It returns the first value from the version
-func ValidateHelmVersion(helmVersionOutput string) (string, error) {
-	var rgx = regexp.MustCompile(`v([0-9])\.[0-9]\.[0-9]\+[0-9a-z]+`)
-
-	versionMatches := rgx.FindStringSubmatch(helmVersionOutput)
-	if len(versionMatches) != 2 {
-		return "", fmt.Errorf("invalid 'helm version --short' output: %s", helmVersionOutput)
+// CreateHelmActionConfiguration creates an action.Configuration that points to the specified cluster and namespace
+func CreateHelmActionConfiguration(kubeConfig, kubeContext, namespace string) (*action.Configuration, error) {
+	// TODO: look into using GetActionConfigurations()
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(kube.GetConfig(kubeConfig, kubeContext, namespace), namespace, "secret", func(format string, v ...interface{}) {}); err != nil {
+		return nil, err
 	}
-	return versionMatches[1], nil
+	return actionConfig, nil
+}
+
+type configFlagsWithTransport struct {
+	*genericclioptions.ConfigFlags
+	Transport *http.RoundTripper
+}
+
+// GetActionConfigurations creates an action.Configuration that points to the specified cluster and namespace
+// TODO - this function specifies more values than CreateHelmActionConfiguration(), consider using this
+func GetActionConfigurations(host, namespace, token string, transport *http.RoundTripper) *action.Configuration {
+
+	confFlags := &configFlagsWithTransport{
+		ConfigFlags: &genericclioptions.ConfigFlags{
+			APIServer:   &host,
+			BearerToken: &token,
+			Namespace:   &namespace,
+		},
+		Transport: transport,
+	}
+	inClusterCfg, err := rest.InClusterConfig()
+
+	if err != nil {
+		fmt.Print("Running outside cluster, CAFile is unset")
+	} else {
+		confFlags.CAFile = &inClusterCfg.CAFile
+	}
+	conf := new(action.Configuration)
+	conf.Init(confFlags, namespace, "secrets", klog.Infof)
+
+	return conf
+}
+
+// LoadChart returns a chart from the specified chartURL
+// Modified from https://github.com/openshift/console/blob/master/pkg/helm/actions/template_test.go
+func LoadChart(chartURL string, actionConfig *action.Configuration) (*chart.Chart, error) {
+	client := action.NewInstall(actionConfig)
+
+	// Get full path - checks local machine and chart repository
+	chartFullPath, err := client.ChartPathOptions.LocateChart(chartURL, settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to locate chart with '%s': %s", chartURL, err)
+	}
+
+	chart, err := loader.Load(chartFullPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load chart from %s", chartFullPath)
+	}
+	return chart, nil
+}
+
+// isChartInstallable validates if a chart can be installed
+//
+// Only the "application" chart type is installable
+func isChartInstallable(ch *chart.Chart) (bool, error) {
+	switch ch.Metadata.Type {
+	case "", "application":
+		return true, nil
+	}
+	return false, fmt.Errorf("%s charts are not installable", ch.Metadata.Type)
+}
+
+// ReleaseExists verifies that a resources is deployed in the cluster
+func ReleaseExists(releaseName, namespace, kubeConfig string) bool {
+	actionConfig, err := CreateHelmActionConfiguration(kubeConfig, "", namespace)
+	if err != nil {
+		return false
+	}
+	client := action.NewGet(actionConfig)
+	release, err := client.Run(releaseName) // lists the releases in the namespace from the actionConfig
+	if err != nil || release == nil {
+		return false
+	}
+	return true
 }
