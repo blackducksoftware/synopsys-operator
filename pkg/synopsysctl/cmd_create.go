@@ -944,7 +944,7 @@ var createPolarisReportingCmd = &cobra.Command{
 		}
 
 		// Deploy Polaris-Reporting Resources
-		out, err := util.RunHelm3("install", polarisReportingName, polarisReportingChartRepository, namespace, []string{}, helmValuesMap)
+		out, err := util.RunHelm3("install", kubeConfigPath, "", polarisReportingName, polarisReportingChartRepository, namespace, []string{}, helmValuesMap)
 		if err != nil {
 			return fmt.Errorf("failed to create Polaris-Reporting resources: %+v; %+v", out, err)
 		}
@@ -1004,7 +1004,7 @@ var createPolarisReportingNativeCmd = &cobra.Command{
 		}
 
 		// Print Polaris-Reporting Resources
-		out, err := util.RunHelm3("template", polarisReportingName, namespace, polarisReportingChartRepository, []string{}, helmValuesMap)
+		out, err := util.RunHelm3("template", kubeConfigPath, "", polarisReportingName, namespace, polarisReportingChartRepository, []string{}, helmValuesMap)
 		if err != nil {
 			return fmt.Errorf("failed to generate Polaris-Reporting resources: %+v", out)
 		}

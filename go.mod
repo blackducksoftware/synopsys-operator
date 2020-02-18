@@ -42,12 +42,16 @@ require (
 	k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver v0.17.2
 	k8s.io/apimachinery v0.17.3
+	k8s.io/cli-runtime v0.17.2
 	k8s.io/client-go v0.17.2
+	k8s.io/klog v1.0.0
 	rsc.io/letsencrypt v0.0.3 // indirect
 	sigs.k8s.io/yaml v1.1.0
 )
 
 replace (
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.3+incompatible
+	github.com/Azure/go-autorest/autorest/adal => github.com/Azure/go-autorest/autorest/adal v0.8.2
 	github.com/blackducksoftware/horizon => github.com/blackducksoftware/horizon v0.0.0-20190625151958-16cafa9109a3
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/evanphx/json-patch => github.com/evanphx/json-patch v4.5.0+incompatible // indirect

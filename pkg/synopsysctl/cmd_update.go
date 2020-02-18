@@ -1438,7 +1438,7 @@ var updatePolarisReportingCmd = &cobra.Command{
 		// if err != nil {
 		// 	return fmt.Errorf("failed to update Polaris-Reporting resources: %+v", out)
 		// }
-		_, _ = util.RunHelm3("install", polarisReportingName, namespace, polarisReportingChartRepository, []string{}, helmValuesMap) // remove this line
+		_, _ = util.RunHelm3("install", kubeConfigPath, "", polarisReportingName, namespace, polarisReportingChartRepository, []string{}, helmValuesMap) // remove this line
 
 		log.Infof("Polaris-Reporting has been successfully Updated in namespace '%s'!", namespace)
 		return nil

@@ -71,6 +71,8 @@ func InstallChart(ns, name, url string, vals map[string]interface{}, conf *actio
 		return nil, err
 	}
 
+	log.Debugf("chart: %+v", ch)
+
 	client.Namespace = ns
 	release, err := client.Run(ch, vals)
 	if err != nil {
@@ -80,15 +82,18 @@ func InstallChart(ns, name, url string, vals map[string]interface{}, conf *actio
 }
 
 // DeployWithHelm ...
-func DeployWithHelm(ns, name, url string, vals map[string]interface{}) error {
+func DeployWithHelm(kubeConfig, kubeContext, namespace, name, url string, vals map[string]interface{}) error {
 	store := storage.Init(driver.NewMemory())
 	actionConfig := &action.Configuration{
 		Releases:     store,
 		KubeClient:   &kubefake.PrintingKubeClient{Out: ioutil.Discard},
 		Capabilities: chartutil.DefaultCapabilities,
-		Log:          func(format string, v ...interface{}) {},
+		Log:          func(format string, v ...interface{}) { fmt.Sprintf(format, v) },
 	}
-	rel, err := InstallChart(ns, name, url, vals, actionConfig)
+	// if err := actionConfig.Init(kube.GetConfig(kubeConfig, kubeContext, namespace), namespace, "memory", func(format string, v ...interface{}) {}); err != nil {
+	// 	panic(err)
+	// }
+	rel, err := InstallChart(namespace, name, url, vals, actionConfig)
 	if err != nil {
 		return fmt.Errorf("failed to install chart: %+v", err)
 	}
@@ -97,8 +102,9 @@ func DeployWithHelm(ns, name, url string, vals map[string]interface{}) error {
 	fmt.Printf("Release Name: %+v\n", rel.Name)
 	fmt.Printf("Release Version: %+v\n", rel.Version)
 	fmt.Printf("Release Config: %+v\n", rel.Config)
+	fmt.Printf("Release Manifest: %+v\n", rel.Manifest)
+	fmt.Printf("Release Chart Path: %+v\n", rel.Chart.ChartPath())
 	fmt.Printf("Release Chart FullPath: %+v\n", rel.Chart.ChartFullPath())
-	fmt.Printf("Release Chart Path: %+v\n", rel.Chart.ChartPath)
 	fmt.Printf("Release Chart Values: %+v\n", rel.Chart.Values)
 	fmt.Printf("Release Chart Metadata: %+v\n", rel.Chart.Metadata)
 	return nil
@@ -106,9 +112,9 @@ func DeployWithHelm(ns, name, url string, vals map[string]interface{}) error {
 
 // RunHelm3 executes a helm command
 // It takes in a helm command, arguments to the command, and values to set in the helm chart
-func RunHelm3(commandName string, name, url, namespace string, args []string, vals map[string]interface{}) (string, error) {
+func RunHelm3(commandName string, kubeConfig, kubeContext, name, url, namespace string, args []string, vals map[string]interface{}) (string, error) {
 
-	err := DeployWithHelm(namespace, name, url, vals)
+	err := DeployWithHelm(kubeConfig, kubeContext, namespace, name, url, vals)
 	if err != nil {
 		return "", err
 	}
