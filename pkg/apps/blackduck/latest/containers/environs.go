@@ -43,7 +43,7 @@ func GetHubKnobs(version string) map[string]string {
 		"DATA_RETENTION_IN_DAYS":            "180",
 		"MAX_TOTAL_SOURCE_SIZE_MB":          "4000",
 	}
-	if versionSAMLSignatureVersionSupportedByDefault, _ := util.IsVersionGreaterThanOrEqualTo(version, 2020, time.February, 0); versionSAMLSignatureVersionSupportedByDefault {
+	if versionSAMLSignatureVersionSetToTrueByDefault, _ := util.IsVersionEqualTo(version, 2019, time.December, 1); versionSAMLSignatureVersionSetToTrueByDefault {
 		defaultEnvirons["SAML_ASSERTION_SIGNATURE_VERIFICATION"] = "true"
 	}
 	return defaultEnvirons
