@@ -307,10 +307,10 @@ var deletePolarisReportingCmd = &cobra.Command{
 		}
 
 		// Deploy Polaris-Reporting Resources
-		out, err := util.RunHelm3("uninstall", []string{polarisReportingName, "-n", namespace}, map[string]string{})
-		if err != nil {
-			return fmt.Errorf("failed to delete Polaris-Reporting resources: %+v", out)
-		}
+		// out, err := util.RunHelm3("uninstall", []string{polarisReportingName, "-n", namespace}, map[string]string{})
+		// if err != nil {
+		// 	return fmt.Errorf("failed to delete Polaris-Reporting resources: %+v", out)
+		// }
 
 		log.Infof("Polaris-Reporting has been successfully Deleted!")
 		return nil

@@ -23,11 +23,76 @@ package util
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
+
+	"helm.sh/helm/pkg/storage/driver"
+	"helm.sh/helm/v3/pkg/storage"
+
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/chartutil"
+	"helm.sh/helm/v3/pkg/cli"
+	kubefake "helm.sh/helm/v3/pkg/kube/fake"
+	"helm.sh/helm/v3/pkg/release"
 )
+
+var settings = initSettings()
+
+func initSettings() *cli.EnvSettings {
+	conf := cli.New()
+	conf.RepositoryCache = "/tmp"
+	return conf
+}
+
+// InstallChart https://github.com/openshift/console/blob/master/pkg/helm/actions/install_chart.go
+func InstallChart(ns, name, url string, vals map[string]interface{}, conf *action.Configuration) (*release.Release, error) {
+	cmd := action.NewInstall(conf)
+
+	name, chart, err := cmd.NameAndChart([]string{name, url})
+	if err != nil {
+		return nil, err
+	}
+	cmd.ReleaseName = name
+
+	cp, err := cmd.ChartPathOptions.LocateChart(chart, settings)
+	if err != nil {
+		return nil, err
+	}
+
+	ch, err := loader.Load(cp)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.Namespace = ns
+	release, err := cmd.Run(ch, vals)
+	if err != nil {
+		return nil, err
+	}
+	return release, nil
+}
+
+func tmp() error {
+	// memoryDriver := *driver.NewMemory()
+	// store := stoage.Storage{
+	// 	Driver: memoryDriver,
+	// 	Log:    func(_ string, _ ...interface{}) {},
+	// }
+	store := storage.Init(driver.NewMemory())
+	actionConfig := &action.Configuration{
+		Releases:     store,
+		KubeClient:   &kubefake.PrintingKubeClient{Out: ioutil.Discard},
+		Capabilities: chartutil.DefaultCapabilities,
+		Log:          func(format string, v ...interface{}) {},
+	}
+	actionConfig.Releases = store
+	_, _ = InstallChart("test-namespace", "test", "chartPath", nil, actionConfig)
+	return nil
+}
 
 // RunHelm3 executes a helm command
 // It takes in a helm command, arguments to the command, and values to set in the helm chart

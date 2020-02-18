@@ -1434,10 +1434,11 @@ var updatePolarisReportingCmd = &cobra.Command{
 		}
 
 		// Deploy Polaris-Reporting Resources
-		out, err := util.RunHelm3("upgrade", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace, "--reuse-values"}, helmValuesMap)
-		if err != nil {
-			return fmt.Errorf("failed to update Polaris-Reporting resources: %+v", out)
-		}
+		// out, err := util.RunHelm3("upgrade", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace, "--reuse-values"}, helmValuesMap)
+		// if err != nil {
+		// 	return fmt.Errorf("failed to update Polaris-Reporting resources: %+v", out)
+		// }
+		_, _ = util.RunHelm3("install", polarisReportingName, namespace, polarisReportingChartRepository, []string{}, helmValuesMap) // remove this line
 
 		log.Infof("Polaris-Reporting has been successfully Updated in namespace '%s'!", namespace)
 		return nil
