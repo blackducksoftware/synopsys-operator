@@ -23,32 +23,27 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os/exec"
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli"
-	kubefake "helm.sh/helm/v3/pkg/kube/fake"
+	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/storage"
-	"helm.sh/helm/v3/pkg/storage/driver"
 )
 
 var settings = cli.New()
 
 // InstallChart https://github.com/openshift/console/blob/master/pkg/helm/actions/install_chart.go
-func InstallChart(ns, name, url string, vals map[string]interface{}, conf *action.Configuration) (*release.Release, error) {
-	fmt.Printf("Namespace: %+v\n", ns)
-	fmt.Printf("Name: %+v\n", name)
-	fmt.Printf("Url: %+v\n", url)
-	fmt.Printf("Vals: %+v\n", vals)
+func InstallChart(namespace, name, url string, vals map[string]interface{}, conf *action.Configuration) (*release.Release, error) {
 	client := action.NewInstall(conf)
 
-	client.Version = ">0.0.0-0"
+	if client.Version == "" && client.Devel {
+		client.Version = ">0.0.0-0"
+	}
 
 	name, chart, err := client.NameAndChart([]string{name, url})
 	if err != nil {
@@ -56,63 +51,80 @@ func InstallChart(ns, name, url string, vals map[string]interface{}, conf *actio
 	}
 	client.ReleaseName = name
 
-	log.Debugf("Chart: %+v", chart)
-	log.Debugf("Settings: %+v", settings)
-
 	cp, err := client.ChartPathOptions.LocateChart(chart, settings)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debugf("chart path: %s", cp)
-
-	ch, err := loader.Load(cp)
+	// Check chart dependencies to make sure all are present in /charts
+	chartRequested, err := loader.Load(cp)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debugf("chart: %+v", ch)
-
-	client.Namespace = ns
-	release, err := client.Run(ch, vals)
-	if err != nil {
+	validInstallableChart, err := isChartInstallable(chartRequested)
+	if !validInstallableChart {
 		return nil, err
 	}
-	return release, nil
+
+	if chartRequested.Metadata.Deprecated {
+		log.Info("WARNING: This chart is deprecated")
+	}
+
+	// if req := chartRequested.Metadata.Dependencies; req != nil {
+	// 	// If CheckDependencies returns an error, we have unfulfilled dependencies.
+	// 	// As of Helm 2.4.0, this is treated as a stopping condition:
+	// 	// https://github.com/helm/helm/issues/2209
+	// 	if err := action.CheckDependencies(chartRequested, req); err != nil {
+	// 		if client.DependencyUpdate {
+	// 			man := &downloader.Manager{
+	// 				Out:              out,
+	// 				ChartPath:        cp,
+	// 				Keyring:          client.ChartPathOptions.Keyring,
+	// 				SkipUpdate:       false,
+	// 				Getters:          p,
+	// 				RepositoryConfig: settings.RepositoryConfig,
+	// 				RepositoryCache:  settings.RepositoryCache,
+	// 			}
+	// 			if err := man.Update(); err != nil {
+	// 				return nil, err
+	// 			}
+	// 		} else {
+	// 			return nil, err
+	// 		}
+	// 	}
+	// }
+
+	client.Namespace = namespace
+	return client.Run(chartRequested, vals)
 }
 
 // DeployWithHelm ...
 func DeployWithHelm(kubeConfig, kubeContext, namespace, name, url string, vals map[string]interface{}) error {
-	store := storage.Init(driver.NewMemory())
-	actionConfig := &action.Configuration{
-		Releases:     store,
-		KubeClient:   &kubefake.PrintingKubeClient{Out: ioutil.Discard},
-		Capabilities: chartutil.DefaultCapabilities,
-		Log:          func(format string, v ...interface{}) { fmt.Sprintf(format, v) },
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(kube.GetConfig(kubeConfig, kubeContext, namespace), namespace, "memory", func(format string, v ...interface{}) {}); err != nil {
+		log.Fatal(err)
 	}
-	// if err := actionConfig.Init(kube.GetConfig(kubeConfig, kubeContext, namespace), namespace, "memory", func(format string, v ...interface{}) {}); err != nil {
-	// 	panic(err)
-	// }
-	rel, err := InstallChart(namespace, name, url, vals, actionConfig)
+	_, err := InstallChart(namespace, name, url, vals, actionConfig)
 	if err != nil {
 		return fmt.Errorf("failed to install chart: %+v", err)
 	}
-	fmt.Printf("Release: %+v\n", rel)
-	fmt.Printf("Release Namespace: %+v\n", rel.Namespace)
-	fmt.Printf("Release Name: %+v\n", rel.Name)
-	fmt.Printf("Release Version: %+v\n", rel.Version)
-	fmt.Printf("Release Config: %+v\n", rel.Config)
-	fmt.Printf("Release Manifest: %+v\n", rel.Manifest)
-	fmt.Printf("Release Chart Path: %+v\n", rel.Chart.ChartPath())
-	fmt.Printf("Release Chart FullPath: %+v\n", rel.Chart.ChartFullPath())
-	fmt.Printf("Release Chart Values: %+v\n", rel.Chart.Values)
-	fmt.Printf("Release Chart Metadata: %+v\n", rel.Chart.Metadata)
+	// fmt.Printf("Release: %+v\n", rel)
+	// fmt.Printf("Release Namespace: %+v\n", rel.Namespace)
+	// fmt.Printf("Release Name: %+v\n", rel.Name)
+	// fmt.Printf("Release Version: %+v\n", rel.Version)
+	// fmt.Printf("Release Config: %+v\n", rel.Config)
+	// fmt.Printf("Release Manifest: %+v\n", rel.Manifest)
+	// fmt.Printf("Release Chart Path: %+v\n", rel.Chart.ChartPath())
+	// fmt.Printf("Release Chart FullPath: %+v\n", rel.Chart.ChartFullPath())
+	// fmt.Printf("Release Chart Values: %+v\n", rel.Chart.Values)
+	// fmt.Printf("Release Chart Metadata: %+v\n", rel.Chart.Metadata)
 	return nil
 }
 
 // RunHelm3 executes a helm command
 // It takes in a helm command, arguments to the command, and values to set in the helm chart
-func RunHelm3(commandName string, kubeConfig, kubeContext, name, url, namespace string, args []string, vals map[string]interface{}) (string, error) {
+func RunHelm3(commandName string, kubeConfig, kubeContext, namespace, name, url string, vals map[string]interface{}) (string, error) {
 
 	err := DeployWithHelm(kubeConfig, kubeContext, namespace, name, url, vals)
 	if err != nil {
@@ -136,6 +148,17 @@ func RunHelm3(commandName string, kubeConfig, kubeContext, name, url, namespace 
 	// 	return string(stdoutErr), fmt.Errorf("failed to run Helm command of args %+v with error %s", cmdArgs, err)
 	// }
 	// return string(stdoutErr), nil
+}
+
+// isChartInstallable validates if a chart can be installed
+//
+// Application chart type is only installable
+func isChartInstallable(ch *chart.Chart) (bool, error) {
+	switch ch.Metadata.Type {
+	case "", "application":
+		return true, nil
+	}
+	return false, fmt.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
 func genHelm3Args(command string, args []string, setValuesMap map[string]string) []string {

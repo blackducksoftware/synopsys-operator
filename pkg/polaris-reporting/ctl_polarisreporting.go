@@ -23,6 +23,7 @@ package polarisreporting
 
 import (
 	"fmt"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ type FlagTree struct {
 	StorageClass             string
 	ReportStorageSize        string
 	EventstoreSize           string
-	PostgresInternal         bool
+	PostgresInternal         string
 	PostgresHost             string
 	PostgresPort             int
 	PostgresUsername         string
@@ -59,7 +60,7 @@ type FlagTree struct {
 	SMTPPassword             string
 	SMTPSenderEmail          string
 	SMTPTlsMode              string
-	SMTPTlsIgnoreInvalidCert bool
+	SMTPTlsIgnoreInvalidCert string
 	SMTPTlsTrustedHosts      string
 }
 
@@ -113,7 +114,7 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPSenderEmail, "smtp-sender-email", ctl.flagTree.SMTPSenderEmail, "SMTP sender email")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsMode, "smtp-tls-mode", ctl.flagTree.SMTPTlsMode, "SMTP TLS mode [disable|try-starttls|require-starttls|require-tls]")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsTrustedHosts, "smtp-trusted-hosts", ctl.flagTree.SMTPTlsTrustedHosts, "Whitespace separated list of trusted hosts")
-	cmd.Flags().BoolVar(&ctl.flagTree.SMTPTlsIgnoreInvalidCert, "insecure-skip-smtp-tls-verify", false, "SMTP server's certificates won't be validated\n")
+	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsIgnoreInvalidCert, "insecure-skip-smtp-tls-verify", "false", "SMTP server's certificates won't be validated\n")
 
 	if master {
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
@@ -124,7 +125,7 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	}
 
 	// postgres specific flags
-	cmd.Flags().BoolVar(&ctl.flagTree.PostgresInternal, "enable-postgres-container", false, "If true, synopsysctl will deploy a postgres container backed by persistent volume (Not recommended for production usage)")
+	cmd.Flags().StringVar(&ctl.flagTree.PostgresInternal, "enable-postgres-container", "false", "If true, synopsysctl will deploy a postgres container backed by persistent volume (Not recommended for production usage)")
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresHost, "postgres-host", ctl.flagTree.PostgresHost, "Postgres host")
 	cmd.Flags().IntVar(&ctl.flagTree.PostgresPort, "postgres-port", 5432, "Postgres port")
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresUsername, "postgres-username", ctl.flagTree.PostgresUsername, "Postgres username")
@@ -153,9 +154,8 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 	if err != nil {
 		return nil, err
 	}
+	ctl.args["global"] = map[string]interface{}{"environment": "onprem"}
 	flagset.VisitAll(ctl.AddHelmValueByCobraFlag)
-
-	ctl.args["global.environment"] = "onprem"
 
 	return ctl.args, nil
 }
@@ -167,68 +167,262 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "fqdn":
-			ctl.args["global.rootDomain"] = fmt.Sprintf("%s", ctl.flagTree.FQDN)
+			globalVal := ctl.args["global"].(map[string]interface{})
+			globalVal["rootDomain"] = ctl.flagTree.FQDN
+			ctl.args["global"] = globalVal
 		case "ingress-class":
-			ctl.args["ingressClass"] = fmt.Sprintf("%s", ctl.flagTree.IngressClass)
+			ctl.args["ingressClass"] = ctl.flagTree.IngressClass
 		case "storage-class":
-			ctl.args["postgres.storageClass"] = ctl.flagTree.StorageClass
-			ctl.args["eventstore.persistence.storageClass"] = ctl.flagTree.StorageClass
-			ctl.args["rp-storage-service.report-storage.volume.storageClass"] = ctl.flagTree.StorageClass
+			// postgres storage class
+			if val, ok := ctl.args["postgres"]; ok && val != nil {
+				postgresVal := val.(map[string]interface{})
+				postgresVal["storageClass"] = ctl.flagTree.StorageClass
+				ctl.args["postgres"] = postgresVal
+			} else {
+				ctl.args["postgres"] = map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}
+			}
+
+			// event store storage class
+			if val, ok := ctl.args["eventstore"]; ok && val != nil {
+				eventstoreVal := val.(map[string]interface{})
+				if val, ok = eventstoreVal["persistence"]; ok && val != nil {
+					persistenceVal := val.(map[string]interface{})
+					persistenceVal["storageClass"] = ctl.flagTree.StorageClass
+					eventstoreVal["persistence"] = persistenceVal
+				} else {
+					eventstoreVal["persistence"] = map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}
+				}
+				ctl.args["eventstore"] = eventstoreVal
+			} else {
+				ctl.args["eventstore"] = map[string]interface{}{"persistence": map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}}
+			}
+
+			// report-storage storage class
+			if val, ok := ctl.args["rp-storage-service"]; ok && val != nil {
+				reportServiceVal := val.(map[string]interface{})
+				if val, ok = reportServiceVal["report-storage"]; ok && val != nil {
+					storageServiceVal := val.(map[string]interface{})
+					if val, ok = storageServiceVal["volume"]; ok && val != nil {
+						volumeServiceVal := val.(map[string]interface{})
+						volumeServiceVal["storageClass"] = ctl.flagTree.StorageClass
+						storageServiceVal["volume"] = volumeServiceVal
+					} else {
+						storageServiceVal["volume"] = map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}
+					}
+					reportServiceVal["report-storage"] = storageServiceVal
+				} else {
+					reportServiceVal["report-storage"] = map[string]interface{}{"volume": map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}}
+				}
+				ctl.args["rp-storage-service"] = reportServiceVal
+			} else {
+				ctl.args["rp-storage-service"] = map[string]interface{}{"report-storage": map[string]interface{}{"volume": map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}}}
+			}
 		case "eventstore-size":
-			ctl.args["eventstore.persistence.size"] = fmt.Sprintf("%s", ctl.flagTree.EventstoreSize)
+			if val, ok := ctl.args["eventstore"]; ok && val != nil {
+				eventstoreVal := val.(map[string]interface{})
+				if val, ok = eventstoreVal["persistence"]; ok && val != nil {
+					persistenceVal := val.(map[string]interface{})
+					persistenceVal["size"] = ctl.flagTree.EventstoreSize
+					eventstoreVal["persistence"] = persistenceVal
+				} else {
+					eventstoreVal["persistence"] = map[string]interface{}{"size": ctl.flagTree.EventstoreSize}
+				}
+				ctl.args["eventstore"] = eventstoreVal
+			} else {
+				ctl.args["eventstore"] = map[string]interface{}{"persistence": map[string]interface{}{"size": ctl.flagTree.EventstoreSize}}
+			}
 		case "reportstorage-size":
-			ctl.args["rp-storage-service.report-storage.volume.size"] = fmt.Sprintf("%s", ctl.flagTree.ReportStorageSize)
+			if val, ok := ctl.args["rp-storage-service"]; ok && val != nil {
+				reportServiceVal := val.(map[string]interface{})
+				if val, ok = reportServiceVal["report-storage"]; ok && val != nil {
+					storageServiceVal := val.(map[string]interface{})
+					if val, ok = storageServiceVal["volume"]; ok && val != nil {
+						volumeServiceVal := val.(map[string]interface{})
+						volumeServiceVal["size"] = ctl.flagTree.ReportStorageSize
+						storageServiceVal["volume"] = volumeServiceVal
+					} else {
+						storageServiceVal["volume"] = map[string]interface{}{"size": ctl.flagTree.ReportStorageSize}
+					}
+					reportServiceVal["report-storage"] = storageServiceVal
+				} else {
+					reportServiceVal["report-storage"] = map[string]interface{}{"volume": map[string]interface{}{"size": ctl.flagTree.ReportStorageSize}}
+				}
+				ctl.args["rp-storage-service"] = reportServiceVal
+			} else {
+				ctl.args["rp-storage-service"] = map[string]interface{}{"report-storage": map[string]interface{}{"volume": map[string]interface{}{"size": ctl.flagTree.ReportStorageSize}}}
+			}
 		case "smtp-host":
-			ctl.args["smtp.host"] = fmt.Sprintf("%s", ctl.flagTree.SMTPHost)
+			if val, ok := ctl.args["smtp"]; ok && val != nil {
+				smtpVal := val.(map[string]interface{})
+				smtpVal["host"] = ctl.flagTree.SMTPHost
+				ctl.args["smtp"] = smtpVal
+			} else {
+				ctl.args["smtp"] = map[string]interface{}{"host": ctl.flagTree.SMTPHost}
+			}
 		case "smtp-port":
-			ctl.args["smtp.port"] = fmt.Sprintf("%d", ctl.flagTree.SMTPPort)
+			if val, ok := ctl.args["smtp"]; ok && val != nil {
+				smtpVal := val.(map[string]interface{})
+				smtpVal["port"] = fmt.Sprintf("%d", ctl.flagTree.SMTPPort)
+				ctl.args["smtp"] = smtpVal
+			} else {
+				ctl.args["smtp"] = map[string]interface{}{"port": fmt.Sprintf("%d", ctl.flagTree.SMTPPort)}
+			}
 		case "smtp-username":
-			ctl.args["smtp.user"] = fmt.Sprintf("%s", ctl.flagTree.SMTPUsername)
+			if val, ok := ctl.args["smtp"]; ok && val != nil {
+				smtpVal := val.(map[string]interface{})
+				smtpVal["user"] = ctl.flagTree.SMTPUsername
+				ctl.args["smtp"] = smtpVal
+			} else {
+				ctl.args["smtp"] = map[string]interface{}{"user": ctl.flagTree.SMTPUsername}
+			}
 		case "smtp-password":
-			ctl.args["smtp.password"] = fmt.Sprintf("%s", ctl.flagTree.SMTPPassword)
+			if val, ok := ctl.args["smtp"]; ok && val != nil {
+				smtpVal := val.(map[string]interface{})
+				smtpVal["password"] = ctl.flagTree.SMTPPassword
+				ctl.args["smtp"] = smtpVal
+			} else {
+				ctl.args["smtp"] = map[string]interface{}{"password": ctl.flagTree.SMTPPassword}
+			}
 		case "smtp-sender-email":
-			ctl.args["onprem-auth-service.smtp.sender_email"] = fmt.Sprintf("%s", ctl.flagTree.SMTPSenderEmail)
+			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
+				onpremAuthVal := val.(map[string]interface{})
+				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
+					smtpVal := val.(map[string]interface{})
+					smtpVal["sender_email"] = ctl.flagTree.SMTPSenderEmail
+					onpremAuthVal["smtp"] = smtpVal
+				} else {
+					onpremAuthVal["smtp"] = map[string]interface{}{"sender_email": ctl.flagTree.SMTPSenderEmail}
+				}
+				ctl.args["onprem-auth-service"] = onpremAuthVal
+			} else {
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"sender_email": ctl.flagTree.SMTPSenderEmail}}
+			}
 		case "smtp-tls-mode":
+			var tlsMode SMTPTLSMode
 			switch SMTPTLSMode(ctl.flagTree.SMTPTlsMode) {
 			case SMTPTLSModeDisable:
-				ctl.args["onprem-auth-service.smtp.tls_mode"] = fmt.Sprintf("%s", SMTPTLSModeDisable)
+				tlsMode = SMTPTLSModeDisable
 			case SMTPTLSModeTryStartTLS:
-				ctl.args["onprem-auth-service.smtp.tls_mode"] = fmt.Sprintf("%s", SMTPTLSModeTryStartTLS)
+				tlsMode = SMTPTLSModeTryStartTLS
 			case SMTPTLSModeRequireStartTLS:
-				ctl.args["onprem-auth-service.smtp.tls_mode"] = fmt.Sprintf("%s", SMTPTLSModeRequireStartTLS)
+				tlsMode = SMTPTLSModeRequireStartTLS
 			case SMTPTLSModeRequireTLS:
-				ctl.args["onprem-auth-service.smtp.tls_mode"] = fmt.Sprintf("%s", SMTPTLSModeRequireTLS)
+				tlsMode = SMTPTLSModeRequireTLS
 			default:
 				log.Fatalf("%s is an invalid value for --smtp-tls-mode", ctl.flagTree.SMTPTlsMode)
 			}
+			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
+				onpremAuthVal := val.(map[string]interface{})
+				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
+					smtpVal := val.(map[string]interface{})
+					smtpVal["tls_mode"] = tlsMode
+					onpremAuthVal["smtp"] = smtpVal
+				} else {
+					onpremAuthVal["smtp"] = map[string]interface{}{"tls_mode": tlsMode}
+				}
+				ctl.args["onprem-auth-service"] = onpremAuthVal
+			} else {
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_mode": tlsMode}}
+			}
 		case "smtp-trusted-hosts":
-			ctl.args["onprem-auth-service.smtp.tls_trusted_hosts"] = fmt.Sprintf("%s", ctl.flagTree.SMTPTlsTrustedHosts)
+			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
+				onpremAuthVal := val.(map[string]interface{})
+				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
+					smtpVal := val.(map[string]interface{})
+					smtpVal["tls_trusted_hosts"] = ctl.flagTree.SMTPTlsTrustedHosts
+					onpremAuthVal["smtp"] = smtpVal
+				} else {
+					onpremAuthVal["smtp"] = map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}
+				}
+				ctl.args["onprem-auth-service"] = onpremAuthVal
+			} else {
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}}
+			}
 		case "insecure-skip-smtp-tls-verify":
-			ctl.args["onprem-auth-service.smtp.tls_check_server_identity"] = fmt.Sprintf("%t", !ctl.flagTree.SMTPTlsIgnoreInvalidCert)
+			b, _ := strconv.ParseBool(ctl.flagTree.SMTPTlsIgnoreInvalidCert)
+			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
+				onpremAuthVal := val.(map[string]interface{})
+				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
+					smtpVal := val.(map[string]interface{})
+					smtpVal["tls_check_server_identity"] = !b
+					onpremAuthVal["smtp"] = smtpVal
+				} else {
+					onpremAuthVal["smtp"] = map[string]interface{}{"tls_check_server_identity": !b}
+				}
+				ctl.args["onprem-auth-service"] = onpremAuthVal
+			} else {
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_check_server_identity": !b}}
+			}
 		case "enable-postgres-container":
-			ctl.args["postgres.isExternal"] = fmt.Sprintf("%t", !ctl.flagTree.PostgresInternal)
+			b, _ := strconv.ParseBool(ctl.flagTree.PostgresInternal)
+			if val, ok := ctl.args["postgres"]; ok && val != nil {
+				postgresVal := val.(map[string]interface{})
+				postgresVal["isExternal"] = !b
+				ctl.args["postgres"] = postgresVal
+			} else {
+				ctl.args["postgres"] = map[string]interface{}{"isExternal": !b}
+			}
 		case "postgres-host":
-			ctl.args["postgres.host"] = fmt.Sprintf("%s", ctl.flagTree.PostgresHost)
+			if val, ok := ctl.args["postgres"]; ok && val != nil {
+				postgresVal := val.(map[string]interface{})
+				postgresVal["host"] = ctl.flagTree.PostgresHost
+				ctl.args["postgres"] = postgresVal
+			} else {
+				ctl.args["postgres"] = map[string]interface{}{"host": ctl.flagTree.PostgresHost}
+			}
 		case "postgres-port":
-			ctl.args["postgres.port"] = fmt.Sprintf("%d", ctl.flagTree.PostgresPort)
+			if val, ok := ctl.args["postgres"]; ok && val != nil {
+				postgresVal := val.(map[string]interface{})
+				postgresVal["port"] = fmt.Sprintf("%d", ctl.flagTree.PostgresPort)
+				ctl.args["postgres"] = postgresVal
+			} else {
+				ctl.args["postgres"] = map[string]interface{}{"port": fmt.Sprintf("%d", ctl.flagTree.PostgresPort)}
+			}
 		case "postgres-username":
-			ctl.args["postgres.user"] = fmt.Sprintf("%s", ctl.flagTree.PostgresUsername)
+			if val, ok := ctl.args["postgres"]; ok && val != nil {
+				postgresVal := val.(map[string]interface{})
+				postgresVal["user"] = ctl.flagTree.PostgresUsername
+				ctl.args["postgres"] = postgresVal
+			} else {
+				ctl.args["postgres"] = map[string]interface{}{"user": ctl.flagTree.PostgresUsername}
+			}
 		case "postgres-password":
-			ctl.args["postgres.password"] = fmt.Sprintf("%s", ctl.flagTree.PostgresPassword)
+			if val, ok := ctl.args["postgres"]; ok && val != nil {
+				postgresVal := val.(map[string]interface{})
+				postgresVal["password"] = ctl.flagTree.PostgresPassword
+				ctl.args["postgres"] = postgresVal
+			} else {
+				ctl.args["postgres"] = map[string]interface{}{"password": ctl.flagTree.PostgresPassword}
+			}
 		case "postgres-size":
-			ctl.args["postgres.size"] = fmt.Sprintf("%s", ctl.flagTree.PostgresSize)
+			if val, ok := ctl.args["postgres"]; ok && val != nil {
+				postgresVal := val.(map[string]interface{})
+				postgresVal["size"] = ctl.flagTree.PostgresSize
+				ctl.args["postgres"] = postgresVal
+			} else {
+				ctl.args["postgres"] = map[string]interface{}{"size": ctl.flagTree.PostgresSize}
+			}
+			ctl.args["postgres"].(map[string]interface{})["size"] = ctl.flagTree.PostgresSize
 		case "postgres-ssl-mode":
+			var sslMode PostgresSSLMode
 			switch PostgresSSLMode(ctl.flagTree.PostgresSSLMode) {
 			case PostgresSSLModeDisable:
-				ctl.args["postgres.sslMode"] = fmt.Sprintf("%s", PostgresSSLModeDisable)
+				sslMode = PostgresSSLModeDisable
 			//case PostgresSSLModeAllow:
 			//  ctl.args["postgres.sslMode"] = fmt.Sprintf("%s", PostgresSSLModeAllow)
 			//case PostgresSSLModePrefer:
 			//  ctl.args["postgres.sslMode"] = fmt.Sprintf("%s", PostgresSSLModePrefer)
 			case PostgresSSLModeRequire:
-				ctl.args["postgres.sslMode"] = fmt.Sprintf("%s", PostgresSSLModeRequire)
+				sslMode = PostgresSSLModeRequire
 			default:
 				log.Fatalf("%s is an invalid value for --postgres-ssl-mode", ctl.flagTree.PostgresSSLMode)
+			}
+			if val, ok := ctl.args["postgres"]; ok && val != nil {
+				postgresVal := val.(map[string]interface{})
+				postgresVal["sslMode"] = sslMode
+				ctl.args["postgres"] = postgresVal
+			} else {
+				ctl.args["postgres"] = map[string]interface{}{"sslMode": sslMode}
 			}
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
