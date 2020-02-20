@@ -21,9 +21,15 @@ under the License.
 
 package containers
 
+import (
+	"time"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+)
+
 // GetHubKnobs returns the default environs
-func GetHubKnobs() map[string]string {
-	return map[string]string{
+func GetHubKnobs(version string) map[string]string {
+	defaultEnvirons := map[string]string{
 		"IPV4_ONLY":                         "0",
 		"USE_ALERT":                         "0",
 		"USE_BINARY_UPLOADS":                "0",
@@ -37,4 +43,8 @@ func GetHubKnobs() map[string]string {
 		"DATA_RETENTION_IN_DAYS":            "180",
 		"MAX_TOTAL_SOURCE_SIZE_MB":          "4000",
 	}
+	if versionSAMLSignatureVersionSetToTrueByDefault, _ := util.IsVersionEqualTo(version, 2019, time.December, 1); versionSAMLSignatureVersionSetToTrueByDefault {
+		defaultEnvirons["SAML_ASSERTION_SIGNATURE_VERIFICATION"] = "true"
+	}
+	return defaultEnvirons
 }
