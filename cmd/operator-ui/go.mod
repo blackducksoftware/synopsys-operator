@@ -5,7 +5,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.44.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20200203192355-a51e122c8eaf
+	github.com/blackducksoftware/synopsys-operator v0.0.0-20200218225734-240088024df7
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -18,6 +18,7 @@ require (
 	github.com/gobuffalo/packr/v2 v2.5.2
 	github.com/gobuffalo/suite v2.8.1+incompatible
 	github.com/gogo/protobuf v1.2.2-0.20190730201129-28a6bbf47e48 // indirect
+	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
@@ -40,13 +41,14 @@ require (
 	k8s.io/apimachinery v0.0.0-20190827074644-f378a67c6af3
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
+	k8s.io/utils v0.0.0-20200124190032-861946025e34 // indirect
 )
 
 replace (
 	cloud.google.com/go => cloud.google.com/go v0.44.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent => contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	github.com/NYTimes/gziphandler => github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20200203192355-a51e122c8eaf
+	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20200218225734-240088024df7
 	github.com/cockroachdb/cockroach-go => github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt => github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.13+incompatible // indirect
