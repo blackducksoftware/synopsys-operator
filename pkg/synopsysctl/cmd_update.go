@@ -1416,27 +1416,10 @@ var updatePolarisReportingCmd = &cobra.Command{
 			}
 		}
 
-		// Get Secret For the GCP Key
-		gcpServiceAccountPath := cmd.Flag("gcp-service-account-path").Value.String()
-		gcpServiceAccountData, err := util.ReadFileData(gcpServiceAccountPath)
-		if err != nil {
-			return fmt.Errorf("failed to read gcp service account file at location: '%s', error: %+v", gcpServiceAccountPath, err)
-		}
-		gcpServiceAccountSecrets, err := polarisreporting.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
-		if err != nil {
-			return fmt.Errorf("failed to generate GCP Service Account Secrets: %+v", err)
-		}
-
-		// Deploy the Secret
-		err = KubectlApplyRuntimeObjects(gcpServiceAccountSecrets)
-		if err != nil {
-			return fmt.Errorf("failed to update the gcpServiceAccount Secrets: %s", err)
-		}
-
 		// Deploy Polaris-Reporting Resources
-		out, err := util.RunHelm3("upgrade", []string{polarisReportingName, polarisReportingChartRepository, "-n", namespace, "--reuse-values"}, helmValuesMap)
+		err = util.UpdateWithHelm3(polarisReportingName, namespace, polarisReportingChartRepository, helmValuesMap, kubeConfigPath)
 		if err != nil {
-			return fmt.Errorf("failed to update Polaris-Reporting resources: %+v", out)
+			return fmt.Errorf("failed to update Polaris-Reporting resources due to %+v", err)
 		}
 
 		log.Infof("Polaris-Reporting has been successfully Updated in namespace '%s'!", namespace)
