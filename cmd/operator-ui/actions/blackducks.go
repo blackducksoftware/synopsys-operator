@@ -117,7 +117,7 @@ func (v BlackducksResource) New(c buffalo.Context) error {
 	blackduck := &blackduckapi.Blackduck{}
 	blackduck.Spec = *blackduckSpec
 	// TODO: fix the sort logic for Black Duck version
-	blackduck.Spec.Version = "2019.12.1"
+	blackduck.Spec.Version = "2020.2.0"
 	if v.config.IsClusterScoped {
 		blackduck.Spec.Namespace = ""
 	} else {
@@ -218,7 +218,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 
 	// environment variables
 	if bd.View.Environs == nil {
-		env := containers.GetHubKnobs()
+		env := containers.GetHubKnobs(bd.Spec.Version)
 		environs := []string{}
 		for key, value := range env {
 			if !strings.EqualFold(value, "") {
