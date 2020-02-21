@@ -44,7 +44,7 @@ require (
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	helm.sh/helm/v3 v3.1.0-rc.1.0.20200219163831-598dc504d634
+	helm.sh/helm/v3 v3.1.1
 	k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver v0.17.3
 	k8s.io/apimachinery v0.17.3
@@ -78,6 +78,6 @@ replace (
 	github.com/spf13/viper => github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify => github.com/stretchr/testify v1.3.0
 	gopkg.in/inf.v0 => gopkg.in/inf.v0 v0.9.1 // indirect
-	helm.sh/helm/v3 => helm.sh/helm/v3 v3.1.0-rc.1.0.20200219163831-598dc504d634
+	helm.sh/helm/v3 => helm.sh/helm/v3 v3.1.1
 	sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
 )
