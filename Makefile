@@ -35,6 +35,20 @@ binary: clean ${OUTDIR}
 		echo "completed synopsysctl binary for $(p) platform" \
 	)
 
+coverity: clean ${OUTDIR}
+	mkdir -p /go/src/github.com/blackducksoftware && ln -s `pwd` /go/src/github.com/blackducksoftware/synopsys-operator
+	$(foreach p,${PLATFORM}, \
+		echo "creating synopsysctl binary for $(p) platform at `date`" && \
+		cd /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl && \
+		if [ $(p) = ${WINDOWS} ]; then \
+			go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl.exe; \
+		else \
+			go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl; \
+		fi && \
+		echo "completed synopsysctl binary for $(p) platform at `date`" \
+	)
+	rm /go/src/github.com/blackducksoftware/synopsys-operator
+
 package:
 	$(foreach p,${PLATFORM}, \
 		echo "creating synopsysctl package for $(p) platform" && \
