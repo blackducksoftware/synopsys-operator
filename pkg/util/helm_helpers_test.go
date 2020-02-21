@@ -19,7 +19,7 @@
  *  under the License.
  */
 
-package polarisreporting
+package util
 
 import (
 	"fmt"

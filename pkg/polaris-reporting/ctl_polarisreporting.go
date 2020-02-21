@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -167,27 +168,27 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "fqdn":
-			SetHelmValueInMap(ctl.args, []string{"global", "rootDomain"}, ctl.flagTree.FQDN)
+			util.SetHelmValueInMap(ctl.args, []string{"global", "rootDomain"}, ctl.flagTree.FQDN)
 		case "ingress-class":
-			SetHelmValueInMap(ctl.args, []string{"ingressClass"}, ctl.flagTree.IngressClass)
+			util.SetHelmValueInMap(ctl.args, []string{"ingressClass"}, ctl.flagTree.IngressClass)
 		case "storage-class":
-			SetHelmValueInMap(ctl.args, []string{"postgres", "storageClass"}, ctl.flagTree.StorageClass)
-			SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
-			SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "storageClass"}, ctl.flagTree.StorageClass)
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "storageClass"}, ctl.flagTree.StorageClass)
+			util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+			util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "storageClass"}, ctl.flagTree.StorageClass)
 		case "eventstore-size":
-			SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+			util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "size"}, ctl.flagTree.EventstoreSize)
 		case "reportstorage-size":
-			SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "size"}, ctl.flagTree.ReportStorageSize)
+			util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "size"}, ctl.flagTree.ReportStorageSize)
 		case "smtp-host":
-			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "host"}, ctl.flagTree.SMTPHost)
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "host"}, ctl.flagTree.SMTPHost)
 		case "smtp-port":
-			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "port"}, fmt.Sprintf("%d", ctl.flagTree.SMTPPort))
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "port"}, fmt.Sprintf("%d", ctl.flagTree.SMTPPort))
 		case "smtp-username":
-			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "user"}, ctl.flagTree.SMTPUsername)
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "user"}, ctl.flagTree.SMTPUsername)
 		case "smtp-password":
-			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "password"}, ctl.flagTree.SMTPPassword)
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "password"}, ctl.flagTree.SMTPPassword)
 		case "smtp-sender-email":
-			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "sender_email"}, ctl.flagTree.SMTPPassword)
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "sender_email"}, ctl.flagTree.SMTPPassword)
 		case "smtp-tls-mode":
 			var tlsMode SMTPTLSMode
 			switch SMTPTLSMode(ctl.flagTree.SMTPTlsMode) {
@@ -202,25 +203,25 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			default:
 				log.Fatalf("%s is an invalid value for --smtp-tls-mode", ctl.flagTree.SMTPTlsMode)
 			}
-			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_mode"}, tlsMode)
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_mode"}, tlsMode)
 		case "smtp-trusted-hosts":
-			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_trusted_hosts"}, ctl.flagTree.SMTPTlsTrustedHosts)
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_trusted_hosts"}, ctl.flagTree.SMTPTlsTrustedHosts)
 		case "insecure-skip-smtp-tls-verify":
 			b, _ := strconv.ParseBool(ctl.flagTree.SMTPTlsIgnoreInvalidCert)
-			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !b)
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !b)
 		case "enable-postgres-container":
 			b, _ := strconv.ParseBool(ctl.flagTree.PostgresInternal)
-			SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !b)
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !b)
 		case "postgres-host":
-			SetHelmValueInMap(ctl.args, []string{"postgres", "host"}, ctl.flagTree.PostgresHost)
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "host"}, ctl.flagTree.PostgresHost)
 		case "postgres-port":
-			SetHelmValueInMap(ctl.args, []string{"postgres", "port"}, fmt.Sprintf("%d", ctl.flagTree.PostgresPort))
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "port"}, fmt.Sprintf("%d", ctl.flagTree.PostgresPort))
 		case "postgres-username":
-			SetHelmValueInMap(ctl.args, []string{"postgres", "user"}, ctl.flagTree.PostgresUsername)
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "user"}, ctl.flagTree.PostgresUsername)
 		case "postgres-password":
-			SetHelmValueInMap(ctl.args, []string{"postgres", "password"}, ctl.flagTree.PostgresPassword)
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "password"}, ctl.flagTree.PostgresPassword)
 		case "postgres-size":
-			SetHelmValueInMap(ctl.args, []string{"postgres", "size"}, ctl.flagTree.PostgresSize)
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "size"}, ctl.flagTree.PostgresSize)
 		case "postgres-ssl-mode":
 			var sslMode PostgresSSLMode
 			switch PostgresSSLMode(ctl.flagTree.PostgresSSLMode) {
@@ -235,7 +236,7 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			default:
 				log.Fatalf("%s is an invalid value for --postgres-ssl-mode", ctl.flagTree.PostgresSSLMode)
 			}
-			SetHelmValueInMap(ctl.args, []string{"postgres", "sslMode"}, sslMode)
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "sslMode"}, sslMode)
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}

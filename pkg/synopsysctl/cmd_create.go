@@ -31,6 +31,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 
@@ -60,6 +61,7 @@ var createBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createPolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createPolarisReportingCobraHelper polarisreporting.HelmValuesFromCobraFlags
+var createBDBACobraHelper bdba.HelmValuesFromCobraFlags
 
 // Default Base Specs for Create
 var baseAlertSpec string
@@ -916,7 +918,7 @@ var createPolarisReportingCmd = &cobra.Command{
 		} else {
 			versionFlag := cmd.Flag("version")
 			if versionFlag.Changed {
-				polarisReportingChartRepository = fmt.Sprintf("https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com/charts/polaris-helmchart-reporting-%s.tgz", versionFlag.Value.String())
+				polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-%s.tgz", synopsysChartRepository, versionFlag.Value.String())
 			}
 		}
 
@@ -983,7 +985,7 @@ var createPolarisReportingNativeCmd = &cobra.Command{
 		} else {
 			versionFlag := cmd.Flag("version")
 			if versionFlag.Changed {
-				polarisReportingChartRepository = fmt.Sprintf("https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com/charts/polaris-helmchart-reporting-%s.tgz", versionFlag.Value.String())
+				polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-%s.tgz", synopsysChartRepository, versionFlag.Value.String())
 			}
 		}
 
@@ -1013,6 +1015,106 @@ var createPolarisReportingNativeCmd = &cobra.Command{
 	},
 }
 
+// createBDBACmd creates a BDBA instance
+var createBDBACmd = &cobra.Command{
+	Use:           "bdba",
+	Example:       "",
+	Short:         "Create a BDBA instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get the flags to set Helm values
+		helmValuesMap, err := createBDBACobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		// Update the Helm Chart Location
+		// TODO: allow user to specify --version and --chart-location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			bdbaChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				bdbaChartRepository = fmt.Sprintf("%s/charts/bdba-%s.tgz", synopsysChartRepository, versionFlag.Value.String())
+			}
+		}
+
+		// Check Dry Run before deploying any resources
+		err = util.CreateWithHelm3(bdbaName, namespace, bdbaChartRepository, helmValuesMap, kubeConfigPath, true)
+		if err != nil {
+			return fmt.Errorf("failed to create BDBA resources: %+v", err)
+		}
+
+		// Deploy initial resources like secrets...
+		// ...
+
+		// Deploy Resources
+		err = util.CreateWithHelm3(bdbaName, namespace, bdbaChartRepository, helmValuesMap, kubeConfigPath, false)
+		if err != nil {
+			return fmt.Errorf("failed to create BDBA resources: %+v", err)
+		}
+
+		log.Infof("BDBA has been successfully Created!")
+		return nil
+	},
+}
+
+// createBDBANativeCmd prints BDBA resources
+var createBDBANativeCmd = &cobra.Command{
+	Use:           "native",
+	Example:       "",
+	Short:         "Print Kubernetes resources for creating a BDBA instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get the flags to set Helm values
+		helmValuesMap, err := createBDBACobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			bdbaChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				bdbaChartRepository = fmt.Sprintf("%s/charts/bdba-%s.tgz", synopsysChartRepository, versionFlag.Value.String())
+			}
+		}
+
+		// Print extra resources like secrets...
+		// ...
+
+		// Print Resources
+		err = util.TemplateWithHelm3(bdbaName, namespace, bdbaChartRepository, helmValuesMap)
+		if err != nil {
+			return fmt.Errorf("failed to generate BDBA resources: %+v", err)
+		}
+
+		return nil
+	},
+}
+
 func init() {
 	// initialize global resource ctl structs for commands to use
 	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
@@ -1020,6 +1122,7 @@ func init() {
 	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	createPolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
 	createPolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
+	createBDBACobraHelper = *bdba.NewHelmValuesFromCobraFlags()
 
 	rootCmd.AddCommand(createCmd)
 
@@ -1080,5 +1183,16 @@ func init() {
 	createPolarisReportingCobraHelper.AddCobraFlagsToCommand(createPolarisReportingNativeCmd, true)
 	addChartLocationPathFlag(createPolarisReportingNativeCmd)
 	createPolarisReportingCmd.AddCommand(createPolarisReportingNativeCmd)
+
+	// Add BDBA commands
+	createBDBACmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(createBDBACmd.PersistentFlags(), "namespace")
+	createBDBACobraHelper.AddCobraFlagsToCommand(createBDBACmd, true)
+	addChartLocationPathFlag(createBDBACmd)
+	createCmd.AddCommand(createBDBACmd)
+
+	createBDBACobraHelper.AddCobraFlagsToCommand(createBDBANativeCmd, true)
+	addChartLocationPathFlag(createBDBANativeCmd)
+	createBDBACmd.AddCommand(createBDBANativeCmd)
 
 }

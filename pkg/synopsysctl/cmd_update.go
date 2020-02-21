@@ -39,6 +39,7 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 	"github.com/pkg/errors"
 
@@ -64,6 +65,7 @@ var updateBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updatePolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updatePolarisReportingCobraHelper polarisreporting.HelmValuesFromCobraFlags
+var updateBDBACobraHelper bdba.HelmValuesFromCobraFlags
 
 var updateMockFormat = "json"
 
@@ -1416,13 +1418,57 @@ var updatePolarisReportingCmd = &cobra.Command{
 			}
 		}
 
-		// Deploy Polaris-Reporting Resources
+		// Update Polaris-Reporting Resources
 		err = util.UpdateWithHelm3(polarisReportingName, namespace, polarisReportingChartRepository, helmValuesMap, kubeConfigPath)
 		if err != nil {
 			return fmt.Errorf("failed to update Polaris-Reporting resources due to %+v", err)
 		}
 
 		log.Infof("Polaris-Reporting has been successfully Updated in namespace '%s'!", namespace)
+		return nil
+	},
+}
+
+// updateBDBACmd updates a BDBA instance
+var updateBDBACmd = &cobra.Command{
+	Use:           "bdba",
+	Example:       "",
+	Short:         "Update a BDBA instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get the flags to set Helm values
+		helmValuesMap, err := updateBDBACobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			bdbaChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				bdbaChartRepository = fmt.Sprintf("%s/charts/bdba-%s.tgz", synopsysChartRepository, versionFlag.Value.String())
+			}
+		}
+
+		// Update Resources
+		err = util.UpdateWithHelm3(bdbaName, namespace, bdbaChartRepository, helmValuesMap, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to update BDBA resources due to %+v", err)
+		}
+
+		log.Infof("BDBA has been successfully Updated in namespace '%s'!", namespace)
 		return nil
 	},
 }
@@ -1515,4 +1561,11 @@ func init() {
 	updatePolarisReportingCobraHelper.AddCobraFlagsToCommand(updatePolarisReportingCmd, false)
 	addChartLocationPathFlag(updatePolarisReportingCmd)
 	updateCmd.AddCommand(updatePolarisReportingCmd)
+
+	// BDBA
+	updateBDBACmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(updateBDBACmd.PersistentFlags(), "namespace")
+	updateBDBACobraHelper.AddCobraFlagsToCommand(updateBDBACmd, false)
+	addChartLocationPathFlag(updateBDBACmd)
+	updateCmd.AddCommand(updateBDBACmd)
 }

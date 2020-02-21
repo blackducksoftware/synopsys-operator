@@ -253,10 +253,6 @@ var getPolarisReportingCmd = &cobra.Command{
 		if len(args) != 0 {
 			return fmt.Errorf("this command takes 0 arguments")
 		}
-
-		if !cmd.Flags().Lookup("namespace").Changed {
-			return fmt.Errorf("a namespace must be specified using the --namespace flag")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -270,17 +266,42 @@ var getPolarisReportingCmd = &cobra.Command{
 	},
 }
 
+// getBDBACmd display the BDBA instance
+var getBDBACmd = &cobra.Command{
+	Use:           "bdba",
+	Example:       "synopsysctl get bdba -n <namespace>",
+	Short:         "Display the BDBA instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("this command takes 0 arguments")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		helmRelease, err := util.GetWithHelm3(bdbaName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to get BDBA values: %+v", err)
+		}
+		helmSetValues := helmRelease.Config
+		PrintComponent(helmSetValues, "YAML")
+		return nil
+	},
+}
+
 func init() {
 	//(PassCmd) getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
 	rootCmd.AddCommand(getCmd)
 
-	// Add Commands
+	// Alert
 	getAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getAlertCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
 	getCmd.AddCommand(getAlertCmd)
 
+	// Black Duck
 	getBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getBlackDuckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getBlackDuckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
@@ -290,15 +311,24 @@ func init() {
 	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
 	getCmd.AddCommand(getBlackDuckCmd)
 
+	// OpsSight
 	getOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getOpsSightCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
 	getCmd.AddCommand(getOpsSightCmd)
 
+	// Polaris
 	getPolarisCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getCmd.AddCommand(getPolarisCmd)
 
+	// Polaris Reporting
 	getPolarisReportingCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(getPolarisReportingCmd.Flags(), "namespace")
 	getCmd.AddCommand(getPolarisReportingCmd)
+
+	// BDBA
+	getBDBACmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(getBDBACmd.Flags(), "namespace")
+	getCmd.AddCommand(getBDBACmd)
 }
