@@ -252,36 +252,61 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 				ctl.args["rp-storage-service"] = map[string]interface{}{"report-storage": map[string]interface{}{"volume": map[string]interface{}{"size": ctl.flagTree.ReportStorageSize}}}
 			}
 		case "smtp-host":
-			if val, ok := ctl.args["smtp"]; ok && val != nil {
-				smtpVal := val.(map[string]interface{})
-				smtpVal["host"] = ctl.flagTree.SMTPHost
-				ctl.args["smtp"] = smtpVal
+			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
+				onpremAuthVal := val.(map[string]interface{})
+				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
+					smtpVal := val.(map[string]interface{})
+					smtpVal["host"] = ctl.flagTree.SMTPHost
+					onpremAuthVal["smtp"] = smtpVal
+				} else {
+					onpremAuthVal["smtp"] = map[string]interface{}{"host": ctl.flagTree.SMTPHost}
+				}
+				ctl.args["onprem-auth-service"] = onpremAuthVal
 			} else {
-				ctl.args["smtp"] = map[string]interface{}{"host": ctl.flagTree.SMTPHost}
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"host": ctl.flagTree.SMTPHost}}
 			}
 		case "smtp-port":
-			if val, ok := ctl.args["smtp"]; ok && val != nil {
-				smtpVal := val.(map[string]interface{})
-				smtpVal["port"] = fmt.Sprintf("%d", ctl.flagTree.SMTPPort)
-				ctl.args["smtp"] = smtpVal
+			port := fmt.Sprintf("%d", ctl.flagTree.SMTPPort)
+			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
+				onpremAuthVal := val.(map[string]interface{})
+				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
+					smtpVal := val.(map[string]interface{})
+					smtpVal["port"] = port
+					onpremAuthVal["smtp"] = smtpVal
+				} else {
+					onpremAuthVal["smtp"] = map[string]interface{}{"port": port}
+				}
+				ctl.args["onprem-auth-service"] = onpremAuthVal
 			} else {
-				ctl.args["smtp"] = map[string]interface{}{"port": fmt.Sprintf("%d", ctl.flagTree.SMTPPort)}
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"port": port}}
 			}
 		case "smtp-username":
-			if val, ok := ctl.args["smtp"]; ok && val != nil {
-				smtpVal := val.(map[string]interface{})
-				smtpVal["user"] = ctl.flagTree.SMTPUsername
-				ctl.args["smtp"] = smtpVal
+			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
+				onpremAuthVal := val.(map[string]interface{})
+				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
+					smtpVal := val.(map[string]interface{})
+					smtpVal["user"] = ctl.flagTree.SMTPUsername
+					onpremAuthVal["smtp"] = smtpVal
+				} else {
+					onpremAuthVal["smtp"] = map[string]interface{}{"user": ctl.flagTree.SMTPUsername}
+				}
+				ctl.args["onprem-auth-service"] = onpremAuthVal
 			} else {
-				ctl.args["smtp"] = map[string]interface{}{"user": ctl.flagTree.SMTPUsername}
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"user": ctl.flagTree.SMTPUsername}}
 			}
 		case "smtp-password":
-			if val, ok := ctl.args["smtp"]; ok && val != nil {
-				smtpVal := val.(map[string]interface{})
-				smtpVal["password"] = ctl.flagTree.SMTPPassword
-				ctl.args["smtp"] = smtpVal
+			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
+				onpremAuthVal := val.(map[string]interface{})
+				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
+					smtpVal := val.(map[string]interface{})
+					smtpVal["password"] = ctl.flagTree.SMTPPassword
+					onpremAuthVal["smtp"] = smtpVal
+				} else {
+					onpremAuthVal["smtp"] = map[string]interface{}{"password": ctl.flagTree.SMTPPassword}
+				}
+				ctl.args["onprem-auth-service"] = onpremAuthVal
 			} else {
-				ctl.args["smtp"] = map[string]interface{}{"password": ctl.flagTree.SMTPPassword}
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"password": ctl.flagTree.SMTPPassword}}
 			}
 		case "smtp-sender-email":
 			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
@@ -311,47 +336,66 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			default:
 				log.Fatalf("%s is an invalid value for --smtp-tls-mode", ctl.flagTree.SMTPTlsMode)
 			}
+
 			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthVal := val.(map[string]interface{})
-				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
-					smtpVal := val.(map[string]interface{})
-					smtpVal["tls_mode"] = tlsMode
-					onpremAuthVal["smtp"] = smtpVal
+				onpremAuthServiceVal := val.(map[string]interface{})
+				if val, ok = onpremAuthServiceVal["auth-server"]; ok && val != nil {
+					authServiceVal := val.(map[string]interface{})
+					if val, ok = authServiceVal["smtp"]; ok && val != nil {
+						smtpServiceVal := val.(map[string]interface{})
+						smtpServiceVal["tls_mode"] = tlsMode
+						authServiceVal["smtp"] = smtpServiceVal
+					} else {
+						authServiceVal["smtp"] = map[string]interface{}{"tls_mode": tlsMode}
+					}
+					onpremAuthServiceVal["auth-server"] = authServiceVal
 				} else {
-					onpremAuthVal["smtp"] = map[string]interface{}{"tls_mode": tlsMode}
+					onpremAuthServiceVal["auth-server"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_mode": tlsMode}}
 				}
-				ctl.args["onprem-auth-service"] = onpremAuthVal
+				ctl.args["onprem-auth-service"] = onpremAuthServiceVal
 			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_mode": tlsMode}}
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"auth-server": map[string]interface{}{"smtp": map[string]interface{}{"tls_mode": tlsMode}}}
 			}
 		case "smtp-trusted-hosts":
 			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthVal := val.(map[string]interface{})
-				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
-					smtpVal := val.(map[string]interface{})
-					smtpVal["tls_trusted_hosts"] = ctl.flagTree.SMTPTlsTrustedHosts
-					onpremAuthVal["smtp"] = smtpVal
+				onpremAuthServiceVal := val.(map[string]interface{})
+				if val, ok = onpremAuthServiceVal["auth-server"]; ok && val != nil {
+					authServiceVal := val.(map[string]interface{})
+					if val, ok = authServiceVal["smtp"]; ok && val != nil {
+						smtpServiceVal := val.(map[string]interface{})
+						smtpServiceVal["tls_trusted_hosts"] = ctl.flagTree.SMTPTlsTrustedHosts
+						authServiceVal["smtp"] = smtpServiceVal
+					} else {
+						authServiceVal["smtp"] = map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}
+					}
+					onpremAuthServiceVal["auth-server"] = authServiceVal
 				} else {
-					onpremAuthVal["smtp"] = map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}
+					onpremAuthServiceVal["auth-server"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}}
 				}
-				ctl.args["onprem-auth-service"] = onpremAuthVal
+				ctl.args["onprem-auth-service"] = onpremAuthServiceVal
 			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}}
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"auth-server": map[string]interface{}{"smtp": map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}}}
 			}
 		case "insecure-skip-smtp-tls-verify":
 			b, _ := strconv.ParseBool(ctl.flagTree.SMTPTlsIgnoreInvalidCert)
 			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthVal := val.(map[string]interface{})
-				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
-					smtpVal := val.(map[string]interface{})
-					smtpVal["tls_check_server_identity"] = !b
-					onpremAuthVal["smtp"] = smtpVal
+				onpremAuthServiceVal := val.(map[string]interface{})
+				if val, ok = onpremAuthServiceVal["auth-server"]; ok && val != nil {
+					authServiceVal := val.(map[string]interface{})
+					if val, ok = authServiceVal["smtp"]; ok && val != nil {
+						smtpServiceVal := val.(map[string]interface{})
+						smtpServiceVal["tls_check_server_identity"] = !b
+						authServiceVal["smtp"] = smtpServiceVal
+					} else {
+						authServiceVal["smtp"] = map[string]interface{}{"tls_check_server_identity": !b}
+					}
+					onpremAuthServiceVal["auth-server"] = authServiceVal
 				} else {
-					onpremAuthVal["smtp"] = map[string]interface{}{"tls_check_server_identity": !b}
+					onpremAuthServiceVal["auth-server"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_check_server_identity": !b}}
 				}
-				ctl.args["onprem-auth-service"] = onpremAuthVal
+				ctl.args["onprem-auth-service"] = onpremAuthServiceVal
 			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_check_server_identity": !b}}
+				ctl.args["onprem-auth-service"] = map[string]interface{}{"auth-server": map[string]interface{}{"smtp": map[string]interface{}{"tls_check_server_identity": !b}}}
 			}
 		case "enable-postgres-container":
 			b, _ := strconv.ParseBool(ctl.flagTree.PostgresInternal)
