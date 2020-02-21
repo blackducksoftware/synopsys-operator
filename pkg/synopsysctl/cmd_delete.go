@@ -300,13 +300,13 @@ var deletePolarisReportingCmd = &cobra.Command{
 			return fmt.Errorf("failed to generate GCP Service Account Secrets: %+v", err)
 		}
 
-		// Deploy the Secret
+		// Delete the Secret
 		err = KubectlDeleteRuntimeObjects(gcpServiceAccountSecrets)
 		if err != nil {
 			return fmt.Errorf("failed to delete the gcpServiceAccount Secrets: %s", err)
 		}
 
-		// Deploy Polaris-Reporting Resources
+		// Delete Polaris-Reporting Resources
 		err = util.DeleteWithHelm3(polarisReportingName, namespace, kubeConfigPath)
 		if err != nil {
 			return fmt.Errorf("failed to delete Polaris-Reporting resources: %+v", err)
