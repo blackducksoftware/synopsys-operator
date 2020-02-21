@@ -167,161 +167,27 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "fqdn":
-			globalVal := ctl.args["global"].(map[string]interface{})
-			globalVal["rootDomain"] = ctl.flagTree.FQDN
-			ctl.args["global"] = globalVal
+			SetHelmValueInMap(ctl.args, []string{"global", "rootDomain"}, ctl.flagTree.FQDN)
 		case "ingress-class":
-			ctl.args["ingressClass"] = ctl.flagTree.IngressClass
+			SetHelmValueInMap(ctl.args, []string{"ingressClass"}, ctl.flagTree.IngressClass)
 		case "storage-class":
-			// postgres storage class
-			if val, ok := ctl.args["postgres"]; ok && val != nil {
-				postgresVal := val.(map[string]interface{})
-				postgresVal["storageClass"] = ctl.flagTree.StorageClass
-				ctl.args["postgres"] = postgresVal
-			} else {
-				ctl.args["postgres"] = map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}
-			}
-
-			// event store storage class
-			if val, ok := ctl.args["eventstore"]; ok && val != nil {
-				eventstoreVal := val.(map[string]interface{})
-				if val, ok = eventstoreVal["persistence"]; ok && val != nil {
-					persistenceVal := val.(map[string]interface{})
-					persistenceVal["storageClass"] = ctl.flagTree.StorageClass
-					eventstoreVal["persistence"] = persistenceVal
-				} else {
-					eventstoreVal["persistence"] = map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}
-				}
-				ctl.args["eventstore"] = eventstoreVal
-			} else {
-				ctl.args["eventstore"] = map[string]interface{}{"persistence": map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}}
-			}
-
-			// report-storage storage class
-			if val, ok := ctl.args["rp-storage-service"]; ok && val != nil {
-				reportServiceVal := val.(map[string]interface{})
-				if val, ok = reportServiceVal["report-storage"]; ok && val != nil {
-					storageServiceVal := val.(map[string]interface{})
-					if val, ok = storageServiceVal["volume"]; ok && val != nil {
-						volumeServiceVal := val.(map[string]interface{})
-						volumeServiceVal["storageClass"] = ctl.flagTree.StorageClass
-						storageServiceVal["volume"] = volumeServiceVal
-					} else {
-						storageServiceVal["volume"] = map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}
-					}
-					reportServiceVal["report-storage"] = storageServiceVal
-				} else {
-					reportServiceVal["report-storage"] = map[string]interface{}{"volume": map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}}
-				}
-				ctl.args["rp-storage-service"] = reportServiceVal
-			} else {
-				ctl.args["rp-storage-service"] = map[string]interface{}{"report-storage": map[string]interface{}{"volume": map[string]interface{}{"storageClass": ctl.flagTree.StorageClass}}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"postgres", "storageClass"}, ctl.flagTree.StorageClass)
+			SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+			SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "storageClass"}, ctl.flagTree.StorageClass)
 		case "eventstore-size":
-			if val, ok := ctl.args["eventstore"]; ok && val != nil {
-				eventstoreVal := val.(map[string]interface{})
-				if val, ok = eventstoreVal["persistence"]; ok && val != nil {
-					persistenceVal := val.(map[string]interface{})
-					persistenceVal["size"] = ctl.flagTree.EventstoreSize
-					eventstoreVal["persistence"] = persistenceVal
-				} else {
-					eventstoreVal["persistence"] = map[string]interface{}{"size": ctl.flagTree.EventstoreSize}
-				}
-				ctl.args["eventstore"] = eventstoreVal
-			} else {
-				ctl.args["eventstore"] = map[string]interface{}{"persistence": map[string]interface{}{"size": ctl.flagTree.EventstoreSize}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "size"}, ctl.flagTree.EventstoreSize)
 		case "reportstorage-size":
-			if val, ok := ctl.args["rp-storage-service"]; ok && val != nil {
-				reportServiceVal := val.(map[string]interface{})
-				if val, ok = reportServiceVal["report-storage"]; ok && val != nil {
-					storageServiceVal := val.(map[string]interface{})
-					if val, ok = storageServiceVal["volume"]; ok && val != nil {
-						volumeServiceVal := val.(map[string]interface{})
-						volumeServiceVal["size"] = ctl.flagTree.ReportStorageSize
-						storageServiceVal["volume"] = volumeServiceVal
-					} else {
-						storageServiceVal["volume"] = map[string]interface{}{"size": ctl.flagTree.ReportStorageSize}
-					}
-					reportServiceVal["report-storage"] = storageServiceVal
-				} else {
-					reportServiceVal["report-storage"] = map[string]interface{}{"volume": map[string]interface{}{"size": ctl.flagTree.ReportStorageSize}}
-				}
-				ctl.args["rp-storage-service"] = reportServiceVal
-			} else {
-				ctl.args["rp-storage-service"] = map[string]interface{}{"report-storage": map[string]interface{}{"volume": map[string]interface{}{"size": ctl.flagTree.ReportStorageSize}}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "size"}, ctl.flagTree.ReportStorageSize)
 		case "smtp-host":
-			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthVal := val.(map[string]interface{})
-				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
-					smtpVal := val.(map[string]interface{})
-					smtpVal["host"] = ctl.flagTree.SMTPHost
-					onpremAuthVal["smtp"] = smtpVal
-				} else {
-					onpremAuthVal["smtp"] = map[string]interface{}{"host": ctl.flagTree.SMTPHost}
-				}
-				ctl.args["onprem-auth-service"] = onpremAuthVal
-			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"host": ctl.flagTree.SMTPHost}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "host"}, ctl.flagTree.SMTPHost)
 		case "smtp-port":
-			port := fmt.Sprintf("%d", ctl.flagTree.SMTPPort)
-			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthVal := val.(map[string]interface{})
-				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
-					smtpVal := val.(map[string]interface{})
-					smtpVal["port"] = port
-					onpremAuthVal["smtp"] = smtpVal
-				} else {
-					onpremAuthVal["smtp"] = map[string]interface{}{"port": port}
-				}
-				ctl.args["onprem-auth-service"] = onpremAuthVal
-			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"port": port}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "port"}, fmt.Sprintf("%d", ctl.flagTree.SMTPPort))
 		case "smtp-username":
-			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthVal := val.(map[string]interface{})
-				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
-					smtpVal := val.(map[string]interface{})
-					smtpVal["user"] = ctl.flagTree.SMTPUsername
-					onpremAuthVal["smtp"] = smtpVal
-				} else {
-					onpremAuthVal["smtp"] = map[string]interface{}{"user": ctl.flagTree.SMTPUsername}
-				}
-				ctl.args["onprem-auth-service"] = onpremAuthVal
-			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"user": ctl.flagTree.SMTPUsername}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "user"}, ctl.flagTree.SMTPUsername)
 		case "smtp-password":
-			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthVal := val.(map[string]interface{})
-				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
-					smtpVal := val.(map[string]interface{})
-					smtpVal["password"] = ctl.flagTree.SMTPPassword
-					onpremAuthVal["smtp"] = smtpVal
-				} else {
-					onpremAuthVal["smtp"] = map[string]interface{}{"password": ctl.flagTree.SMTPPassword}
-				}
-				ctl.args["onprem-auth-service"] = onpremAuthVal
-			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"password": ctl.flagTree.SMTPPassword}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "password"}, ctl.flagTree.SMTPPassword)
 		case "smtp-sender-email":
-			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthVal := val.(map[string]interface{})
-				if val, ok = onpremAuthVal["smtp"]; ok && val != nil {
-					smtpVal := val.(map[string]interface{})
-					smtpVal["sender_email"] = ctl.flagTree.SMTPSenderEmail
-					onpremAuthVal["smtp"] = smtpVal
-				} else {
-					onpremAuthVal["smtp"] = map[string]interface{}{"sender_email": ctl.flagTree.SMTPSenderEmail}
-				}
-				ctl.args["onprem-auth-service"] = onpremAuthVal
-			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"smtp": map[string]interface{}{"sender_email": ctl.flagTree.SMTPSenderEmail}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "sender_email"}, ctl.flagTree.SMTPPassword)
 		case "smtp-tls-mode":
 			var tlsMode SMTPTLSMode
 			switch SMTPTLSMode(ctl.flagTree.SMTPTlsMode) {
@@ -336,117 +202,25 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			default:
 				log.Fatalf("%s is an invalid value for --smtp-tls-mode", ctl.flagTree.SMTPTlsMode)
 			}
-
-			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthServiceVal := val.(map[string]interface{})
-				if val, ok = onpremAuthServiceVal["auth-server"]; ok && val != nil {
-					authServiceVal := val.(map[string]interface{})
-					if val, ok = authServiceVal["smtp"]; ok && val != nil {
-						smtpServiceVal := val.(map[string]interface{})
-						smtpServiceVal["tls_mode"] = tlsMode
-						authServiceVal["smtp"] = smtpServiceVal
-					} else {
-						authServiceVal["smtp"] = map[string]interface{}{"tls_mode": tlsMode}
-					}
-					onpremAuthServiceVal["auth-server"] = authServiceVal
-				} else {
-					onpremAuthServiceVal["auth-server"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_mode": tlsMode}}
-				}
-				ctl.args["onprem-auth-service"] = onpremAuthServiceVal
-			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"auth-server": map[string]interface{}{"smtp": map[string]interface{}{"tls_mode": tlsMode}}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_mode"}, tlsMode)
 		case "smtp-trusted-hosts":
-			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthServiceVal := val.(map[string]interface{})
-				if val, ok = onpremAuthServiceVal["auth-server"]; ok && val != nil {
-					authServiceVal := val.(map[string]interface{})
-					if val, ok = authServiceVal["smtp"]; ok && val != nil {
-						smtpServiceVal := val.(map[string]interface{})
-						smtpServiceVal["tls_trusted_hosts"] = ctl.flagTree.SMTPTlsTrustedHosts
-						authServiceVal["smtp"] = smtpServiceVal
-					} else {
-						authServiceVal["smtp"] = map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}
-					}
-					onpremAuthServiceVal["auth-server"] = authServiceVal
-				} else {
-					onpremAuthServiceVal["auth-server"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}}
-				}
-				ctl.args["onprem-auth-service"] = onpremAuthServiceVal
-			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"auth-server": map[string]interface{}{"smtp": map[string]interface{}{"tls_trusted_hosts": ctl.flagTree.SMTPTlsTrustedHosts}}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_trusted_hosts"}, ctl.flagTree.SMTPTlsTrustedHosts)
 		case "insecure-skip-smtp-tls-verify":
 			b, _ := strconv.ParseBool(ctl.flagTree.SMTPTlsIgnoreInvalidCert)
-			if val, ok := ctl.args["onprem-auth-service"]; ok && val != nil {
-				onpremAuthServiceVal := val.(map[string]interface{})
-				if val, ok = onpremAuthServiceVal["auth-server"]; ok && val != nil {
-					authServiceVal := val.(map[string]interface{})
-					if val, ok = authServiceVal["smtp"]; ok && val != nil {
-						smtpServiceVal := val.(map[string]interface{})
-						smtpServiceVal["tls_check_server_identity"] = !b
-						authServiceVal["smtp"] = smtpServiceVal
-					} else {
-						authServiceVal["smtp"] = map[string]interface{}{"tls_check_server_identity": !b}
-					}
-					onpremAuthServiceVal["auth-server"] = authServiceVal
-				} else {
-					onpremAuthServiceVal["auth-server"] = map[string]interface{}{"smtp": map[string]interface{}{"tls_check_server_identity": !b}}
-				}
-				ctl.args["onprem-auth-service"] = onpremAuthServiceVal
-			} else {
-				ctl.args["onprem-auth-service"] = map[string]interface{}{"auth-server": map[string]interface{}{"smtp": map[string]interface{}{"tls_check_server_identity": !b}}}
-			}
+			SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !b)
 		case "enable-postgres-container":
 			b, _ := strconv.ParseBool(ctl.flagTree.PostgresInternal)
-			if val, ok := ctl.args["postgres"]; ok && val != nil {
-				postgresVal := val.(map[string]interface{})
-				postgresVal["isExternal"] = !b
-				ctl.args["postgres"] = postgresVal
-			} else {
-				ctl.args["postgres"] = map[string]interface{}{"isExternal": !b}
-			}
+			SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !b)
 		case "postgres-host":
-			if val, ok := ctl.args["postgres"]; ok && val != nil {
-				postgresVal := val.(map[string]interface{})
-				postgresVal["host"] = ctl.flagTree.PostgresHost
-				ctl.args["postgres"] = postgresVal
-			} else {
-				ctl.args["postgres"] = map[string]interface{}{"host": ctl.flagTree.PostgresHost}
-			}
+			SetHelmValueInMap(ctl.args, []string{"postgres", "host"}, ctl.flagTree.PostgresHost)
 		case "postgres-port":
-			if val, ok := ctl.args["postgres"]; ok && val != nil {
-				postgresVal := val.(map[string]interface{})
-				postgresVal["port"] = fmt.Sprintf("%d", ctl.flagTree.PostgresPort)
-				ctl.args["postgres"] = postgresVal
-			} else {
-				ctl.args["postgres"] = map[string]interface{}{"port": fmt.Sprintf("%d", ctl.flagTree.PostgresPort)}
-			}
+			SetHelmValueInMap(ctl.args, []string{"postgres", "port"}, fmt.Sprintf("%d", ctl.flagTree.PostgresPort))
 		case "postgres-username":
-			if val, ok := ctl.args["postgres"]; ok && val != nil {
-				postgresVal := val.(map[string]interface{})
-				postgresVal["user"] = ctl.flagTree.PostgresUsername
-				ctl.args["postgres"] = postgresVal
-			} else {
-				ctl.args["postgres"] = map[string]interface{}{"user": ctl.flagTree.PostgresUsername}
-			}
+			SetHelmValueInMap(ctl.args, []string{"postgres", "user"}, ctl.flagTree.PostgresUsername)
 		case "postgres-password":
-			if val, ok := ctl.args["postgres"]; ok && val != nil {
-				postgresVal := val.(map[string]interface{})
-				postgresVal["password"] = ctl.flagTree.PostgresPassword
-				ctl.args["postgres"] = postgresVal
-			} else {
-				ctl.args["postgres"] = map[string]interface{}{"password": ctl.flagTree.PostgresPassword}
-			}
+			SetHelmValueInMap(ctl.args, []string{"postgres", "password"}, ctl.flagTree.PostgresPassword)
 		case "postgres-size":
-			if val, ok := ctl.args["postgres"]; ok && val != nil {
-				postgresVal := val.(map[string]interface{})
-				postgresVal["size"] = ctl.flagTree.PostgresSize
-				ctl.args["postgres"] = postgresVal
-			} else {
-				ctl.args["postgres"] = map[string]interface{}{"size": ctl.flagTree.PostgresSize}
-			}
-			ctl.args["postgres"].(map[string]interface{})["size"] = ctl.flagTree.PostgresSize
+			SetHelmValueInMap(ctl.args, []string{"postgres", "size"}, ctl.flagTree.PostgresSize)
 		case "postgres-ssl-mode":
 			var sslMode PostgresSSLMode
 			switch PostgresSSLMode(ctl.flagTree.PostgresSSLMode) {
@@ -461,13 +235,7 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			default:
 				log.Fatalf("%s is an invalid value for --postgres-ssl-mode", ctl.flagTree.PostgresSSLMode)
 			}
-			if val, ok := ctl.args["postgres"]; ok && val != nil {
-				postgresVal := val.(map[string]interface{})
-				postgresVal["sslMode"] = sslMode
-				ctl.args["postgres"] = postgresVal
-			} else {
-				ctl.args["postgres"] = map[string]interface{}{"sslMode": sslMode}
-			}
+			SetHelmValueInMap(ctl.args, []string{"postgres", "sslMode"}, sslMode)
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
