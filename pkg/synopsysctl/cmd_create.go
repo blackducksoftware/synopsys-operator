@@ -859,11 +859,7 @@ var createPolarisReportingNativeCmd = &cobra.Command{
 		} else {
 			versionFlag := cmd.Flag("version")
 			if versionFlag.Changed {
-<<<<<<< HEAD
 				polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-%s.tgz", baseChartRepository, versionFlag.Value.String())
-=======
-				polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-%s.tgz", synopsysChartRepository, versionFlag.Value.String())
->>>>>>> CRUD with bdba helm chart
 			}
 		}
 

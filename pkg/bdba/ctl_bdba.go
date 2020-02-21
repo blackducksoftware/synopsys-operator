@@ -40,12 +40,13 @@ type HelmValuesFromCobraFlags struct {
 type FlagTree struct {
 	Version string `json:"version"`
 
-	ClusterDomain string `json:"clusterDomain"`
+	Hostname          string `json:"hostname"`
+	RabbitMQK8SDomain string `json:"rabbitmqK8sDomain"`
 
 	// Storage
-	PGStorageClass        string `json:"pgStorageClass"`
-	PGSize                string `json:"pgSize"`
-	PGExistingClaim       string `json:"pgExistingClaim"`
+	PSQLStorageClass      string `json:"psqlStorageClass"`
+	PSQLSize              string `json:"psqlSize"`
+	PSQLExistingClaim     string `json:"psqlExistingClaim"`
 	MinioStorageClass     string `json:"minioStorageClass"`
 	MinioSize             string `json:"minioSize"`
 	MinioExistingClaim    string `json:"minioExistingClaim"`
@@ -89,6 +90,7 @@ type FlagTree struct {
 	LDAPStartTLS             bool   `json:"ldapStartTLS"`
 	LDAPVerify               bool   `json:"ldapVerify"`
 	LDAPRootCASecret         string `json:"ldapRootCASecret"`
+	LDAPRootCAFile           string `json:"ldapRootCAFile"`
 	LDAPRequireGroup         string `json:"ldapRequireGroup"`
 	LDAPUserSearch           string `json:"ldapUserSearch"`
 	LDAPUserSearchScope      string `json:"ldapUserSearchScope"`
@@ -97,8 +99,8 @@ type FlagTree struct {
 	LDAPNestedSearch         bool   `json:"ldapNestedSearch"`
 
 	// Logging
-	DisableFrontendLogging bool `json:"disableFrontendLogging"`
-	DisableWorkerLogging   bool `json:"disableWorkerLogging"`
+	FrontendLogging bool `json:"frontendLogging"`
+	WorkerLogging   bool `json:"workerLogging"`
 
 	// Worker scaling
 	WorkerReplicas    int `json:"workerReplicas"`
@@ -109,36 +111,27 @@ type FlagTree struct {
 	HTTPProxy    string `json:"httpProxy"`
 	HTTPNoProxy  string `json:"httpNoProxy"`
 
-	// Minio
-	MinioMode  string `json:"minioMode"`
-
 	// Ingress
 	IngressEnabled       bool   `json:"ingressEnabled"`
 	IngressHost          string `json:"ingressHost"`
 	IngressTLSEnabled    bool   `json:"ingressTLSEnabled"`
 	IngressTLSSecretName string `json:"ingressTLSSecretName"`
 
-	// External PostgreSQL
-	ExternalPG			  bool `json:ExternalPg`
-	ExternalPGHost        string `json:"ExternalPgHost"`
-	ExternalPGPort        string `json:"ExternalPgPort"`
-	ExternalPGUser        string `json:"ExternalPgUser"`
-	ExternalPGPassword    string `json:"ExternalPgUser"`
-	ExternalPGDataBase    string `json:"ExternalPgDataBase"`
-	ExternalPGSSLMode     string `json:"ExternalPgSSLMode"`
-	ExternalPGRootCASecret  string `json:"ExternalPgRootCASecret"`
-	ExternalPGClientSecret  string `json:"ExternalPgClientSecret"`
+	BrokerURL string `json:"brokerURL"`
+
+	// External PG
+	PGHost     string `json:"pgHost"`
+	PGPort     string `json:"pgPort"`
+	PGUser     string `json:"pgUser"`
+	PGDataBase string `json:"pgDataBase"`
 
 	// Secrets
-	DjangoSecretKey        string `json:"djangoSecretKey"`
-	RabbitMQPassword       string `json:"rabbitMQPassword"`
-	RabbitMQErlangCookie   string `json:"rabbitMQErlangCookie"`
-	PGPassword             string `json:"pgPassword"`
-	MinioAccessKey         string `json:"minioAccessKey"`
-	MinioSecretKey         string `json:"minioSecretKey"`
-	RabbitMQExistingSecret string `json:"rabbitMQExistingSecret"`
-	PGExistingSecret       string `json:"pgExistingSecret"`
-	MinioExistingSecret    string `json:"minioExistingSecret"`
+	DjangoSecretKey      string `json:"djangoSecretKey"`
+	RabbitMQPassword     string `json:"rabbitMQPassword"`
+	RabbitMQErlangCookie string `json:"rabbitMQErlangCookie"`
+	PGPassword           string `json:"pgpPassword"`
+	MinioAccessKey       string `json:"minioAccessKey"`
+	MinioSecretKey       string `json:"minioSecretKey"`
 }
 
 // NewHelmValuesFromCobraFlags returns an initialized HelmValuesFromCobraFlags
@@ -165,110 +158,98 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	// 	cobra.MarkFlagRequired(cmd.Flags(), "version")
 	// }
 
-	cmd.Flags().StringVar(&ctl.flagTree.ClusterDomain, "cluster-domain", "cluster.local", "Kubernetes cluster domain")
+	cmd.Flags().StringVar(&ctl.flagTree.Hostname, "hostname", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQK8SDomain, "rabbitmq-domain", "default", "Description")
 
 	// Storage
-	cmd.Flags().StringVar(&ctl.flagTree.PGStorageClass, "postgres-storage-class", "default", "Storage class for PostgreSQL")
-	cmd.Flags().StringVar(&ctl.flagTree.PGSize, "postgres-size", "300Gi", "Persistent volument claim size for PostgreSQL")
-	cmd.Flags().StringVar(&ctl.flagTree.PGExistingClaim, "postgres-existing-claim", ctl.flagTree.PGExistingClaim, "Existing claim to use for PostgreSQL")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioStorageClass, "minio-storage-class", "default", "Storage class for minio")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioSize, "minio-size", "300Gi", "Persistent volume claim size of minio")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioExistingClaim, "minio-existing-claim", ctl.flagTree.MinioExistingClaim, "Existing claim to use for minio")
-	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQStorageClass, "rabbitmq-storage-class", "default", "Storage class for RabbitMQ")
-	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQSize, "rabbitmq-size", "8Gi", "Persistent volument claim size for RabbitMQ")
-	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQExistingClaim, "rabbitmq-existing-claim", ctl.flagTree.RabbitMQExistingClaim, "Existing claim to use for RabbitMQ")
+	cmd.Flags().StringVar(&ctl.flagTree.PSQLStorageClass, "psql-storage-class", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.PSQLSize, "psql-size", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.PSQLExistingClaim, "psql-existing-claim", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.MinioStorageClass, "minio-storage-class", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.MinioSize, "minio-size", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.MinioExistingClaim, "minio-existing-claim", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQStorageClass, "rabbitmq-storage-class", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQSize, "rabbitmq-size", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQExistingClaim, "rabbitmq-existing-claim", "default", "Description")
 
 	// Licensing
-	cmd.Flags().StringVar(&ctl.flagTree.LicensingUsername, "license-username", ctl.flagTree.LicensingUsername, "Username for licensing")
-	cmd.Flags().StringVar(&ctl.flagTree.LicensingPassword, "license-password", ctl.flagTree.LicensingPassword, "Username for password")
-	cmd.Flags().StringVar(&ctl.flagTree.LicensingUpstream, "license-upstream", "https://protecode-sc.com/", "Upstream server for data updates")
+	cmd.Flags().StringVar(&ctl.flagTree.LicensingUsername, "license-username", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LicensingPassword, "license-password", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LicensingUpstream, "license-upstream", "default", "Description")
+
+	// Rabbitmq configuration
 
 	// Web frontend configuration
-	cmd.Flags().IntVar(&ctl.flagTree.SessionCookieAge, "session-cookie-age", 1209600, "Session cookie expiration time")
-	cmd.Flags().IntVar(&ctl.flagTree.FrontendReplicas, "frontend-replicas", 1, "Number of web application replicas")
-	cmd.Flags().BoolVar(&ctl.flagTree.HideLicenses, "hide-licenses", false, "Hide licensing information")
-	cmd.Flags().BoolVar(&ctl.flagTree.OfflineMode, "enable-offline-mode", false, "Run in airgapped mode")
-	cmd.Flags().StringVar(&ctl.flagTree.AdminEmail, "admin-email", "admin@bdba.local", "Administrator email address")
-	cmd.Flags().StringVar(&ctl.flagTree.RootURL, "root-url", "http://bdba.local", "Root URL of application to be used in tempates")
+	cmd.Flags().IntVar(&ctl.flagTree.SessionCookieAge, "session-cookie-age", 0, "Description")
+	cmd.Flags().IntVar(&ctl.flagTree.FrontendReplicas, "frontend-replicas", 0, "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.HideLicenses, "hide-licenses", false, "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.OfflineMode, "enable-offline-mode", false, "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.AdminEmail, "admin-email", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.ErrorAdminEmail, "error-admin-email", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.RootURL, "root-url", "default", "Description")
 
 	// SMTP configuration
-	cmd.Flags().BoolVar(&ctl.flagTree.EmailEnabled, "enable-email", false, "Enable STMP to send emails")
-	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPHost, "email-smtp-host", ctl.flagTree.EmailSMTPHost, "SMTP server address")
-	cmd.Flags().IntVar(&ctl.flagTree.EmailSMTPPort, "email-smtp-port", 25, "SMTP server port")
-	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPUser, "email-smtp-user", ctl.flagTree.EmailSMTPUser, "SMTP user")
-	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPPassword, "email-smtp-password", ctl.flagTree.EmailSMTPPassword, "SMTP password")
-	cmd.Flags().StringVar(&ctl.flagTree.EmailFrom, "email-from", "default", "Email sender address")
-	cmd.Flags().StringVar(&ctl.flagTree.EmailSecurity, "email-security", "noreply@bdba.local", "Email security mode [none|ssl|starttls]")
-	cmd.Flags().BoolVar(&ctl.flagTree.EmailVerify, "verify-email", false, "Verify SMTP server certificate")
+	cmd.Flags().BoolVar(&ctl.flagTree.EmailEnabled, "enable-email", false, "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPHost, "email-smtp-host", "default", "Description")
+	cmd.Flags().IntVar(&ctl.flagTree.EmailSMTPPort, "email-smtp-port", 0, "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPUser, "email-smtp-user", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPPassword, "email-smtp-password", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.EmailFrom, "email-from", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.EmailSecurity, "email-security", "default", "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.EmailVerify, "verify-email", false, "Description")
 
 	// LDAP Authentication
-	cmd.Flags().BoolVar(&ctl.flagTree.LDAPEnabled, "enable-ldap", false, "Enable LDAP for authentication")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPServerURI, "ldap-server-uri", ctl.flagTree.LDAPServerURI, "LDAP server URI")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPUserDNTemplate, "ldap-user-dn-template", ctl.flagTree.LDAPUserDNTemplate, "LDAP user DN template")
-	cmd.Flags().BoolVar(&ctl.flagTree.LDAPBindAsAuthenticating, "enable-ldap-bind-as-authenticating", false, "Bind as authenticating user")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPBindDN, "ldap-bind-dn", ctl.flagTree.LDAPBindDN, "Generic LDAP bind username (optional)")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPBindPassword, "ldap-bind-password", ctl.flagTree.LDAPBindPassword, "Generic LDAP bind password (optional)")
-	cmd.Flags().BoolVar(&ctl.flagTree.LDAPStartTLS, "ldap-start-tls", false, "Enable start TLS for LDAP")
-	cmd.Flags().BoolVar(&ctl.flagTree.LDAPVerify, "verify-ldap", false, "Verify LDAP server certificate")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPRootCASecret, "ldap-root-ca-secret", ctl.flagTree.LDAPRootCASecret, "Secret to use for LDAP root certificate")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPRequireGroup, "ldap-require-group", ctl.flagTree.LDAPRequireGroup, "LDAP group required to allow login")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPUserSearch, "ldap-user-search", ctl.flagTree.LDAPUserSearch, "Base DN for user branch")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPUserSearchScope, "ldap-user-search-scope", ctl.flagTree.LDAPUserSearchScope, "LDAP search filter for users")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPGroupSearch, "ldap-group-search", ctl.flagTree.LDAPGroupSearch, "Base DN for groups branch")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPGroupSearchScope, "ldap-group-search-scope", ctl.flagTree.LDAPGroupSearchScope, "LDAP search filter for groups")
-	cmd.Flags().BoolVar(&ctl.flagTree.LDAPNestedSearch, "enable-ldap-nested-search", false, "Enable nested search")
+	cmd.Flags().BoolVar(&ctl.flagTree.LDAPEnabled, "enable-ldap", false, "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPServerURI, "ldap-server-uri", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPUserDNTemplate, "ldap-user-dn-template", "default", "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.LDAPBindAsAuthenticating, "enable-ldap-bind-as-authenticating", false, "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPBindDN, "ldap-bind-dn", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPBindPassword, "ldap-bind-password", "default", "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.LDAPStartTLS, "ldap-start-tls", false, "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.LDAPVerify, "verify-ldap", false, "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPRootCASecret, "ldap-root-ca-secret", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPRootCAFile, "ldap-root-ca-file", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPRequireGroup, "ldap-require-group", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPUserSearch, "ldap-user-search", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPUserSearchScope, "ldap-user-search-scope", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPGroupSearch, "ldap-group-search", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.LDAPGroupSearchScope, "ldap-group-search-scope", "default", "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.LDAPNestedSearch, "enable-ldap-nested-search", false, "Description")
 
 	// Logging
-	cmd.Flags().BoolVar(&ctl.flagTree.DisableFrontendLogging, "disable-frontend-logging", false, "Disable log collection in web application pods")
-	cmd.Flags().BoolVar(&ctl.flagTree.DisableWorkerLogging, "disable-worker-logging", false, "Disable log collection in scanner pods")
+	cmd.Flags().BoolVar(&ctl.flagTree.FrontendLogging, "enable-frontend-logging", false, "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.WorkerLogging, "enable-worker-logging", false, "Description")
 
 	// Worker scaling
-	cmd.Flags().IntVar(&ctl.flagTree.WorkerReplicas, "worker-replicas", 1, "Number of worker replicas")
-	cmd.Flags().IntVar(&ctl.flagTree.WorkerConcurrency, "worker-concurrency", 1, "Amount of concurrent workers per pod")
-
-	// Minio
-	cmd.Flags().StringVar(&ctl.flagTree.MinioMode, "minio-mode", "standalone", "Minio mode [standalone|distributed]")
+	cmd.Flags().IntVar(&ctl.flagTree.WorkerReplicas, "worker-replicas", 0, "Description")
+	cmd.Flags().IntVar(&ctl.flagTree.WorkerConcurrency, "worker-condurrency", 0, "Description")
 
 	// Networking and security
-	cmd.Flags().StringVar(&ctl.flagTree.RootCASecret, "root-ca-secret", ctl.flagTree.RootCASecret, "Additional root certificate")
-	cmd.Flags().StringVar(&ctl.flagTree.HTTPProxy, "http-proxy", ctl.flagTree.HTTPProxy, "HTTP Proxy to use")
-	cmd.Flags().StringVar(&ctl.flagTree.HTTPNoProxy, "http-no-proxy", ctl.flagTree.HTTPNoProxy, "Comma-separated list of domain extensions to omit proxy")
+	cmd.Flags().StringVar(&ctl.flagTree.RootCASecret, "root-ca-secret", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.HTTPProxy, "http-proxy", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.HTTPNoProxy, "http-no-proxy", "default", "Description")
 
 	// Ingress
-	cmd.Flags().BoolVar(&ctl.flagTree.IngressEnabled, "enable-ingress", false, "Enable ingress")
-	cmd.Flags().StringVar(&ctl.flagTree.IngressHost, "ingress-host", ctl.flagTree.IngressHost, "Hostname for ingress")
-	cmd.Flags().BoolVar(&ctl.flagTree.IngressTLSEnabled, "enable-ingress-tls", false, "Enable TLS for ingress")
-	cmd.Flags().StringVar(&ctl.flagTree.IngressTLSSecretName, "ingress-tls-secret", ctl.flagTree.IngressTLSSecretName, "TLS Secret to use for ingress")
+	cmd.Flags().BoolVar(&ctl.flagTree.IngressEnabled, "enable-ingress", false, "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.IngressHost, "ingress-host", "default", "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.IngressTLSEnabled, "enable-ingress-tls", false, "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.IngressTLSSecretName, "ingress-tls-secret-name", "default", "Description")
+
+	cmd.Flags().StringVar(&ctl.flagTree.BrokerURL, "broker-url", "default", "Description")
 
 	// External PG
-	cmd.Flags().BoolVar(&ctl.flagTree.ExternalPG,
-		"external-postgres", false, "Use external PostgreSQL")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGHost,
-		"external-postgres-host", ctl.flagTree.ExternalPGHost, "Hostname for external postgresql database")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGPort,
-		"external-postgres-port", ctl.flagTree.ExternalPGPort, "Port for external PostgreSQL database")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGDataBase,
-		"external-postgres-database", ctl.flagTree.ExternalPGDataBase, "Database for external PostgreSQL database")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGUser,
-		"external-postgres-user", ctl.flagTree.ExternalPGUser, "User for external PostgreSQL database")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGPassword,
-		"external-postgres-password", ctl.flagTree.ExternalPGPassword, "Password for external PostgreSQL database")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGSSLMode,
-		"external-postgres-ssl-mode", "disable", "PostgreSQL SSL mode [disable|allow|prefer|require|verify-ca|verify-full]")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGClientSecret,
-		"external-postgres-client-secret", ctl.flagTree.ExternalPGClientSecret, "Secret name for external PostgreSQL client certificate (TLS Secret)")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGRootCASecret,
-		"external-postgres-rootca-secret", ctl.flagTree.ExternalPGRootCASecret, "Secret name for external PostgreSQL root certificate")
+	cmd.Flags().StringVar(&ctl.flagTree.PGHost, "postgres-host", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.PGPort, "postgres-port", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.PGUser, "postgres-username", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.PGDataBase, "postgres-database", "default", "Description")
 
 	// Secrets
-	cmd.Flags().StringVar(&ctl.flagTree.DjangoSecretKey, "django-secret-key", "default", "Description")  // Helm chart autogenerates this on first install. Is this needed here?
-	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQPassword, "rabbitmq-password", "default", "RabbitMQ password")
-	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQExistingSecret, "rabbitmq-secret", ctl.flagTree.RabbitMQExistingSecret, "Existing secret for RabbitMQ")
-	cmd.Flags().StringVar(&ctl.flagTree.PGPassword, "postgres-password", "default", "PostgreSQL password")
-	cmd.Flags().StringVar(&ctl.flagTree.PGExistingSecret, "postgres-secret", ctl.flagTree.PGExistingSecret, "Existing secret for PostgreSQL")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioAccessKey, "minio-access-key", "default", "Minio access key (20 characters)")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioSecretKey, "minio-secret-key", "default", "Minio secret key (40 characters)")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioExistingSecret, "minio-secret", ctl.flagTree.MinioExistingSecret, "Existing secret for Minio")
+	cmd.Flags().StringVar(&ctl.flagTree.DjangoSecretKey, "django-secret-key", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQPassword, "rabbitmq-password", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQErlangCookie, "rabbitmq-erlang-cookie", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.PGPassword, "postgres-password", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.MinioAccessKey, "minio-access-key", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.MinioSecretKey, "minio-secret-key", "default", "Description")
 
 	cmd.Flags().SortFlags = false
 }
@@ -296,33 +277,34 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
-		case "cluster-domain":
-			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "rabbitmq", "clustering", "k8s_domain"}, ctl.flagTree.ClusterDomain)
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "clusterDomain"}, ctl.flagTree.ClusterDomain)
-		case "postgres-storage-class":
-			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "persistence", "storageClass"}, ctl.flagTree.PGStorageClass)
-		case "postgres-size":
-			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "persistence", "size"}, ctl.flagTree.PGSize)
-		case "postgres-existing-claim":
-			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "persistence", "existingClaim"}, ctl.flagTree.PGExistingClaim)
+		case "hostname":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.Hostname)
+		case "rabbitmq-domain":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.RabbitMQK8SDomain)
+		case "psql-storage-class":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.PSQLStorageClass)
+		case "psql-size":
+			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "persistence", "size"}, ctl.flagTree.PSQLSize)
+		case "psql-existing-claim":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.PSQLExistingClaim)
 		case "minio-storage-class":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "persistence", "storageClass"}, ctl.flagTree.MinioStorageClass)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.MinioStorageClass)
 		case "minio-size":
 			util.SetHelmValueInMap(ctl.args, []string{"minio", "persistence", "size"}, ctl.flagTree.MinioSize)
 		case "minio-existing-claim":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "persistence", "existingClaim"}, ctl.flagTree.MinioExistingClaim)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.MinioExistingClaim)
 		case "rabbitmq-storage-class":
-			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "persistence", "storageClass"}, ctl.flagTree.RabbitMQStorageClass)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.RabbitMQStorageClass)
 		case "rabbitmq-size":
 			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "persistence", "size"}, ctl.flagTree.RabbitMQSize)
 		case "rabbitmq-existing-claim":
-			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "persistence", "existingClaim"}, ctl.flagTree.RabbitMQExistingClaim)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.RabbitMQExistingClaim)
 		case "license-username":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "licensing", "username"}, ctl.flagTree.LicensingUsername)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LicensingUsername)
 		case "license-password":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "licensing", "password"}, ctl.flagTree.LicensingPassword)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LicensingPassword)
 		case "license-upstream":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "licensing", "upstream"}, ctl.flagTree.LicensingUpstream)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LicensingUpstream)
 		case "session-cookie-age":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "web", "sessionCookieAge"}, ctl.flagTree.SessionCookieAge)
 		case "frontend-replicas":
@@ -330,69 +312,71 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		case "hide-licenses":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "web", "hideLicenses"}, ctl.flagTree.HideLicenses)
 		case "enable-offline-mode":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "web", "offlineMode"}, ctl.flagTree.OfflineMode)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.OfflineMode)
 		case "admin-email":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "web", "admin"}, ctl.flagTree.AdminEmail)
+		case "error-admin-email":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.ErrorAdminEmail)
 		case "root-url":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "web", "rootURL"}, ctl.flagTree.RootURL)
 		case "enable-email":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "email", "enabled"}, ctl.flagTree.EmailEnabled)
 		case "email-smtp-host":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "email", "smtpHost"}, ctl.flagTree.EmailSMTPHost)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.EmailSMTPHost)
 		case "email-smtp-port":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "email", "smtpPort"}, ctl.flagTree.EmailSMTPPort)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.EmailSMTPPort)
 		case "email-smtp-user":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "email", "smtpUser"}, ctl.flagTree.EmailSMTPUser)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.EmailSMTPUser)
 		case "email-smtp-password":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "email", "smtpPassword"}, ctl.flagTree.EmailSMTPPassword)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.EmailSMTPPassword)
 		case "email-from":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "email", "from"}, ctl.flagTree.EmailFrom)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.EmailFrom)
 		case "email-security":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "email", "security"}, ctl.flagTree.EmailSecurity)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.EmailSecurity)
 		case "verify-email":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "email", "verify"}, ctl.flagTree.EmailVerify)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.EmailVerify)
 		case "enable-ldap":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "enabled"}, ctl.flagTree.LDAPEnabled)
 		case "ldap-server-uri":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "serverUri"}, ctl.flagTree.LDAPServerURI)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPServerURI)
 		case "ldap-user-dn-template":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "userDNTemplate"}, ctl.flagTree.LDAPUserDNTemplate)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPUserDNTemplate)
 		case "enable-ldap-bind-as-authenticating":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "bindAsAuthenticating"}, ctl.flagTree.LDAPBindAsAuthenticating)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPBindAsAuthenticating)
 		case "ldap-bind-dn":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "bindDN"}, ctl.flagTree.LDAPBindDN)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPBindDN)
 		case "ldap-bind-password":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "bindPassword"}, ctl.flagTree.LDAPBindPassword)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPBindPassword)
 		case "ldap-start-tls":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "startTLS"}, ctl.flagTree.LDAPStartTLS)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPStartTLS)
 		case "verify-ldap":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "verify"}, ctl.flagTree.LDAPVerify)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPVerify)
 		case "ldap-root-ca-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "rootCASecret"}, ctl.flagTree.LDAPRootCASecret)
-		case "ldap-require-group":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "requireGroup"}, ctl.flagTree.LDAPRequireGroup)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPRootCASecret)
+		case "ldap-root-ca-file":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPRootCAFile)
+		case "ldap-required-group":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPRequireGroup)
 		case "ldap-user-search":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "userSearch"}, ctl.flagTree.LDAPUserSearch)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPUserSearch)
 		case "ldap-user-search-scope":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "userSearchScope"}, ctl.flagTree.LDAPUserSearchScope)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPUserSearchScope)
 		case "ldap-group-search":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "groupSearch"}, ctl.flagTree.LDAPGroupSearch)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPGroupSearch)
 		case "ldap-group-search-scope":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "groupSearchScope"}, ctl.flagTree.LDAPGroupSearchScope)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPGroupSearchScope)
 		case "enable-ldap-nested-search":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "nestedSearch"}, ctl.flagTree.LDAPNestedSearch)
-		case "disable-frontend-logging":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "applicationLogging", "enabled"}, !ctl.flagTree.DisableFrontendLogging)
-		case "disable-worker-logging":
-			util.SetHelmValueInMap(ctl.args, []string{"worker", "applicationLogging", "enabled"}, !ctl.flagTree.DisableWorkerLogging)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.LDAPNestedSearch)
+		case "enable-frontend-logging":
+			util.SetHelmValueInMap(ctl.args, []string{"frontend", "applicationLogging", "enabled"}, ctl.flagTree.FrontendLogging)
+		case "enable-worker-logging":
+			util.SetHelmValueInMap(ctl.args, []string{"worker", "applicationLogging", "enabled"}, ctl.flagTree.WorkerLogging)
 		case "worker-replicas":
 			util.SetHelmValueInMap(ctl.args, []string{"worker", "replicas"}, ctl.flagTree.WorkerReplicas)
 		case "worker-concurrency":
 			util.SetHelmValueInMap(ctl.args, []string{"worker", "concurrency"}, ctl.flagTree.WorkerConcurrency)
-		case "minio-mode":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "mode"}, ctl.flagTree.MinioMode)
 		case "root-ca-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"rootCASecret"}, ctl.flagTree.RootCASecret)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.RootCASecret)
 		case "http-proxy":
 			util.SetHelmValueInMap(ctl.args, []string{"httpProxy"}, ctl.flagTree.HTTPProxy)
 		case "http-no-proxy":
@@ -403,43 +387,30 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			util.SetHelmValueInMap(ctl.args, []string{"ingress", "host"}, ctl.flagTree.IngressHost)
 		case "enable-ingress-tls":
 			util.SetHelmValueInMap(ctl.args, []string{"ingress", "tls", "enabled"}, ctl.flagTree.IngressTLSEnabled)
-		case "ingress-tls-secret":
+		case "ingress-tls-secret-name":
 			util.SetHelmValueInMap(ctl.args, []string{"ingress", "tls", "secretName"}, ctl.flagTree.IngressTLSSecretName)
-		case "external-postgres":
-			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "enabled"}, !ctl.flagTree.ExternalPG)
-		case "external-postgres-host":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlHost"}, ctl.flagTree.ExternalPGHost)
-		case "external-postgres-port":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlPort"}, ctl.flagTree.ExternalPGPort)
-		case "external-postgres-database":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlDatabase"}, ctl.flagTree.ExternalPGDataBase)
-		case "external-postgres-user":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlUsername"}, ctl.flagTree.ExternalPGUser)
-		case "external-postgres-password":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlPassword"}, ctl.flagTree.ExternalPGPassword)
-		case "external-postgres-ssl-mode":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlSslMode"}, ctl.flagTree.ExternalPGSSLMode)
-		case "external-postgres-client-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "clientSecretName"}, ctl.flagTree.ExternalPGClientSecret)
-		case "external-postgres-rootca-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "rootCASecretName"}, ctl.flagTree.ExternalPGRootCASecret)
-		case "django-secret-key":  // ?
-			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.DjangoSecretKey) // ?
+		case "broker-url":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.BrokerURL)
+		case "postgres-host":
+			util.SetHelmValueInMap(ctl.args, []string{}, ctl.flagTree.PGHost)
+		case "postgres-port":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.PGPort)
+		case "postgres-username":
+			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "postgresqlUsername"}, ctl.flagTree.PGUser)
+		case "postgres-database":
+			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "postgresqlDatabase"}, ctl.flagTree.PGDataBase)
+		case "django-secret-key":
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.DjangoSecretKey)
 		case "rabbitmq-password":
 			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "rabbitmq", "password"}, ctl.flagTree.RabbitMQPassword)
+		case "rabbitmq-erlang-cookie":
+			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "rabbitmq", "erlangCookie"}, ctl.flagTree.RabbitMQErlangCookie)
 		case "postgres-password":
 			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "postgresqlPassword"}, ctl.flagTree.PGPassword)
 		case "minio-access-key":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "accessKey"}, ctl.flagTree.MinioAccessKey)
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.MinioAccessKey)
 		case "minio-secret-key":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "secretKey"}, ctl.flagTree.MinioSecretKey)
-		case "rabbitmq-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "rabbitmq", "existingPasswordSecret"}, ctl.flagTree.RabbitMQExistingSecret)
-		case "postgres-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"global", "postgresql", "existingSecret"}, ctl.flagTree.PGExistingSecret)
-		case "minio-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "existingSecret"}, ctl.flagTree.MinioExistingSecret)
-
+			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.MinioSecretKey)
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}

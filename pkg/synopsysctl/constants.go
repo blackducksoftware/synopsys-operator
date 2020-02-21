@@ -56,13 +56,13 @@ var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/mast
 var baseChartRepository = "https://chartmuseum.cloudnative.sig-clops.synopsys.com"
 var synopsysChartRepository = "https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com"
 
+var polarisName = "polaris"
 var polarisChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-2020.03.tgz", baseChartRepository)
+
+var polarisReportingName = "polaris-reporting"
 var polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-2020.03.tgz", baseChartRepository)
 
-var polarisName = "polaris"
-var polarisReportingName = "polaris-reporting"
-
 // BDBA Constants
+var bdbaName = "bdba"
 var bdbaVersion = "0.0.1"
 var bdbaChartRepository = fmt.Sprintf("%s/charts/bdba-%s.tgz", synopsysChartRepository, bdbaVersion)
-var bdbaName = "bdba"
