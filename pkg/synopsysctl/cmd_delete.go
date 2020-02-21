@@ -201,6 +201,36 @@ var deletePolarisReportingCmd = &cobra.Command{
 	},
 }
 
+// deleteBDBACmd deletes a BDBA instance
+var deleteBDBACmd = &cobra.Command{
+	Use:           "bdba",
+	Example:       "synopsysctl delete bdba -n <namespace>",
+	Short:         "Delete a BDBA instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
+		if len(args) != 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Delete the extra resources like secrets...
+		// ...
+
+		// Delete Resources
+		err := util.DeleteWithHelm3(bdbaName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to delete BDBA resources: %+v", err)
+		}
+
+		log.Infof("BDBA has been successfully Deleted!")
+		return nil
+	},
+}
+
 func init() {
 	// deletePolarisReportingCobraHelper = *polarisreporting.NewArgsFromCobraFlags()
 
@@ -229,4 +259,9 @@ func init() {
 	deletePolarisReportingCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	cobra.MarkFlagRequired(deletePolarisReportingCmd.Flags(), "namespace")
 	deleteCmd.AddCommand(deletePolarisReportingCmd)
+
+	// Add Delete BDBA Command
+	deleteBDBACmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(deleteBDBACmd.Flags(), "namespace")
+	deleteCmd.AddCommand(deleteBDBACmd)
 }
