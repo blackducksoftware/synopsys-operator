@@ -35,6 +35,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/kube"
+	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
@@ -96,7 +97,7 @@ func CreateWithHelm3(releaseName, namespace, chartURL string, vals map[string]in
 	client.DryRun = dryRun
 	_, err = client.Run(chart, vals) // deploy the chart into the namespace from the actionConfig
 	if err != nil {
-		return fmt.Errorf("failed to Run NewInstall: %+v", err)
+		return fmt.Errorf("failed to run install: %+v", err)
 	}
 	return nil
 }
@@ -127,7 +128,7 @@ func UpdateWithHelm3(releaseName, namespace, chartURL string, vals map[string]in
 	client.ReuseValues = true                     // rememeber the values that have been set previously
 	_, err = client.Run(releaseName, chart, vals) // updates the release in the namespace from the actionConfig
 	if err != nil {
-		return fmt.Errorf("failed to Run NewUpgrade: %+v", err)
+		return fmt.Errorf("failed to run upgrade: %+v", err)
 	}
 	return nil
 }
@@ -241,9 +242,24 @@ func DeleteWithHelm3(releaseName, namespace, kubeConfig string) error {
 	client := action.NewUninstall(actionConfig)
 	_, err = client.Run(releaseName) // deletes the releaseName from the namespace in the actionConfig
 	if err != nil {
-		return fmt.Errorf("failed to Run NewUninstall: %+v", err)
+		return fmt.Errorf("failed to run uninstall: %+v", err)
 	}
 	return nil
+}
+
+// GetWithHelm3 uses the helm NewGet action to return a Release with information about
+// a resource from the cluster
+func GetWithHelm3(releaseName, namespace, kubeConfig string) (*release.Release, error) {
+	actionConfig, err := CreateHelmActionConfiguration(kubeConfig, "", namespace)
+	if err != nil {
+		return nil, err
+	}
+	client := action.NewGet(actionConfig)
+	release, err := client.Run(releaseName) // lists the releases in the namespace from the actionConfig
+	if err != nil {
+		return nil, fmt.Errorf("failed to run get: %+v", err)
+	}
+	return release, nil
 }
 
 // CreateHelmActionConfiguration creates an action.Configuration that points to the specified cluster and namespace
