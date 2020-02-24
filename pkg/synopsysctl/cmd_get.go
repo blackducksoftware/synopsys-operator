@@ -242,6 +242,34 @@ var getPolarisCmd = &cobra.Command{
 	},
 }
 
+// getPolarisReportingCmd display the Polaris Reporting instance
+var getPolarisReportingCmd = &cobra.Command{
+	Use:           "polaris-reporting",
+	Example:       "synopsysctl get polaris-reporting -n <namespace>",
+	Short:         "Display the polaris-reporting instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("this command takes 0 arguments")
+		}
+
+		if !cmd.Flags().Lookup("namespace").Changed {
+			return fmt.Errorf("a namespace must be specified using the --namespace flag")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		helmRelease, err := util.GetWithHelm3(polarisReportingName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to get Polaris-Reporting values: %+v", err)
+		}
+		helmSetValues := helmRelease.Config
+		PrintComponent(helmSetValues, "YAML")
+		return nil
+	},
+}
+
 func init() {
 	//(PassCmd) getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
 	rootCmd.AddCommand(getCmd)
@@ -270,4 +298,7 @@ func init() {
 
 	getPolarisCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getCmd.AddCommand(getPolarisCmd)
+
+	getPolarisReportingCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	getCmd.AddCommand(getPolarisReportingCmd)
 }
