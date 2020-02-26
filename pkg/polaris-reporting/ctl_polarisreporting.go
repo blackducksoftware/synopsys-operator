@@ -95,7 +95,6 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	// license related flags
 	if master {
 		cmd.Flags().StringVar(&ctl.flagTree.GCPServiceAccount, "gcp-service-account-path", "", "Absolute path to given Google Cloud Platform service account for pulling images\n")
-
 		cobra.MarkFlagRequired(cmd.Flags(), "gcp-service-account-path")
 	}
 
@@ -103,8 +102,10 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	if master {
 		cmd.Flags().StringVar(&ctl.flagTree.ReportStorageSize, "reportstorage-size", "5Gi", "Persistent Volume Claim size for reportstorage")
 		cmd.Flags().StringVar(&ctl.flagTree.EventstoreSize, "eventstore-size", "50Gi", "Persistent Volume Claim size for eventstore")
+		cmd.Flags().StringVar(&ctl.flagTree.StorageClass, "storage-class", ctl.flagTree.StorageClass, "Storage Class for all Polaris-Reporting's storage\n")
+		// TODO: Once the Helm charts are fixed for the storage class issue, we can remove the required flag for storage class
+		cobra.MarkFlagRequired(cmd.Flags(), "storage-class")
 	}
-	cmd.Flags().StringVar(&ctl.flagTree.StorageClass, "storage-class", ctl.flagTree.StorageClass, "Storage Class for all Polaris-Reporting's storage\n")
 
 	// smtp related flags
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPHost, "smtp-host", ctl.flagTree.SMTPHost, "SMTP host")
