@@ -21,6 +21,8 @@ under the License.
 
 package synopsysctl
 
+import "fmt"
+
 // DefaultMetricsImage is the Metrics image deployed with Synopsys Operator by default
 const DefaultMetricsImage string = "docker.io/prom/prometheus:v2.1.0"
 
@@ -51,6 +53,7 @@ var nativeClusterType = clusterTypeKubernetes
 
 var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/master"
 
-var polarisReportingChartRepository = "https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com/charts/polaris-helmchart-reporting-0.0.69.tgz"
+var baseChartRepository = "https://chartmuseum.synopsys.cloudnative.sig-clops.synopsys.com"
+var polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-0.0.93.tgz", baseChartRepository)
 
 var polarisReportingName = "polaris-reporting"
