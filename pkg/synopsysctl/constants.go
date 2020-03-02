@@ -54,6 +54,6 @@ var nativeClusterType = clusterTypeKubernetes
 var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/master"
 
 var baseChartRepository = "https://chartmuseum.cloudnative.sig-clops.synopsys.com"
-var polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-0.0.93.tgz", baseChartRepository)
+var polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-2020.03.tgz", baseChartRepository)
 
 var polarisReportingName = "polaris-reporting"
