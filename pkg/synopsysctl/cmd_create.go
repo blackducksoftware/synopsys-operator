@@ -297,7 +297,7 @@ func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blac
 }
 
 // addPVCValuesToBlackDuckSpec returns the baseBlackDuckSpec with it's PVC values
-func addPVCValuesToBlackDuckSpec(cmd *cobra.Command, blackDuckName string, blackDuckNamespace string, baseBlackDuckSpec *blackduckv1.BlackduckSpec) (*blackduckv1.BlackduckSpec, error) {
+func addPVCValuesToBlackDuckSpec(cmd *cobra.Command, blackDuckName string, blackDuckNamespace string, baseBlackDuckSpec blackduckv1.BlackduckSpec) (*blackduckv1.BlackduckSpec, error) {
 	// Create a Black Duck configuration based on the flags
 	blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
 	if err != nil {
@@ -310,7 +310,7 @@ func addPVCValuesToBlackDuckSpec(cmd *cobra.Command, blackDuckName string, black
 	}
 	// Add the PVCs to the base Black Duck spec
 	baseBlackDuckSpec.PVC = convertHorizonPVCComponentToBlackDuckPVC(defaultPvcComponentsList)
-	return baseBlackDuckSpec, nil
+	return &baseBlackDuckSpec, nil
 }
 
 func getBlackDuckPVCValues(bd *blackduckv1.Blackduck) ([]*components.PersistentVolumeClaim, error) {
@@ -376,7 +376,7 @@ var createBlackDuckCmd = &cobra.Command{
 			// Update the BlackDuck spec in 'createBlackDuckCobraHelper' with the correct PVC values
 			blackDuckSpecInterface := createBlackDuckCobraHelper.GetCRSpec()
 			baseBlackDuckSpec, _ := blackDuckSpecInterface.(blackduckv1.BlackduckSpec)
-			baseBlackDuckSpecWithPVCs, err := addPVCValuesToBlackDuckSpec(cmd, blackDuckName, blackDuckNamespace, &baseBlackDuckSpec)
+			baseBlackDuckSpecWithPVCs, err := addPVCValuesToBlackDuckSpec(cmd, blackDuckName, blackDuckNamespace, baseBlackDuckSpec)
 			if err != nil {
 				return fmt.Errorf("failed to add PVCs to Black Duck spec: %+v", err)
 			}
@@ -387,6 +387,7 @@ var createBlackDuckCmd = &cobra.Command{
 			}
 
 			// Update the CR in createBlackDuckCobraHelper with user's flags
+			cmd.Flag("pvc-file-path").Changed = false // we already did the special logic above to set the PVCs
 			blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
 			if err != nil {
 				return err
