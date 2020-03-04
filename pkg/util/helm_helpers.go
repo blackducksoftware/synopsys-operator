@@ -344,3 +344,26 @@ func ReleaseExists(releaseName, namespace, kubeConfig string) bool {
 	}
 	return true
 }
+
+// SetHelmValueInMap adds the finalValue into the valueMapPointer at the location specified
+// by the keyList
+// valueMapPointer - a map for helm values (maps are pointers in Golang)
+//  - it is used to track the current map being updated
+// keyList - an ordered list of keys that lead to the location in the valueMapPointer to place the finalValue
+// finalValue - the value to set in the map
+func SetHelmValueInMap(valueMapPointer map[string]interface{}, keyList []string, finalValue interface{}) {
+	for i, currKey := range keyList {
+		if i == (len(keyList) - 1) { // at the last key -> set the value
+			valueMapPointer[currKey] = finalValue
+			return
+		}
+		if nextMap, _ := valueMapPointer[currKey]; nextMap != nil { // key is in map -> go to next map
+			valueMapPointer = nextMap.(map[string]interface{})
+		} else { // key is not in the map -> add the key and next key; go to next map
+			nextKey := keyList[i+1]
+			valueMapPointer[currKey] = map[string]interface{}{nextKey: nil}
+			nextMap := valueMapPointer[currKey].(map[string]interface{})
+			valueMapPointer = nextMap
+		}
+	}
+}
