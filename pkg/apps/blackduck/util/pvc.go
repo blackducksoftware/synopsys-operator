@@ -35,6 +35,7 @@ import (
 func GenPVC(defaultPVC map[string]string, blackDuck *blackduckapi.Blackduck) ([]*components.PersistentVolumeClaim, error) {
 	var pvcs []*components.PersistentVolumeClaim
 	if blackDuck.Spec.PersistentStorage {
+		// Create map of PVCs the user specified (non-default)
 		pvcMap := make(map[string]blackduckapi.PVC)
 		for _, claim := range blackDuck.Spec.PVC {
 			pvcMap[claim.Name] = claim
@@ -43,6 +44,7 @@ func GenPVC(defaultPVC map[string]string, blackDuck *blackduckapi.Blackduck) ([]
 		for name, size := range defaultPVC {
 			var claim blackduckapi.PVC
 
+			// Check if the user specified the PVC
 			if _, ok := pvcMap[name]; ok {
 				claim = pvcMap[name]
 				if len(claim.StorageClass) == 0 {
