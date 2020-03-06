@@ -40,7 +40,7 @@ type HelmValuesFromCobraFlags struct {
 type FlagTree struct {
 	Version string `json:"version"`
 
-	RabbitMQK8SDomain string `json:"rabbitmqK8sDomain"`
+	ClusterDomain string `json:"clusterDomain"`
 
 	// Storage
 	PGStorageClass        string `json:"pgStorageClass"`
@@ -98,8 +98,8 @@ type FlagTree struct {
 	LDAPNestedSearch         bool   `json:"ldapNestedSearch"`
 
 	// Logging
-	FrontendLogging bool `json:"frontendLogging"`
-	WorkerLogging   bool `json:"workerLogging"`
+	DisableFrontendLogging bool `json:"disableFrontendLogging"`
+	DisableWorkerLogging   bool `json:"disableWorkerLogging"`
 
 	// Worker scaling
 	WorkerReplicas    int `json:"workerReplicas"`
@@ -109,6 +109,9 @@ type FlagTree struct {
 	RootCASecret string `json:"rootCASecret"`
 	HTTPProxy    string `json:"httpProxy"`
 	HTTPNoProxy  string `json:"httpNoProxy"`
+
+	// Minio
+	MinioMode  string `json:"minioMode"`
 
 	// Ingress
 	IngressEnabled       bool   `json:"ingressEnabled"`
@@ -163,7 +166,7 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	// 	cobra.MarkFlagRequired(cmd.Flags(), "version")
 	// }
 
-	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQK8SDomain, "cluster-domain", "cluster.local", "Kubernetes cluster domain")
+	cmd.Flags().StringVar(&ctl.flagTree.ClusterDomain, "cluster-domain", "cluster.local", "Kubernetes cluster domain")
 
 	// Storage
 	cmd.Flags().StringVar(&ctl.flagTree.PGStorageClass, "postgres-storage-class", "default", "Storage class for PostgreSQL")
@@ -218,12 +221,15 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	cmd.Flags().BoolVar(&ctl.flagTree.LDAPNestedSearch, "enable-ldap-nested-search", false, "Enable nested search")
 
 	// Logging
-	cmd.Flags().BoolVar(&ctl.flagTree.FrontendLogging, "enable-frontend-logging", false, "Description")  // These should be switched and enabled by default
-	cmd.Flags().BoolVar(&ctl.flagTree.WorkerLogging, "enable-worker-logging", false, "Description")
+	cmd.Flags().BoolVar(&ctl.flagTree.DisableFrontendLogging, "disable-frontend-logging", false, "Disable log collection in web application pods")
+	cmd.Flags().BoolVar(&ctl.flagTree.DisableWorkerLogging, "disable-worker-logging", false, "Disable log collection in scanner pods")
 
 	// Worker scaling
 	cmd.Flags().IntVar(&ctl.flagTree.WorkerReplicas, "worker-replicas", 1, "Number of worker replicas")
 	cmd.Flags().IntVar(&ctl.flagTree.WorkerConcurrency, "worker-concurrency", 1, "Amount of concurrent workers per pod")
+
+	// Minio
+	cmd.Flags().StringVar(&ctl.flagTree.MinioMode, "minio-mode", "standalone", "Minio mode [standalone|distributed]")
 
 	// Networking and security
 	cmd.Flags().StringVar(&ctl.flagTree.RootCASecret, "root-ca-secret", "default", "Additional root certificate")
@@ -234,7 +240,7 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	cmd.Flags().BoolVar(&ctl.flagTree.IngressEnabled, "enable-ingress", false, "Enable ingress")
 	cmd.Flags().StringVar(&ctl.flagTree.IngressHost, "ingress-host", "default", "Hostname for ingress")
 	cmd.Flags().BoolVar(&ctl.flagTree.IngressTLSEnabled, "enable-ingress-tls", false, "Enable TLS for ingress")
-	cmd.Flags().StringVar(&ctl.flagTree.IngressTLSSecretName, "ingress-tls-secret-name", "default", "TLS Secret to use for ingress")
+	cmd.Flags().StringVar(&ctl.flagTree.IngressTLSSecretName, "ingress-tls-secret", "default", "TLS Secret to use for ingress")
 
 	// External PG
 	cmd.Flags().BoolVar(&ctl.flagTree.ExternalPG,
@@ -293,7 +299,8 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "cluster-domain":
-			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "rabbitmq", "clustering", "k8s_domain"}, ctl.flagTree.RabbitMQK8SDomain)
+			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "rabbitmq", "clustering", "k8s_domain"}, ctl.flagTree.ClusterDomain)
+			util.SetHelmValueInMap(ctl.args, []string{"minio", "clusterDomain"}, ctl.flagTree.ClusterDomain)
 		case "postgres-storage-class":
 			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "persistence", "storageClass"}, ctl.flagTree.PGStorageClass)
 		case "postgres-size":
@@ -366,7 +373,7 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "rootCASecret"}, ctl.flagTree.LDAPRootCASecret)
 		case "ldap-root-ca-file":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "rootCAfile"}, ctl.flagTree.LDAPRootCAFile)
-		case "ldap-required-group":
+		case "ldap-require-group":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "requireGroup"}, ctl.flagTree.LDAPRequireGroup)
 		case "ldap-user-search":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "userSearch"}, ctl.flagTree.LDAPUserSearch)
@@ -377,15 +384,17 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		case "ldap-group-search-scope":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "groupSearchScope"}, ctl.flagTree.LDAPGroupSearchScope)
 		case "enable-ldap-nested-search":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "nesterSearch"}, ctl.flagTree.LDAPNestedSearch)
-		case "enable-frontend-logging":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "applicationLogging", "enabled"}, ctl.flagTree.FrontendLogging)
-		case "enable-worker-logging":
-			util.SetHelmValueInMap(ctl.args, []string{"worker", "applicationLogging", "enabled"}, ctl.flagTree.WorkerLogging)
+			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "nestedSearch"}, ctl.flagTree.LDAPNestedSearch)
+		case "disable-frontend-logging":
+			util.SetHelmValueInMap(ctl.args, []string{"frontend", "applicationLogging", "enabled"}, !ctl.flagTree.DisableFrontendLogging)
+		case "disable-worker-logging":
+			util.SetHelmValueInMap(ctl.args, []string{"worker", "applicationLogging", "enabled"}, !ctl.flagTree.DisableWorkerLogging)
 		case "worker-replicas":
 			util.SetHelmValueInMap(ctl.args, []string{"worker", "replicas"}, ctl.flagTree.WorkerReplicas)
 		case "worker-concurrency":
 			util.SetHelmValueInMap(ctl.args, []string{"worker", "concurrency"}, ctl.flagTree.WorkerConcurrency)
+		case "minio-mode":
+			util.SetHelmValueInMap(ctl.args, []string{"minio", "mode"}, ctl.flagTree.MinioMode)
 		case "root-ca-secret":
 			util.SetHelmValueInMap(ctl.args, []string{"rootCASecret"}, ctl.flagTree.RootCASecret)
 		case "http-proxy":
@@ -411,9 +420,9 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		case "external-postgres-user":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlUsername"}, ctl.flagTree.ExternalPGUser)
 		case "external-postgres-password":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlPassword"}, ctl.flagTree.ExternalPGUser)
+			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlPassword"}, ctl.flagTree.ExternalPGPassword)
 		case "external-postgres-ssl-mode":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlSslModel"}, ctl.flagTree.ExternalPGSSLMode)
+			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "postgresqlSslMode"}, ctl.flagTree.ExternalPGSSLMode)
 		case "external-postgres-client-secret":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "clientSecretName"}, ctl.flagTree.ExternalPGClientSecret)
 		case "external-postgres-rootca-secret":
