@@ -199,7 +199,7 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPUser, "email-smtp-user", "default", "SMTP user")
 	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPPassword, "email-smtp-password", "default", "SMTP password")
 	cmd.Flags().StringVar(&ctl.flagTree.EmailFrom, "email-from", "default", "Email sender address")
-	cmd.Flags().StringVar(&ctl.flagTree.EmailSecurity, "email-security", "default", "Email security mode (none, ssl or starttls)")
+	cmd.Flags().StringVar(&ctl.flagTree.EmailSecurity, "email-security", "default", "Email security mode [none|ssl|starttls]")
 	cmd.Flags().BoolVar(&ctl.flagTree.EmailVerify, "verify-email", false, "Verify SMTP server certificate")
 
 	// LDAP Authentication
