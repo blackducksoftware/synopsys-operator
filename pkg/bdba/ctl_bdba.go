@@ -89,7 +89,6 @@ type FlagTree struct {
 	LDAPStartTLS             bool   `json:"ldapStartTLS"`
 	LDAPVerify               bool   `json:"ldapVerify"`
 	LDAPRootCASecret         string `json:"ldapRootCASecret"`
-	LDAPRootCAFile           string `json:"ldapRootCAFile"`
 	LDAPRequireGroup         string `json:"ldapRequireGroup"`
 	LDAPUserSearch           string `json:"ldapUserSearch"`
 	LDAPUserSearchScope      string `json:"ldapUserSearchScope"`
@@ -212,7 +211,6 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	cmd.Flags().BoolVar(&ctl.flagTree.LDAPStartTLS, "ldap-start-tls", false, "Enable start TLS for LDAP")
 	cmd.Flags().BoolVar(&ctl.flagTree.LDAPVerify, "verify-ldap", false, "Verify LDAP server certificate")
 	cmd.Flags().StringVar(&ctl.flagTree.LDAPRootCASecret, "ldap-root-ca-secret", "default", "Secret to use for LDAP root certificate")
-	cmd.Flags().StringVar(&ctl.flagTree.LDAPRootCAFile, "ldap-root-ca-file", "default", "Key for LDAP root certificate secret")  // Make hardcoded, seems to be standard practice?
 	cmd.Flags().StringVar(&ctl.flagTree.LDAPRequireGroup, "ldap-require-group", "default", "LDAP group required to allow login")
 	cmd.Flags().StringVar(&ctl.flagTree.LDAPUserSearch, "ldap-user-search", "default", "Base DN for user branch")
 	cmd.Flags().StringVar(&ctl.flagTree.LDAPUserSearchScope, "ldap-user-search-scope", "default", "LDAP search filter for users")
@@ -371,8 +369,6 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "verify"}, ctl.flagTree.LDAPVerify)
 		case "ldap-root-ca-secret":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "rootCASecret"}, ctl.flagTree.LDAPRootCASecret)
-		case "ldap-root-ca-file":
-			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "rootCAfile"}, ctl.flagTree.LDAPRootCAFile)
 		case "ldap-require-group":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "ldap", "requireGroup"}, ctl.flagTree.LDAPRequireGroup)
 		case "ldap-user-search":
