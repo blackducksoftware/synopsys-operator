@@ -94,6 +94,7 @@ func CreateWithHelm3(releaseName, namespace, chartURL string, vals map[string]in
 		client.Version = ">0.0.0-0"
 	}
 	client.ReleaseName = releaseName
+	client.Namespace = namespace
 	client.DryRun = dryRun
 	_, err = client.Run(chart, vals) // deploy the chart into the namespace from the actionConfig
 	if err != nil {
@@ -125,6 +126,7 @@ func UpdateWithHelm3(releaseName, namespace, chartURL string, vals map[string]in
 	if client.Version == "" && client.Devel {
 		client.Version = ">0.0.0-0"
 	}
+	client.Namespace = namespace
 	client.ReuseValues = true                     // rememeber the values that have been set previously
 	_, err = client.Run(releaseName, chart, vals) // updates the release in the namespace from the actionConfig
 	if err != nil {
