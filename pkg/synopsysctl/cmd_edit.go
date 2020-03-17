@@ -38,36 +38,6 @@ var editCmd = &cobra.Command{
 	},
 }
 
-// editAlertCmd edits an Alert instance by using the kube/oc editor
-var editAlertCmd = &cobra.Command{
-	Use:           "alert NAME",
-	Example:       "synopsysctl edit alert <name>\nsynopsysctl edit alert <name> -n <namespace>",
-	Short:         "Edit an Alert instance",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName := args[0]
-		alertNamespace, _, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
-		if err != nil {
-			return err
-		}
-		log.Infof("editing Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		err = RunKubeEditorCmd(restconfig, kubeClient, "edit", "alert", alertName, "-n", alertNamespace)
-		if err != nil {
-			return fmt.Errorf("error editing Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-		}
-		log.Infof("successfully edited Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		return nil
-	},
-}
-
 // editOpsSightCmd edits an OpsSight instance by using the kube/oc editor
 var editOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME",
@@ -100,9 +70,6 @@ var editOpsSightCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(editCmd)
-
-	editAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	editCmd.AddCommand(editAlertCmd)
 
 	editOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	editCmd.AddCommand(editOpsSightCmd)

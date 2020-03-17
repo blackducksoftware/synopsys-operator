@@ -414,3 +414,21 @@ func SetHelmValueInMap(valueMapPointer map[string]interface{}, keyList []string,
 		}
 	}
 }
+
+// GetHelmValueFromMap returns an interface{} if the value exists in the map
+func GetHelmValueFromMap(valueMapPointer map[string]interface{}, keyList []string) interface{} {
+	for i, currKey := range keyList {
+		currVal, ok := valueMapPointer[currKey]
+		if !ok { // value doesn't exist - invalid path
+			return nil
+		}
+		if i == (len(keyList) - 1) { // at the last key -> return the value
+			return currVal
+		}
+		valueMapPointer, ok = currVal.(map[string]interface{})
+		if !ok { // got a finalValue instead of a map - invalid path
+			return nil
+		}
+	}
+	return nil
+}

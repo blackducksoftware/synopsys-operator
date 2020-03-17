@@ -32,10 +32,8 @@ import (
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	alertapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
@@ -73,23 +71,13 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		return PrintComponents([]interface{}{crd}, format)
 	}
 
-	app, err := getDefaultApp(nativeClusterType)
-	if err != nil {
-		return err
-	}
-
 	var cList *api.ComponentList
+	var err error
 
 	switch reflect.TypeOf(crd) {
 	case reflect.TypeOf(soperator.SpecConfig{}):
 		operator := crd.(soperator.SpecConfig)
 		cList, err = operator.GetComponents()
-		if err != nil {
-			return fmt.Errorf("failed to get components: %s", err)
-		}
-	case reflect.TypeOf(alertapi.Alert{}):
-		alert := crd.(alertapi.Alert)
-		cList, err = app.Alert().GetComponents(&alert, alertapp.CRDResources)
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}

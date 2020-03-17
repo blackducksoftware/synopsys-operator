@@ -23,31 +23,27 @@ package synopsysctl
 
 import (
 	"fmt"
-	"sort"
 
+	alertctl "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
+	polarisreportingctl "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	alertapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Create Command CRSpecBuilderFromCobraFlagsInterface
-var createAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var createAlertCobraHelper alertctl.HelmValuesFromCobraFlags
 var createBlackDuckCobraHelper blackduck.HelmValuesFromCobraFlags
 var createOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createPolarisCobraHelper polaris.HelmValuesFromCobraFlags
@@ -76,45 +72,6 @@ var createCmd = &cobra.Command{
 Create Alert Commands
 */
 
-var createAlertPreRun = func(cmd *cobra.Command, args []string) error {
-	// Set the base spec
-	if !cmd.Flags().Lookup("template").Changed {
-		baseAlertSpec = defaultBaseAlertSpec
-	}
-	log.Debugf("setting Alert's base spec to '%s'", baseAlertSpec)
-	err := createAlertCobraHelper.SetPredefinedCRSpec(baseAlertSpec)
-	if err != nil {
-		cmd.Help()
-		return err
-	}
-	return nil
-}
-
-func updateAlertSpecWithFlags(cmd *cobra.Command, alertName string, alertNamespace string) (*alertv1.Alert, error) {
-	// Update Spec with user's flags
-	log.Debugf("updating spec with user's flags")
-	alertInterface, err := createAlertCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
-	if err != nil {
-		return nil, err
-	}
-
-	// Set Namespace in Spec
-	alertSpec, _ := alertInterface.(alertv1.AlertSpec)
-	alertSpec.Namespace = alertNamespace
-
-	// Create Alert CRD
-	alert := &alertv1.Alert{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      alertName,
-			Namespace: alertNamespace,
-		},
-		Spec: alertSpec,
-	}
-	alert.Kind = "Alert"
-	alert.APIVersion = "synopsys.com/v1"
-	return alert, nil
-}
-
 // createCmd creates an Alert instance
 var createAlertCmd = &cobra.Command{
 	Use:           "alert NAME",
@@ -130,38 +87,91 @@ var createAlertCmd = &cobra.Command{
 		}
 		return nil
 	},
-	PreRunE: createAlertPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
 		alertName := args[0]
-		alertNamespace, crdNamespace, _, err := getInstanceInfo(mockMode, util.AlertCRDName, "", namespace, alertName)
+
+		// Get the flags to set Helm values
+		helmValuesMap, err := createAlertCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
-		alert, err := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
+
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			alertChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				alertChartRepository = fmt.Sprintf("%s/charts/alert-helmchart-%s.tgz", baseChartRepository, versionFlag.Value.String())
+			}
+		}
+
+		// Check Dry Run before deploying any resources
+		err = util.CreateWithHelm3(alertName, namespace, alertChartRepository, helmValuesMap, kubeConfigPath, true)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create Alert resources: %+v", err)
+		}
+
+		// Create secrets for Alert
+		customCertificateSecret := map[string]runtime.Object{}
+		javaKeystoreSecret := map[string]runtime.Object{}
+		certificateFlag := cmd.Flag("certificate-file-path")
+		certificateKeyFlag := cmd.Flag("certificate-key-file-path")
+		if certificateFlag.Changed && certificateKeyFlag.Changed {
+			certificateData, err := util.ReadFileData(certificateFlag.Value.String())
+			if err != nil {
+				log.Fatalf("failed to read certificate file: %+v", err)
+			}
+
+			certificateKeyData, err := util.ReadFileData(certificateKeyFlag.Value.String())
+			if err != nil {
+				log.Fatalf("failed to read certificate file: %+v", err)
+			}
+			customCertificateSecretName := "alert-custom-certificate"
+			customCertificateSecret, err = alertctl.GetAlertCustomCertificateSecret(namespace, customCertificateSecretName, certificateData, certificateKeyData)
+			util.SetHelmValueInMap(helmValuesMap, []string{"webserverCustomCertificatesSecretName"}, customCertificateSecretName)
+		}
+
+		javaKeystoreFlag := cmd.Flag("java-keystore-file-path")
+		if javaKeystoreFlag.Changed {
+			javaKeystoreData, err := util.ReadFileData(javaKeystoreFlag.Value.String())
+			if err != nil {
+				log.Fatalf("failed to read Java Keystore file: %+v", err)
+			}
+			javaKeystoreSecretName := "alert-java-keystore"
+			javaKeystoreSecret, err = alertctl.GetAlertJavaKeystoreSecret(namespace, javaKeystoreSecretName, javaKeystoreData)
+			util.SetHelmValueInMap(helmValuesMap, []string{"javaKeystoreSecretName"}, javaKeystoreSecretName)
 		}
 
 		// If mock mode, return and don't create resources
 		if mockMode {
-			log.Debugf("generating CRD for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-			return PrintResource(*alert, mockFormat, false)
+			_, err = PrintComponent(helmValuesMap, "YAML")
+			return err
 		}
 
-		log.Infof("creating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		if len(alert.Spec.Version) == 0 {
-			versions := apps.NewApp(&protoform.Config{}, restconfig).Alert().Versions()
-			sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-			alert.Spec.Version = versions[0]
+		// Deploy the Secrets
+		if len(customCertificateSecret) > 0 {
+			err = KubectlApplyRuntimeObjects(customCertificateSecret)
+			if err != nil {
+				return fmt.Errorf("failed to deploy the customCertificateSecret Secrets: %s", err)
+			}
+		}
+		if len(javaKeystoreSecret) > 0 {
+			err = KubectlApplyRuntimeObjects(javaKeystoreSecret)
+			if err != nil {
+				return fmt.Errorf("failed to deploy the javaKeystoreSecret Secrets: %s", err)
+			}
 		}
 
-		// Deploy the Alert instance
-		_, err = util.CreateAlert(alertClient, crdNamespace, alert)
+		// Deploy Alert Resources
+		err = util.CreateWithHelm3(alertName, namespace, alertChartRepository, helmValuesMap, kubeConfigPath, false)
 		if err != nil {
-			return fmt.Errorf("error creating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
+			return fmt.Errorf("failed to create Alert resources: %+v", err)
 		}
-		log.Infof("successfully submitted Alert '%s' into namespace '%s'", alertName, alertNamespace)
+
+		log.Infof("Alert has been successfully Created!")
 		return nil
 	},
 }
@@ -181,37 +191,73 @@ var createAlertNativeCmd = &cobra.Command{
 		}
 		return nil
 	},
-	PreRunE: createAlertPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName := args[0]
-		alertNamespace, _, _, err := getInstanceInfo(true, util.AlertCRDName, "", namespace, alertName)
-		if err != nil {
-			return err
-		}
-		alert, err := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
+
+		// Get the flags to set Helm values
+		helmValuesMap, err := createAlertCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
 
-		log.Debugf("generating Kubernetes resources for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		app, err := getDefaultApp(nativeClusterType)
-		if err != nil {
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			alertChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				alertChartRepository = fmt.Sprintf("%s/charts/alert-helmchart-%s.tgz", baseChartRepository, versionFlag.Value.String())
+			}
+		}
+
+		// Get secrets for Alert
+		customCertificateSecret := map[string]runtime.Object{}
+		javaKeystoreSecret := map[string]runtime.Object{}
+		certificateFlag := cmd.Flag("certificate-file-path")
+		certificateKeyFlag := cmd.Flag("certificate-key-file-path")
+		if certificateFlag.Changed && certificateKeyFlag.Changed {
+			certificateData, err := util.ReadFileData(certificateFlag.Value.String())
+			if err != nil {
+				log.Fatalf("failed to read certificate file: %+v", err)
+			}
+
+			certificateKeyData, err := util.ReadFileData(certificateKeyFlag.Value.String())
+			if err != nil {
+				log.Fatalf("failed to read certificate file: %+v", err)
+			}
+			customCertificateSecretName := "alert-custom-certificate"
+			customCertificateSecret, err = alertctl.GetAlertCustomCertificateSecret(namespace, customCertificateSecretName, certificateData, certificateKeyData)
+			util.SetHelmValueInMap(helmValuesMap, []string{"webserverCustomCertificatesSecretName"}, customCertificateSecretName)
+		}
+
+		javaKeystoreFlag := cmd.Flag("java-keystore-file-path")
+		if javaKeystoreFlag.Changed {
+			javaKeystoreData, err := util.ReadFileData(javaKeystoreFlag.Value.String())
+			if err != nil {
+				log.Fatalf("failed to read Java Keystore file: %+v", err)
+			}
+			javaKeystoreSecretName := "alert-java-keystore"
+			javaKeystoreSecret, err = alertctl.GetAlertJavaKeystoreSecret(namespace, javaKeystoreSecretName, javaKeystoreData)
+			util.SetHelmValueInMap(helmValuesMap, []string{"javaKeystoreSecretName"}, javaKeystoreSecretName)
+		}
+		// Print the Secrets
+		if len(customCertificateSecret) > 0 {
+			_, err = PrintComponent(customCertificateSecret, "YAML")
 			return err
 		}
-		var cList *api.ComponentList
-		switch {
-		case alertNativePVC:
-			cList, err = app.Alert().GetComponents(alert, alertapp.PVCResources)
-		case !alertNativePVC:
-			return PrintResource(*alert, nativeFormat, true)
+		if len(javaKeystoreSecret) > 0 {
+			_, err = PrintComponent(customCertificateSecret, "YAML")
+			return err
 		}
+
+		// Deploy Alert Resources
+		err = util.TemplateWithHelm3(alertName, namespace, alertChartRepository, helmValuesMap)
 		if err != nil {
-			return fmt.Errorf("failed to generate Black Duck components due to %+v", err)
+			return fmt.Errorf("failed to create Alert resources: %+v", err)
 		}
-		if cList == nil {
-			return fmt.Errorf("unable to genreate Black Duck components")
-		}
-		return PrintComponentListKube(cList, nativeFormat)
+
+		return nil
 	},
 }
 
@@ -646,7 +692,7 @@ var createPolarisReportingCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to read gcp service account file at location: '%s', error: %+v", gcpServiceAccountPath, err)
 		}
-		gcpServiceAccountSecrets, err := polarisreporting.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
+		gcpServiceAccountSecrets, err := polarisreportingctl.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
 		if err != nil {
 			return fmt.Errorf("failed to create GCP Service Account Secrets: %+v", err)
 		}
@@ -707,7 +753,7 @@ var createPolarisReportingNativeCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to read gcp service account file at location: '%s', error: %+v", gcpServiceAccountPath, err)
 		}
-		gcpServiceAccountSecrets, err := polarisreporting.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
+		gcpServiceAccountSecrets, err := polarisreportingctl.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
 		if err != nil {
 			return fmt.Errorf("failed to create GCP Service Account Secrets: %+v", err)
 		}
@@ -823,8 +869,8 @@ var createBDBANativeCmd = &cobra.Command{
 
 func init() {
 	// initialize global resource ctl structs for commands to use
-	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	createBlackDuckCobraHelper = *blackduck.NewHelmValuesFromCobraFlags()
+	createAlertCobraHelper = *alertctl.NewHelmValuesFromCobraFlags()
 	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	createPolarisCobraHelper = *polaris.NewHelmValuesFromCobraFlags()
 	createPolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
@@ -833,15 +879,15 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 
 	// Add Alert Command
-	createAlertCmd.PersistentFlags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags [empty|default]")
 	createAlertCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	createAlertCobraHelper.AddCRSpecFlagsToCommand(createAlertCmd, true)
+	cobra.MarkFlagRequired(createAlertCmd.PersistentFlags(), "namespace")
+	createAlertCobraHelper.AddCobraFlagsToCommand(createAlertCmd, true)
+	addChartLocationPathFlag(createAlertCmd)
 	addMockFlag(createAlertCmd)
 	createCmd.AddCommand(createAlertCmd)
 
-	createAlertCobraHelper.AddCRSpecFlagsToCommand(createAlertNativeCmd, true)
-	addNativeFormatFlag(createAlertNativeCmd)
-	createAlertNativeCmd.Flags().BoolVar(&alertNativePVC, "output-pvc", alertNativePVC, "If true, output resources for only Alert's persistent volume claims")
+	createAlertCobraHelper.AddCobraFlagsToCommand(createAlertNativeCmd, true)
+	addChartLocationPathFlag(createAlertNativeCmd)
 	createAlertCmd.AddCommand(createAlertNativeCmd)
 
 	// Add Black Duck Command

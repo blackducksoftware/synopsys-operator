@@ -46,31 +46,48 @@ var deleteCmd = &cobra.Command{
 
 // deleteAlertCmd deletes Alert instances from the cluster
 var deleteAlertCmd = &cobra.Command{
-	Use:           "alert NAME...",
-	Example:       "synopsysctl delete alert <name>\nsynopsysctl delete alert <name1> <name2> <name3>\nsynopsysctl delete alert <name> -n <namespace>\nsynopsysctl delete alert <name1> <name2> <name3> -n <namespace>",
-	Short:         "Delete one or many Alert instances",
+	Use:           "alert NAME",
+	Example:       "synopsysctl delete alert <name>\nsynopsysctl delete alert <name> -n <namespace>",
+	Short:         "Delete an Alert instances",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 or more arguments")
+			return fmt.Errorf("this command takes 1 argument but got %+v", len(args))
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		for _, alertName := range args {
-			alertNamespace, crdNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
-			if err != nil {
-				return err
-			}
-			log.Infof("deleting Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-			err = util.DeleteAlert(alertClient, alertName, crdNamespace, &metav1.DeleteOptions{})
-			if err != nil {
-				return fmt.Errorf("error deleting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-			}
-			log.Infof("successfully submitted delete Alert '%s' in namespace '%s'", alertName, alertNamespace)
+		alertName := args[0]
+
+		// Delete the Secrets
+		helmRelease, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to get Alert values: %+v", err)
 		}
+		var name interface{}
+		var ok bool
+		if name, ok = helmRelease.Config["webserverCustomCertificatesSecretName"]; ok {
+			err := kubeClient.CoreV1().Secrets(namespace).Delete(name.(string), &metav1.DeleteOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to delete Alert custom certiface secret: %+v", err)
+			}
+		}
+		if name, ok = helmRelease.Config["javaKeystoreSecretName"]; ok {
+			err := kubeClient.CoreV1().Secrets(namespace).Delete(name.(string), &metav1.DeleteOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to delete Alert javaKeystore secret: %+v", err)
+			}
+		}
+
+		// Delete Alert Resources
+		err = util.DeleteWithHelm3(alertName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to delete Alert resources: %+v", err)
+		}
+
+		log.Infof("Alert has been successfully Deleted!")
 		return nil
 	},
 }

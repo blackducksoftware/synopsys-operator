@@ -23,27 +23,26 @@ package alert
 
 import (
 	// "encoding/json"
+
 	"fmt"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-// CRSpecBuilderFromCobraFlags uses Cobra commands, Cobra flags and other
-// values to create an Alert CR's Spec.
-//
-// The fields in the CRSpecBuilderFromCobraFlags represent places where the values of the Cobra flags are stored.
-//
-// Usage: Use CRSpecBuilderFromCobraFlags to add flags to your Cobra Command for making an Alert Spec.
-// When flags are used the correspoding value in this struct will by set. You can then
-// generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
-type CRSpecBuilderFromCobraFlags struct {
-	alertSpec              *alertapi.AlertSpec
+// HelmValuesFromCobraFlags is a type for converting synopsysctl flags
+// to Helm Chart fields and values
+// args: map of helm chart field to value
+type HelmValuesFromCobraFlags struct {
+	args     map[string]interface{}
+	flagTree FlagTree
+}
+
+// FlagTree is a set of fields needed to configure the Polaris Reporting Helm Chart
+type FlagTree struct {
 	Version                string
 	StandAlone             string
 	ExposeService          string
@@ -60,106 +59,90 @@ type CRSpecBuilderFromCobraFlags struct {
 	Registry               string
 	RegistryNamespace      string
 	PullSecrets            []string
-	ImageRegistries        []string
 	CertificateFilePath    string
 	CertificateKeyFilePath string
 	JavaKeyStoreFilePath   string
 	// SecurityContextFilePath string
 }
 
-// NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
-func NewCRSpecBuilderFromCobraFlags() *CRSpecBuilderFromCobraFlags {
-	return &CRSpecBuilderFromCobraFlags{
-		alertSpec: &alertapi.AlertSpec{},
+// NewHelmValuesFromCobraFlags returns an initialized HelmValuesFromCobraFlags
+func NewHelmValuesFromCobraFlags() *HelmValuesFromCobraFlags {
+	return &HelmValuesFromCobraFlags{
+		args:     make(map[string]interface{}, 0),
+		flagTree: FlagTree{},
 	}
 }
 
-// GetCRSpec returns a pointer to the AlertSpec as an interface{}
-func (ctl *CRSpecBuilderFromCobraFlags) GetCRSpec() interface{} {
-	return *ctl.alertSpec
+// GetArgs returns the map of helm chart fields to values
+func (ctl *HelmValuesFromCobraFlags) GetArgs() map[string]interface{} {
+	return ctl.args
 }
 
-// SetCRSpec sets the alertSpec in the struct
-func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpec(spec interface{}) error {
-	convertedSpec, ok := spec.(alertapi.AlertSpec)
-	if !ok {
-		return fmt.Errorf("error setting Alert spec")
+// SetArgs set the map to values
+func (ctl *HelmValuesFromCobraFlags) SetArgs(args map[string]interface{}) {
+	for key, value := range args {
+		ctl.args[key] = value
 	}
-	ctl.alertSpec = &convertedSpec
-	return nil
 }
 
-// Constants for predefined specs
-const (
-	EmptySpec   string = "empty"
-	DefaultSpec string = "default"
-)
-
-// SetPredefinedCRSpec sets the alertSpec to a predefined spec
-func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) error {
-	switch specType {
-	case EmptySpec:
-		ctl.alertSpec = &alertapi.AlertSpec{}
-	case DefaultSpec:
-		ctl.alertSpec = util.GetAlertDefault()
-		ctl.alertSpec.PersistentStorage = true
-		ctl.alertSpec.StandAlone = util.BoolToPtr(true)
-	default:
-		return fmt.Errorf("Alert spec type '%s' is not valid", specType)
-	}
-	return nil
-}
-
-// AddCRSpecFlagsToCommand adds flags to a Cobra Command that are need for Alert's Spec.
-// The flags map to fields in the CRSpecBuilderFromCobraFlags struct.
-// master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Alert")
-	cmd.Flags().StringVar(&ctl.StandAlone, "standalone", ctl.StandAlone, "If true, Alert runs in standalone mode [true|false]")
+// AddCobraFlagsToCommand adds flags for the Polaris-Reporting helm chart to the cmd
+// master=true is used to add all flags for creating an instance
+// master=false is used to add a subset of flags for updating an instance
+func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, master bool) {
+	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", ctl.flagTree.Version, "Version of Alert")
 	if master {
-		cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", util.NONE, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
-	} else {
-		cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+		cobra.MarkFlagRequired(cmd.Flags(), "version")
 	}
-	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port of Alert")
-	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for Alert")
-	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for Alert")
-	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables of Alert")
-	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Alert has persistent storage [true|false]")
-	cmd.Flags().StringVar(&ctl.PVCName, "pvc-name", ctl.PVCName, "Name of the persistent volume claim")
-	cmd.Flags().StringVar(&ctl.PVCStorageClass, "pvc-storage-class", ctl.PVCStorageClass, "Storage class for the persistent volume claim")
-	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation of the persistent volume claim")
-	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation of Alert")
-	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation of CFSSL")
-	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
-	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
-	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to the PEM certificate to use for Alert")
-	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to the PEM certificate key for Alert")
-	cmd.Flags().StringVar(&ctl.JavaKeyStoreFilePath, "java-keystore-file-path", ctl.JavaKeyStoreFilePath, "Absolute path to the Java Keystore to use for Alert")
-	// cmd.Flags().StringVar(&ctl.SecurityContextFilePath, "security-context-file-path", ctl.SecurityContextFilePath, "Absolute path to a file containing a map of pod names to security contexts runAsUser, fsGroup, and runAsGroup")
+
+	cmd.Flags().StringVar(&ctl.flagTree.StandAlone, "standalone", ctl.flagTree.StandAlone, "If true, Alert runs in standalone mode [true|false]")
+	if master {
+		cmd.Flags().StringVar(&ctl.flagTree.ExposeService, "expose-ui", util.NONE, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	} else {
+		cmd.Flags().StringVar(&ctl.flagTree.ExposeService, "expose-ui", ctl.flagTree.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	}
+	cmd.Flags().StringVar(&ctl.flagTree.EncryptionPassword, "encryption-password", ctl.flagTree.EncryptionPassword, "Encryption Password for Alert")
+	cmd.Flags().StringVar(&ctl.flagTree.EncryptionGlobalSalt, "encryption-global-salt", ctl.flagTree.EncryptionGlobalSalt, "Encryption Global Salt for Alert")
+	cmd.Flags().StringVar(&ctl.flagTree.PersistentStorage, "persistent-storage", ctl.flagTree.PersistentStorage, "If true, Alert has persistent storage [true|false]")
+	cmd.Flags().StringSliceVar(&ctl.flagTree.Environs, "environs", ctl.flagTree.Environs, "Environment variables of Alert")
+	cmd.Flags().StringVar(&ctl.flagTree.PVCName, "pvc-name", ctl.flagTree.PVCName, "Name of the persistent volume claim")
+	cmd.Flags().StringVar(&ctl.flagTree.PVCStorageClass, "pvc-storage-class", ctl.flagTree.PVCStorageClass, "Storage class for the persistent volume claim")
+	cmd.Flags().StringVar(&ctl.flagTree.PVCSize, "pvc-size", ctl.flagTree.PVCSize, "Memory allocation of the persistent volume claim")
+	cmd.Flags().StringVar(&ctl.flagTree.AlertMemory, "alert-memory", ctl.flagTree.AlertMemory, "Memory allocation of Alert")
+	cmd.Flags().StringVar(&ctl.flagTree.CfsslMemory, "cfssl-memory", ctl.flagTree.CfsslMemory, "Memory allocation of CFSSL")
+	cmd.Flags().StringVar(&ctl.flagTree.Registry, "registry", ctl.flagTree.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
+	cmd.Flags().StringSliceVar(&ctl.flagTree.PullSecrets, "pull-secret-name", ctl.flagTree.PullSecrets, "Only if the registry requires authentication")
+	cmd.Flags().StringVar(&ctl.flagTree.CertificateFilePath, "certificate-file-path", ctl.flagTree.CertificateFilePath, "Absolute path to the PEM certificate to use for Alert")
+	cmd.Flags().StringVar(&ctl.flagTree.CertificateKeyFilePath, "certificate-key-file-path", ctl.flagTree.CertificateKeyFilePath, "Absolute path to the PEM certificate key for Alert")
+	cmd.Flags().StringVar(&ctl.flagTree.JavaKeyStoreFilePath, "java-keystore-file-path", ctl.flagTree.JavaKeyStoreFilePath, "Absolute path to the Java Keystore to use for Alert")
+	// cmd.Flags().StringVar(&ctl.flagTree.SecurityContextFilePath, "security-context-file-path", ctl.flagTree.SecurityContextFilePath, "Absolute path to a file containing a map of pod names to security contexts runAsUser, fsGroup, and runAsGroup")
+
+	cmd.Flags().Int32Var(&ctl.flagTree.Port, "port", ctl.flagTree.Port, "Port of Alert") // only for devs
+	cmd.Flags().MarkHidden("port")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
 // used in the AlertSpec
-func (ctl *CRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
+func (ctl *HelmValuesFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
 	if FlagWasSet(flagset, "encryption-password") {
-		encryptPassLength := len(ctl.EncryptionPassword)
+		encryptPassLength := len(ctl.flagTree.EncryptionPassword)
 		if encryptPassLength > 0 && encryptPassLength < 16 {
 			return fmt.Errorf("flag EncryptionPassword is %d characters. Must be 16 or more characters", encryptPassLength)
 		}
 	}
 	if FlagWasSet(flagset, "encryption-global-salt") {
-		globalSaltLength := len(ctl.EncryptionGlobalSalt)
+		globalSaltLength := len(ctl.flagTree.EncryptionGlobalSalt)
 		if globalSaltLength > 0 && globalSaltLength < 16 {
 			return fmt.Errorf("flag EncryptionGlobalSalt is %d characters. Must be 16 or more characters", globalSaltLength)
 		}
 	}
 	if FlagWasSet(flagset, "expose-ui") {
-		isValid := util.IsExposeServiceValid(ctl.ExposeService)
+		isValid := util.IsExposeServiceValid(ctl.flagTree.ExposeService)
 		if !isValid {
 			return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
 		}
+	}
+	if (FlagWasSet(flagset, "certificate-file-path") || FlagWasSet(flagset, "certificate-key-file-path")) && !(FlagWasSet(flagset, "certificate-file-path") && FlagWasSet(flagset, "certificate-key-file-path")) {
+		return fmt.Errorf("must set both certificate-file-path and certificate-key-file-path")
 	}
 	return nil
 }
@@ -172,83 +155,76 @@ func FlagWasSet(flagset *pflag.FlagSet, flagName string) bool {
 	return false
 }
 
-// GenerateCRSpecFromFlags checks if a flag was changed and updates the alertSpec with the value that's stored
-// in the corresponding struct field
-func (ctl *CRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *pflag.FlagSet) (interface{}, error) {
+// GenerateHelmFlagsFromCobraFlags checks each flag in synopsysctl and updates the map to
+// contain the corresponding helm chart field and value
+func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pflag.FlagSet) (map[string]interface{}, error) {
 	err := ctl.CheckValuesFromFlags(flagset)
 	if err != nil {
 		return nil, err
 	}
-	flagset.VisitAll(ctl.SetCRSpecFieldByFlag)
-	return *ctl.alertSpec, nil
+	flagset.VisitAll(ctl.AddHelmValueByCobraFlag)
+
+	return ctl.args, nil
 }
 
-// SetCRSpecFieldByFlag updates a field in the alertSpec if the flag was set by the user. It gets the
-// value from the corresponding struct field
-// Note: It should only handle values with a 1 to 1 mapping - struct-field to spec
-func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
+// AddHelmValueByCobraFlag adds the helm chart field and value based on the flag set
+// in synopsysctl
+func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "version":
-			ctl.alertSpec.Version = ctl.Version
+			util.SetHelmValueInMap(ctl.args, []string{"alert", "imageTag"}, ctl.flagTree.Version)
 		case "standalone":
-			standAloneVal := strings.ToUpper(ctl.StandAlone) == "TRUE"
-			ctl.alertSpec.StandAlone = &standAloneVal
+			standAloneVal := strings.ToUpper(ctl.flagTree.StandAlone) == "TRUE"
+			util.SetHelmValueInMap(ctl.args, []string{"enableStandalone"}, standAloneVal)
 		case "expose-ui":
-			ctl.alertSpec.ExposeService = ctl.ExposeService
+			util.SetHelmValueInMap(ctl.args, []string{"exposeui"}, true)
+			switch ctl.flagTree.ExposeService {
+			case util.NODEPORT:
+				util.SetHelmValueInMap(ctl.args, []string{"exposedServiceType"}, "NodePort")
+			case util.LOADBALANCER:
+				util.SetHelmValueInMap(ctl.args, []string{"exposedServiceType"}, "LoadBalancer")
+			case util.NONE:
+				util.SetHelmValueInMap(ctl.args, []string{"exposedServiceType"}, "ClusterIP")
+			}
 		case "port":
-			ctl.alertSpec.Port = &ctl.Port
+			util.SetHelmValueInMap(ctl.args, []string{"alert", "port"}, ctl.flagTree.Port)
 		case "encryption-password":
-			ctl.alertSpec.EncryptionPassword = ctl.EncryptionPassword
+			util.SetHelmValueInMap(ctl.args, []string{"setEncryptionSecretData"}, true)
+			util.SetHelmValueInMap(ctl.args, []string{"alertEncryptionPassword"}, ctl.flagTree.EncryptionPassword)
 		case "encryption-global-salt":
-			ctl.alertSpec.EncryptionGlobalSalt = ctl.EncryptionGlobalSalt
+			util.SetHelmValueInMap(ctl.args, []string{"setEncryptionSecretData"}, true)
+			util.SetHelmValueInMap(ctl.args, []string{"alertEncryptionGlobalSalt"}, ctl.flagTree.EncryptionGlobalSalt)
 		case "persistent-storage":
-			ctl.alertSpec.PersistentStorage = strings.ToUpper(ctl.PersistentStorage) == "TRUE"
+			persistentStorageVal := strings.ToUpper(ctl.flagTree.PersistentStorage) == "TRUE"
+			util.SetHelmValueInMap(ctl.args, []string{"enablePersistentStorage"}, persistentStorageVal)
 		case "pvc-name":
-			ctl.alertSpec.PVCName = ctl.PVCName
+			util.SetHelmValueInMap(ctl.args, []string{"persistentVolumeClaimName"}, ctl.flagTree.PVCName)
 		case "pvc-storage-class":
-			ctl.alertSpec.PVCStorageClass = ctl.PVCStorageClass
+			util.SetHelmValueInMap(ctl.args, []string{"storageClassName"}, ctl.flagTree.PVCStorageClass)
 		case "pvc-size":
-			ctl.alertSpec.PVCSize = ctl.PVCSize
+			util.SetHelmValueInMap(ctl.args, []string{"pvcSize"}, ctl.flagTree.PVCSize)
 		case "alert-memory":
-			ctl.alertSpec.AlertMemory = ctl.AlertMemory
+			util.SetHelmValueInMap(ctl.args, []string{"alert", "resources", "limits", "memory"}, ctl.flagTree.AlertMemory)
+			util.SetHelmValueInMap(ctl.args, []string{"alert", "resources", "requests", "memory"}, ctl.flagTree.AlertMemory)
 		case "cfssl-memory":
-			ctl.alertSpec.CfsslMemory = ctl.CfsslMemory
+			util.SetHelmValueInMap(ctl.args, []string{"cfssl", "resources", "limits", "memory"}, ctl.flagTree.CfsslMemory)
+			util.SetHelmValueInMap(ctl.args, []string{"cfssl", "resources", "requests", "memory"}, ctl.flagTree.CfsslMemory)
 		case "environs":
-			ctl.alertSpec.Environs = ctl.Environs
+			// TODO: Make sure this is converted correclty
+			envMap := map[string]interface{}{}
+			for _, env := range ctl.flagTree.Environs {
+				envSplit := strings.Split(env, ":")
+				envMap[envSplit[0]] = envSplit[1]
+			}
+			util.SetHelmValueInMap(ctl.args, []string{"environs"}, envMap)
 		case "registry":
-			if ctl.alertSpec.RegistryConfiguration == nil {
-				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}
-			}
-			ctl.alertSpec.RegistryConfiguration.Registry = ctl.Registry
+			util.SetHelmValueInMap(ctl.args, []string{"registry"}, ctl.flagTree.Registry)
 		case "pull-secret-name":
-			if ctl.alertSpec.RegistryConfiguration == nil {
-				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}
-			}
-			ctl.alertSpec.RegistryConfiguration.PullSecrets = ctl.PullSecrets
-		case "image-registries":
-			ctl.alertSpec.ImageRegistries = ctl.ImageRegistries
-		case "certificate-file-path":
-			data, err := util.ReadFileData(ctl.CertificateFilePath)
-			if err != nil {
-				log.Fatalf("failed to read certificate file: %+v", err)
-			}
-			ctl.alertSpec.Certificate = data
-		case "certificate-key-file-path":
-			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
-			if err != nil {
-				log.Fatalf("failed to read certificate file: %+v", err)
-			}
-			ctl.alertSpec.CertificateKey = data
-		case "java-keystore-file-path":
-			data, err := util.ReadFileData(ctl.JavaKeyStoreFilePath)
-			if err != nil {
-				log.Fatalf("failed to read Java keystore file: %+v", err)
-			}
-			ctl.alertSpec.JavaKeyStore = data
+			util.SetHelmValueInMap(ctl.args, []string{"imagePullSecrets"}, ctl.flagTree.PullSecrets)
 		// case "security-context-file-path":
-		// 	data, err := util.ReadFileData(ctl.SecurityContextFilePath)
+		// 	data, err := util.ReadFileData(ctl.flagTree.SecurityContextFilePath)
 		// 	if err != nil {
 		// 		log.Errorf("failed to read security context file: %+v", err)
 		// 		return
@@ -259,7 +235,9 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 		// 		log.Errorf("failed to unmarshal security contexts: %+v", err)
 		// 		return
 		// 	}
-		// 	ctl.alertSpec.SecurityContexts = SecurityContexts
+		// 	for k, v := range SecurityContexts {
+		// 		util.SetHelmValueInMap(ctl.args, []string{k, "securityContext"}, OperatorSecurityContextTok8sAffinity(v))
+		// 	}
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}

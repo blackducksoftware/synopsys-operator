@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMapFlag(t *testing.T) {
+func TestSetHelmValueInMap(t *testing.T) {
 	type test struct {
 		testDesc   string
 		startMap   map[string]interface{}
@@ -130,5 +130,96 @@ func TestMapFlag(t *testing.T) {
 		SetHelmValueInMap(tt.startMap, tt.keyString, tt.finalValue)
 		assert := assert.New(t)
 		assert.Equal(tt.startMap, tt.finalMap, fmt.Sprintf("failed case: %s\nGot: %+v\nWanted: %+v", tt.testDesc, tt.startMap, tt.finalMap))
+	}
+}
+
+func TestGetHelmValueFromMap(t *testing.T) {
+	type test struct {
+		testDesc      string
+		valueMap      map[string]interface{}
+		keyString     []string
+		expectedValue interface{}
+		finalMap      map[string]interface{}
+	}
+	tests := []test{
+		{
+			testDesc:      "empty key string and empty valueMap",
+			valueMap:      map[string]interface{}{},
+			keyString:     []string{},
+			expectedValue: nil,
+		},
+		{
+			testDesc: "empty key string and non-empty valueMap",
+			valueMap: map[string]interface{}{
+				"first": "otherValue",
+			},
+			keyString:     []string{},
+			expectedValue: nil,
+		},
+		{
+			testDesc:      "invalid path with empty map returns nil",
+			valueMap:      map[string]interface{}{},
+			keyString:     []string{"first"},
+			expectedValue: nil,
+		},
+		{
+			testDesc: "invalid path with non-empty map returns nil",
+			valueMap: map[string]interface{}{
+				"first": "VALUE",
+			},
+			keyString:     []string{"second"},
+			expectedValue: nil,
+		},
+		{
+			testDesc: "invalid path with non-empty map returns nil",
+			valueMap: map[string]interface{}{
+				"first": "VALUE",
+			},
+			keyString:     []string{"first", "second"},
+			expectedValue: nil,
+		},
+		{
+			testDesc: "find value in map",
+			valueMap: map[string]interface{}{
+				"first": "VALUE",
+			},
+			keyString:     []string{"first"},
+			expectedValue: "VALUE",
+		},
+		{
+			testDesc: "find value in map with multiple keys",
+			valueMap: map[string]interface{}{
+				"first": map[string]interface{}{
+					"second": "VALUE",
+				},
+			},
+			keyString:     []string{"first", "second"},
+			expectedValue: "VALUE",
+		},
+		{
+			testDesc: "find an int value",
+			valueMap: map[string]interface{}{
+				"first": map[string]interface{}{
+					"second": 1234,
+				},
+			},
+			keyString:     []string{"first", "second"},
+			expectedValue: 1234,
+		},
+		{
+			testDesc: "find an bool value",
+			valueMap: map[string]interface{}{
+				"first": map[string]interface{}{
+					"second": false,
+				},
+			},
+			keyString:     []string{"first", "second"},
+			expectedValue: false,
+		},
+	}
+	for _, tt := range tests {
+		receivedValue := GetHelmValueFromMap(tt.valueMap, tt.keyString)
+		assert := assert.New(t)
+		assert.Equal(tt.expectedValue, receivedValue, fmt.Sprintf("failed case: %s\nGot: %+v\nWanted: %+v", tt.testDesc, receivedValue, tt.expectedValue))
 	}
 }

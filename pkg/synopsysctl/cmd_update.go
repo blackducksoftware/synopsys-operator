@@ -33,8 +33,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertctl "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
@@ -53,10 +52,12 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	// "k8s.io/apimachinery/pkg/runtime"
 )
 
 // Update Command ResourceCtlSpecBuilders
-var updateAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var updateAlertCobraHelper alertctl.HelmValuesFromCobraFlags
 var updateBlackDuckCobraHelper blackduck.HelmValuesFromCobraFlags
 var updateOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updatePolarisCobraHelper polaris.HelmValuesFromCobraFlags
@@ -79,99 +80,208 @@ var updateCmd = &cobra.Command{
 Update Alert Commands
 */
 
-func updateAlert(alt *alertapi.Alert, flagset *pflag.FlagSet) (*alertapi.Alert, error) {
-	updateAlertCobraHelper.SetCRSpec(alt.Spec)
-	alertInterface, err := updateAlertCobraHelper.GenerateCRSpecFromFlags(flagset)
-	if err != nil {
-		return nil, err
-	}
-	newSpec := alertInterface.(alertapi.AlertSpec)
-	newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, alt.Spec.Environs)
-	// check whether the update Alert version is greater than or equal to 5.0.0
-	isGreaterThanOrEqualTo, err := util.IsNotDefaultVersionGreaterThanOrEqualTo(newSpec.Version, 5, 0, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// if greater than or equal to 5.0.0, then copy PUBLIC_HUB_WEBSERVER_HOST to ALERT_HOSTNAME and PUBLIC_HUB_WEBSERVER_PORT to ALERT_SERVER_PORT
-	// and delete PUBLIC_HUB_WEBSERVER_HOST and PUBLIC_HUB_WEBSERVER_PORT from the environs. In future, we need to request the customer to use the new params
-	if isGreaterThanOrEqualTo {
-		isChanged := false
-		maps := util.StringArrayToMapSplitBySeparator(newSpec.Environs, ":")
-		if _, ok := maps["PUBLIC_HUB_WEBSERVER_HOST"]; ok {
-			if _, ok1 := maps["ALERT_HOSTNAME"]; !ok1 {
-				maps["ALERT_HOSTNAME"] = maps["PUBLIC_HUB_WEBSERVER_HOST"]
-				isChanged = true
-			}
-			delete(maps, "PUBLIC_HUB_WEBSERVER_HOST")
-		}
-
-		if _, ok := maps["PUBLIC_HUB_WEBSERVER_PORT"]; ok {
-			if _, ok1 := maps["ALERT_SERVER_PORT"]; !ok1 {
-				maps["ALERT_SERVER_PORT"] = maps["PUBLIC_HUB_WEBSERVER_PORT"]
-				isChanged = true
-			}
-			delete(maps, "PUBLIC_HUB_WEBSERVER_PORT")
-		}
-
-		if isChanged {
-			newSpec.Environs = util.MapToStringArrayJoinBySeparator(maps, ":")
-		}
-	}
-	alt.Spec = newSpec
-	return alt, nil
-}
-
 // updateAlertCmd updates an Alert instance
 var updateAlertCmd = &cobra.Command{
 	Use:           "alert NAME",
-	Example:       "synopsysctl update alert <name> --port 80\nsynopsysctl update alert <name> -n <namespace> --port 80\nsynopsysctl update alert <name> --mock json",
+	Example:       "synopsysctl update alert <name>  -n <namespace> --port 80",
 	Short:         "Update an Alert instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
+			return fmt.Errorf("this command takes 1 argument but got %+v", len(args))
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		mockMode := cmd.Flags().Lookup("mock").Changed
 		alertName := args[0]
-		alertNamespace, crdnamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
-		if err != nil {
-			return err
+
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			alertChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				alertChartRepository = fmt.Sprintf("%s/charts/alert-helmchart-%s.tgz", baseChartRepository, versionFlag.Value.String())
+			}
 		}
-		currAlert, err := util.GetAlert(alertClient, crdnamespace, alertName, metav1.GetOptions{})
+
+		// TODO verity we can download the chart
+		isOperatorBased := false
+		instance, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
 		if err != nil {
-			return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
+			isOperatorBased = true
 		}
-		currAlert, err = updateAlert(currAlert, cmd.Flags())
+
+		if !isOperatorBased && instance != nil {
+			err = updateAlertHelmBased(cmd, alertName)
+		} else if isOperatorBased {
+			versionFlag := cmd.Flag("version")
+			if !versionFlag.Changed {
+				return fmt.Errorf("you must upgrade this Alert version with --version to use this synopsysctl binary")
+			}
+			// // TODO: Make sure 6.0.0 is the correct Chart Version for Alert
+			// isGreaterThanOrEqualTo, err := util.IsNotDefaultVersionGreaterThanOrEqualTo(versionFlag.Value.String(), 6, 0, 0)
+			// if err != nil {
+			// 	return fmt.Errorf("failed to compare version: %+v", err)
+			// }
+			// if !isGreaterThanOrEqualTo {
+			// 	return fmt.Errorf("you must upgrade this Alert to version 6.0.0 or after in order to use this synopsysctl binary - you gave version %+v", versionFlag.Value.String())
+			// }
+			err = updateAlertOperatorBased(cmd, alertName)
+		}
 		if err != nil {
 			return err
 		}
 
-		// If mock mode, return and don't create resources
-		if mockMode {
-			log.Debugf("generating updates to the CRD for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-			return PrintResource(*currAlert, mockFormat, false)
-		}
+		log.Infof("Alert has been successfully Updated in namespace '%s'!", namespace)
 
-		log.Infof("updating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		// update the namespace label if the version of the app got changed
-		_, err = util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alertNamespace, alertName, currAlert.Spec.Version, false)
-		if err != nil {
-			return err
-		}
-		// Update the Alert
-		_, err = util.UpdateAlert(alertClient, crdnamespace, currAlert)
-		if err != nil {
-			return fmt.Errorf("error updating Alert '%s' due to %+v", currAlert.Name, err)
-		}
-		log.Infof("successfully submitted updates to Alert '%s' in namespace '%s'", alertName, alertNamespace)
 		return nil
 	},
+}
+
+func updateAlertHelmBased(cmd *cobra.Command, alertName string) error {
+	mockMode := cmd.Flags().Lookup("mock").Changed
+
+	// Set flags from the current release in the updateAlertCobraHelper
+	helmRelease, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to get previous user defined values: %+v", err)
+	}
+	updateAlertCobraHelper.SetArgs(helmRelease.Config)
+
+	// Update Helm Values with flags
+	helmValuesMap, err := updateAlertCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
+	if err != nil {
+		return err
+	}
+
+	// check whether the update Alert version is greater than or equal to 5.0.0
+	if cmd.Flag("version").Changed {
+		helmValuesMapAlertData := helmValuesMap["alert"].(map[string]interface{})
+		oldAlertVersion := helmValuesMapAlertData["imageTag"].(string)
+		isGreaterThanOrEqualTo, err := util.IsNotDefaultVersionGreaterThanOrEqualTo(oldAlertVersion, 5, 0, 0)
+		if err != nil {
+			return fmt.Errorf("failed to check Alert version: %+v", err)
+		}
+
+		// if greater than or equal to 5.0.0, then copy PUBLIC_HUB_WEBSERVER_HOST to ALERT_HOSTNAME and PUBLIC_HUB_WEBSERVER_PORT to ALERT_SERVER_PORT
+		// and delete PUBLIC_HUB_WEBSERVER_HOST and PUBLIC_HUB_WEBSERVER_PORT from the environs. In future, we need to request the customer to use the new params
+		if isGreaterThanOrEqualTo && helmValuesMap["environs"] != nil {
+			maps := helmValuesMap["environs"].(map[string]interface{})
+			isChanged := false
+			if _, ok := maps["PUBLIC_HUB_WEBSERVER_HOST"]; ok {
+				if _, ok1 := maps["ALERT_HOSTNAME"]; !ok1 {
+					maps["ALERT_HOSTNAME"] = maps["PUBLIC_HUB_WEBSERVER_HOST"]
+					isChanged = true
+				}
+				delete(maps, "PUBLIC_HUB_WEBSERVER_HOST")
+			}
+
+			if _, ok := maps["PUBLIC_HUB_WEBSERVER_PORT"]; ok {
+				if _, ok1 := maps["ALERT_SERVER_PORT"]; !ok1 {
+					maps["ALERT_SERVER_PORT"] = maps["PUBLIC_HUB_WEBSERVER_PORT"]
+					isChanged = true
+				}
+				delete(maps, "PUBLIC_HUB_WEBSERVER_PORT")
+			}
+
+			if isChanged {
+				util.SetHelmValueInMap(helmValuesMap, []string{"environs"}, maps)
+			}
+		}
+	}
+
+	// Get secrets for Alert
+	customCertificateSecret := map[string]runtime.Object{}
+	javaKeystoreSecret := map[string]runtime.Object{}
+	certificateFlag := cmd.Flag("certificate-file-path")
+	certificateKeyFlag := cmd.Flag("certificate-key-file-path")
+	if certificateFlag.Changed && certificateKeyFlag.Changed {
+		certificateData, err := util.ReadFileData(certificateFlag.Value.String())
+		if err != nil {
+			log.Fatalf("failed to read certificate file: %+v", err)
+		}
+
+		certificateKeyData, err := util.ReadFileData(certificateKeyFlag.Value.String())
+		if err != nil {
+			log.Fatalf("failed to read certificate file: %+v", err)
+		}
+		customCertificateSecretName := "alert-custom-certificate"
+		customCertificateSecret, err = alertctl.GetAlertCustomCertificateSecret(namespace, customCertificateSecretName, certificateData, certificateKeyData)
+		util.SetHelmValueInMap(helmValuesMap, []string{"webserverCustomCertificatesSecretName"}, customCertificateSecretName)
+	}
+
+	javaKeystoreFlag := cmd.Flag("java-keystore-file-path")
+	if javaKeystoreFlag.Changed {
+		javaKeystoreData, err := util.ReadFileData(javaKeystoreFlag.Value.String())
+		if err != nil {
+			log.Fatalf("failed to read Java Keystore file: %+v", err)
+		}
+		javaKeystoreSecretName := "alert-java-keystore"
+		javaKeystoreSecret, err = alertctl.GetAlertJavaKeystoreSecret(namespace, javaKeystoreSecretName, javaKeystoreData)
+		util.SetHelmValueInMap(helmValuesMap, []string{"javaKeystoreSecretName"}, javaKeystoreSecretName)
+	}
+
+	// If mock mode, return and don't create resources
+	if mockMode {
+		_, err = PrintComponent(helmValuesMap, "YAML")
+		return err
+	}
+
+	// Update the Secrets
+	if len(customCertificateSecret) > 0 {
+		err = KubectlApplyRuntimeObjects(customCertificateSecret)
+		if err != nil {
+			return fmt.Errorf("failed to deploy the customCertificateSecret Secrets: %s", err)
+		}
+	}
+	if len(javaKeystoreSecret) > 0 {
+		err = KubectlApplyRuntimeObjects(javaKeystoreSecret)
+		if err != nil {
+			return fmt.Errorf("failed to deploy the javaKeystoreSecret Secrets: %s", err)
+		}
+	}
+
+	// Update Alert Resources
+	err = util.UpdateWithHelm3(alertName, namespace, alertChartRepository, helmValuesMap, kubeConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to update Alert resources due to %+v", err)
+	}
+	return nil
+}
+
+func updateAlertOperatorBased(cmd *cobra.Command, alertName string) error {
+	operatorNamespace := namespace
+	isClusterScoped := util.GetClusterScope(apiExtensionClient)
+	if isClusterScoped {
+		opNamespace, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+		if err != nil {
+			return err
+		}
+		if len(opNamespace) > 1 {
+			return fmt.Errorf("more than 1 Synopsys Operator found in your cluster")
+		}
+		operatorNamespace = opNamespace[0]
+	}
+
+	crdNamespace := namespace
+	if isClusterScoped {
+		crdNamespace = metav1.NamespaceAll
+	}
+
+	currAlert, err := util.GetAlert(alertClient, crdNamespace, alertName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, crdNamespace, err)
+	}
+
+	if err := migrateAlert(currAlert, operatorNamespace, cmd.Flags()); err != nil {
+		// TODO restart operator if migration failed?
+		return err
+	}
+	return nil
 }
 
 // updateBlackDuckCmd updates a Black Duck instance
@@ -958,7 +1068,7 @@ func init() {
 	// initialize global resource ctl structs for commands to use
 	updateBlackDuckCobraHelper = *blackduck.NewHelmValuesFromCobraFlags()
 	updateOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
-	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
+	updateAlertCobraHelper = *alertctl.NewHelmValuesFromCobraFlags()
 	updatePolarisCobraHelper = *polaris.NewHelmValuesFromCobraFlags()
 	updatePolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
 	updateBDBACobraHelper = *bdba.NewHelmValuesFromCobraFlags()
@@ -967,8 +1077,10 @@ func init() {
 
 	// updateAlertCmd
 	updateAlertCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	updateAlertCobraHelper.AddCRSpecFlagsToCommand(updateAlertCmd, false)
+	cobra.MarkFlagRequired(updateAlertCmd.PersistentFlags(), "namespace")
+	updateAlertCobraHelper.AddCobraFlagsToCommand(updateAlertCmd, false)
 	addMockFlag(updateAlertCmd)
+	addChartLocationPathFlag(updateAlertCmd)
 	updateCmd.AddCommand(updateAlertCmd)
 
 	/* Update Black Duck Comamnds */

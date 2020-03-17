@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2019 Synopsys, Inc.
+Copyright (C) 2020 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -22,147 +22,43 @@ under the License.
 package alert
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCRSpecBuilderFromCobraFlags(t *testing.T) {
+func TestNewHelmValuesFromCobraFlags(t *testing.T) {
 	assert := assert.New(t)
-	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
-	assert.Equal(&CRSpecBuilderFromCobraFlags{
-		alertSpec: &alertapi.AlertSpec{},
-	}, alertCobraHelper)
+	bdbaCobraHelper := NewHelmValuesFromCobraFlags()
+	assert.Equal(&HelmValuesFromCobraFlags{
+		args:     map[string]interface{}{},
+		flagTree: FlagTree{},
+	}, bdbaCobraHelper)
 }
 
-func TestGetCRSpec(t *testing.T) {
+func TestGetArgs(t *testing.T) {
 	assert := assert.New(t)
-	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
-	assert.Equal(alertapi.AlertSpec{}, alertCobraHelper.GetCRSpec())
+	bdbaCobraHelper := NewHelmValuesFromCobraFlags()
+	assert.Equal(map[string]interface{}{}, bdbaCobraHelper.GetArgs())
 }
 
-func TestSetCRSpec(t *testing.T) {
+func TestGenerateHelmFlagsFromCobraFlags(t *testing.T) {
 	assert := assert.New(t)
-	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
-	specToSet := alertapi.AlertSpec{Namespace: "test", Version: "test"}
-	alertCobraHelper.SetCRSpec(specToSet)
-	assert.Equal(specToSet, alertCobraHelper.GetCRSpec())
 
-	// check for error
-	assert.Error(alertCobraHelper.SetCRSpec(""))
-}
-
-func TestCheckValuesFromFlags(t *testing.T) {
-	assert := assert.New(t)
-	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
-	alertCobraHelper.ExposeService = util.NONE
+	bdbaCobraHelper := NewHelmValuesFromCobraFlags()
 	cmd := &cobra.Command{}
-	specFlags := alertCobraHelper.CheckValuesFromFlags(cmd.Flags())
-	assert.Nil(specFlags)
+	bdbaCobraHelper.AddCobraFlagsToCommand(cmd, true)
+	flagset := cmd.Flags()
+	// Set flags here...
 
-	var tests = []struct {
-		input          *CRSpecBuilderFromCobraFlags
-		flagNameToTest string
-		flagValue      string
-	}{
-		// invalid expose case
-		{input: &CRSpecBuilderFromCobraFlags{
-			alertSpec:     &alertapi.AlertSpec{},
-			ExposeService: "",
-		},
-			flagNameToTest: "expose-ui",
-			flagValue:      "",
-		},
-	}
+	bdbaCobraHelper.GenerateHelmFlagsFromCobraFlags(flagset)
 
-	for _, test := range tests {
-		cmd := &cobra.Command{}
-		alertCobraHelper.AddCRSpecFlagsToCommand(cmd, true)
-		flagset := cmd.Flags()
-		flagset.Set(test.flagNameToTest, test.flagValue)
-		err := test.input.CheckValuesFromFlags(flagset)
-		if err == nil {
-			t.Errorf("Expected an error but got nil, test: %+v", test)
-		}
-	}
-}
+	expectedArgs := map[string]interface{}{}
 
-func TestSetPredefinedCRSpec(t *testing.T) {
-	assert := assert.New(t)
-	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
-	defaultSpec := *util.GetAlertDefault()
-	defaultSpec.StandAlone = util.BoolToPtr(true)
-	defaultSpec.PersistentStorage = true
-
-	var tests = []struct {
-		input    string
-		expected alertapi.AlertSpec
-	}{
-		{input: EmptySpec, expected: alertapi.AlertSpec{}},
-		{input: DefaultSpec, expected: defaultSpec},
-	}
-
-	// test cases: "default"
-	for _, test := range tests {
-		assert.Nil(alertCobraHelper.SetPredefinedCRSpec(test.input))
-		assert.Equal(test.expected, alertCobraHelper.GetCRSpec())
-	}
-
-	// test cases: default
-	createAlertSpecType := ""
-	assert.Error(alertCobraHelper.SetPredefinedCRSpec(createAlertSpecType))
-
-}
-
-func TestAddCRSpecFlagsToCommand(t *testing.T) {
-	assert := assert.New(t)
-
-	// test case: Only Non-Master Flags are added
-	ctl := NewCRSpecBuilderFromCobraFlags()
-	actualCmd := &cobra.Command{}
-	ctl.AddCRSpecFlagsToCommand(actualCmd, false)
-
-	cmd := &cobra.Command{}
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Alert")
-	cmd.Flags().StringVar(&ctl.StandAlone, "standalone", ctl.StandAlone, "If true, Alert runs in standalone mode [true|false]")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
-	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port of Alert")
-	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for Alert")
-	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for Alert")
-	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables of Alert")
-	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Alert has persistent storage [true|false]")
-	cmd.Flags().StringVar(&ctl.PVCName, "pvc-name", ctl.PVCName, "Name of the persistent volume claim")
-	cmd.Flags().StringVar(&ctl.PVCStorageClass, "pvc-storage-class", ctl.PVCStorageClass, "Storage class for the persistent volume claim")
-	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation of the persistent volume claim")
-	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation of Alert")
-	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation of CFSSL")
-	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
-	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
-	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to the PEM certificate to use for Alert")
-	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to the PEM certificate key for Alert")
-	cmd.Flags().StringVar(&ctl.JavaKeyStoreFilePath, "java-keystore-file-path", ctl.JavaKeyStoreFilePath, "Absolute path to the Java Keystore to use for Alert")
-	// cmd.Flags().StringVar(&ctl.SecurityContextFilePath, "security-context-file-path", ctl.SecurityContextFilePath, "Absolute path to a file containing a map of pod names to security contexts runAsUser, fsGroup, and runAsGroup")
-
-	assert.Equal(cmd.Flags(), actualCmd.Flags())
-}
-
-func TestGenerateCRSpecFromFlags(t *testing.T) {
-	assert := assert.New(t)
-
-	actualCtl := NewCRSpecBuilderFromCobraFlags()
-	cmd := &cobra.Command{}
-	actualCtl.AddCRSpecFlagsToCommand(cmd, true)
-	actualCtl.GenerateCRSpecFromFlags(cmd.Flags())
-
-	expCtl := NewCRSpecBuilderFromCobraFlags()
-
-	assert.Equal(expCtl.alertSpec, actualCtl.alertSpec)
+	assert.Equal(expectedArgs, bdbaCobraHelper.GetArgs())
 
 }
 
@@ -171,188 +67,283 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 
 	var tests = []struct {
 		flagName    string
-		initialCtl  *CRSpecBuilderFromCobraFlags
-		changedCtl  *CRSpecBuilderFromCobraFlags
-		changedSpec *alertapi.AlertSpec
+		initialCtl  *HelmValuesFromCobraFlags
+		changedCtl  *HelmValuesFromCobraFlags
+		changedArgs map[string]interface{}
 	}{
 		// case
-		{flagName: "version",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				Version: "changed",
+		{
+			flagName: "version",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					Version: "latest",
+				},
 			},
-			changedSpec: &alertapi.AlertSpec{Version: "changed"},
-		},
-		// case
-		{flagName: "standalone",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				StandAlone: "true",
+			changedArgs: map[string]interface{}{
+				"alert": map[string]interface{}{
+					"imageTag": "latest",
+				},
 			},
-			changedSpec: &alertapi.AlertSpec{StandAlone: util.BoolToPtr(true)},
-		},
-		// case
-		{flagName: "standalone",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				StandAlone: "false",
-			},
-			changedSpec: &alertapi.AlertSpec{StandAlone: util.BoolToPtr(false)},
-		},
-		// case
-		{flagName: "expose-ui",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				ExposeService: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{ExposeService: "changed"},
-		},
-		// case
-		{flagName: "port",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				Port: 1234,
-			},
-			changedSpec: &alertapi.AlertSpec{Port: util.IntToInt32(1234)},
-		},
-		// case
-		{flagName: "encryption-password",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				EncryptionPassword: "changedEncryptionPassword",
-			},
-			changedSpec: &alertapi.AlertSpec{EncryptionPassword: "changedEncryptionPassword"},
-		},
-		// case
-		{flagName: "encryption-global-salt",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				EncryptionGlobalSalt: "changedEncryptionGlobalSalt",
-			},
-			changedSpec: &alertapi.AlertSpec{EncryptionGlobalSalt: "changedEncryptionGlobalSalt"},
-		},
-		// case
-		{flagName: "environs",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"},
-			},
-			changedSpec: &alertapi.AlertSpec{Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"}},
-		},
-		// case
-		{flagName: "persistent-storage",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				PersistentStorage: "true",
-			},
-			changedSpec: &alertapi.AlertSpec{PersistentStorage: true},
-		},
-		// case
-		{flagName: "persistent-storage",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				PersistentStorage: "false",
-			},
-			changedSpec: &alertapi.AlertSpec{PersistentStorage: false},
-		},
-		// case
-		{flagName: "pvc-name",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				PVCName: "changedPVCName",
-			},
-			changedSpec: &alertapi.AlertSpec{PVCName: "changedPVCName"},
-		},
-		// case
-		{flagName: "pvc-storage-class",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				PVCStorageClass: "changedStorageClass",
-			},
-			changedSpec: &alertapi.AlertSpec{PVCStorageClass: "changedStorageClass"},
-		},
-		// case
-		{flagName: "pvc-size",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				PVCSize: "changedStorageSize",
-			},
-			changedSpec: &alertapi.AlertSpec{PVCSize: "changedStorageSize"},
-		},
-		// case
-		{flagName: "alert-memory",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				AlertMemory: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{AlertMemory: "changed"},
-		},
-		// case
-		{flagName: "cfssl-memory",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				CfsslMemory: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{CfsslMemory: "changed"},
 		},
 		// case
 		{
-			flagName:   "registry",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				alertSpec: &alertapi.AlertSpec{},
-				Registry:  "changed",
+			flagName: "standalone",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					StandAlone: "true",
+				},
 			},
-			changedSpec: &alertapi.AlertSpec{RegistryConfiguration: &api.RegistryConfiguration{Registry: "changed"}},
+			changedArgs: map[string]interface{}{
+				"enableStandalone": true,
+			},
 		},
 		// case
 		{
-			flagName:   "pull-secret-name",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				alertSpec:   &alertapi.AlertSpec{},
-				PullSecrets: []string{"changed"},
+			flagName: "port",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					Port: int32(1234),
+				},
 			},
-			changedSpec: &alertapi.AlertSpec{RegistryConfiguration: &api.RegistryConfiguration{PullSecrets: []string{"changed"}}},
+			changedArgs: map[string]interface{}{
+				"alert": map[string]interface{}{
+					"port": int32(1234),
+				},
+			},
 		},
 		// case
 		{
-			flagName:   "image-registries",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				alertSpec:       &alertapi.AlertSpec{},
-				ImageRegistries: []string{"changed"},
+			flagName: "expose-ui",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					ExposeService: "NODEPORT",
+				},
 			},
-			changedSpec: &alertapi.AlertSpec{ImageRegistries: []string{"changed"}},
+			changedArgs: map[string]interface{}{
+				"exposeui":           true,
+				"exposedServiceType": "NodePort",
+			},
 		},
+		// case
+		{
+			flagName: "encryption-password",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					EncryptionPassword: "abcdabcdabcdabcd",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"setEncryptionSecretData": true,
+				"alertEncryptionPassword": "abcdabcdabcdabcd",
+			},
+		},
+		// case
+		{
+			flagName: "encryption-global-salt",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					EncryptionGlobalSalt: "abcdabcdabcdabcd",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"setEncryptionSecretData":   true,
+				"alertEncryptionGlobalSalt": "abcdabcdabcdabcd",
+			},
+		},
+		// case
+		{
+			flagName: "persistent-storage",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					PersistentStorage: "true",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"enablePersistentStorage": true,
+			},
+		},
+		// case
+		{
+			flagName: "pvc-name",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					PVCName: "pvcName",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"persistentVolumeClaimName": "pvcName",
+			},
+		},
+		// case
+		{
+			flagName: "pvc-storage-class",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					PVCStorageClass: "storageclass",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"storageClassName": "storageclass",
+			},
+		},
+		// case
+		{
+			flagName: "pvc-size",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					PVCSize: "size",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"pvcSize": "size",
+			},
+		},
+		// case
+		{
+			flagName: "alert-memory",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					AlertMemory: "10Gi",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"alert": map[string]interface{}{
+					"resources": map[string]interface{}{
+						"limits": map[string]interface{}{
+							"memory": "10Gi",
+						},
+						"requests": map[string]interface{}{
+							"memory": "10Gi",
+						},
+					},
+				},
+			},
+		},
+		// case
+		{
+			flagName: "cfssl-memory",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					CfsslMemory: "10Gi",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"cfssl": map[string]interface{}{
+					"resources": map[string]interface{}{
+						"limits": map[string]interface{}{
+							"memory": "10Gi",
+						},
+						"requests": map[string]interface{}{
+							"memory": "10Gi",
+						},
+					},
+				},
+			},
+		},
+		// case
+		{
+			flagName: "environs",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					Environs: []string{"ENV1:VAL1", "ENV2:VAL2"},
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"environs": map[string]interface{}{
+					"ENV1": "VAL1",
+					"ENV2": "VAL2",
+				},
+			},
+		},
+		// case
+		{
+			flagName: "registry",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					Registry: "registryName",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"registry": "registryName",
+			},
+		},
+		// case
+		{
+			flagName: "pull-secret-name",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					PullSecrets: []string{"secret1", "secret2"},
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"imagePullSecrets": []string{"secret1", "secret2"},
+			},
+		},
+		// case
+		{
+			flagName: "certificate-file-path",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					CertificateFilePath: "filepath",
+				},
+			},
+			changedArgs: map[string]interface{}{},
+		},
+		// case
+		{
+			flagName: "certificate-key-file-path",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					CertificateKeyFilePath: "filepath",
+				},
+			},
+			changedArgs: map[string]interface{}{},
+		},
+		// case
+		{
+			flagName: "java-keystore-file-path",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					JavaKeyStoreFilePath: "filepath",
+				},
+			},
+			changedArgs: map[string]interface{}{},
+		},
+		// case
+		// {
+		// 	flagName:    "security-context-file-path",
+		// 	changedCtl:  &HelmValuesFromCobraFlags{},
+		// 	changedArgs: map[string]interface{}{},
+		// },
 	}
 
-	// get the CRSpecBuilderFromCobraFlags's flags
+	// get the flagset
 	cmd := &cobra.Command{}
-	actualCtl := NewCRSpecBuilderFromCobraFlags()
-	actualCtl.AddCRSpecFlagsToCommand(cmd, true)
+	bdbaCobraHelper := NewHelmValuesFromCobraFlags()
+	bdbaCobraHelper.AddCobraFlagsToCommand(cmd, true)
 	flagset := cmd.Flags()
 
 	for _, test := range tests {
-		actualCtl = NewCRSpecBuilderFromCobraFlags()
+		fmt.Printf("Testing flag '%s':\n", test.flagName)
 		// check the Flag exists
 		foundFlag := flagset.Lookup(test.flagName)
 		if foundFlag == nil {
-			t.Errorf("flag %s is not in the spec", test.flagName)
+			t.Errorf("flag '%s' is not in the spec", test.flagName)
 		}
-		// check the correct CRSpecBuilderFromCobraFlags is used
-		assert.Equal(test.initialCtl, actualCtl)
-		actualCtl = test.changedCtl
-		// test setting a flag
+		// test setting the flag
 		f := &pflag.Flag{Changed: true, Name: test.flagName}
-		actualCtl.SetCRSpecFieldByFlag(f)
-		assert.Equal(test.changedSpec, actualCtl.alertSpec)
+		bdbaCobraHelper = test.changedCtl
+		bdbaCobraHelper.args = map[string]interface{}{}
+		bdbaCobraHelper.AddHelmValueByCobraFlag(f)
+		if isEqual := assert.Equal(test.changedArgs, bdbaCobraHelper.GetArgs()); !isEqual {
+			t.Errorf("failed case for flag '%s'", test.flagName)
+		}
 	}
 
 	// case: nothing set if flag doesn't exist
-	actualCtl = NewCRSpecBuilderFromCobraFlags()
+	bdbaCobraHelper = NewHelmValuesFromCobraFlags()
 	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
-	actualCtl.SetCRSpecFieldByFlag(f)
-	assert.Equal(&alertapi.AlertSpec{}, actualCtl.alertSpec)
+	bdbaCobraHelper.AddHelmValueByCobraFlag(f)
+	assert.Equal(map[string]interface{}{}, bdbaCobraHelper.GetArgs())
 
 }

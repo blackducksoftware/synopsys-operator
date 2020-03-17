@@ -26,10 +26,13 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	alertctl "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+var startAlertCobraHelper alertctl.HelmValuesFromCobraFlags
 
 // startCmd starts a Synopsys resource in the cluster
 var startCmd = &cobra.Command{
@@ -43,48 +46,44 @@ var startCmd = &cobra.Command{
 // startAlertCmd starts an Alert instance
 var startAlertCmd = &cobra.Command{
 	Use:           "alert NAME",
-	Example:       "synopsysctl start alert <name>\nsynopsysctl start alert <name1> <name2>\nsynopsysctl start alert <name> -n <namespace>\nsynopsysctl start alert <name1> <name2> -n <namespace>",
+	Example:       "synopsysctl start alert <name> -n <namespace>",
 	Short:         "Start an Alert instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes one or more arguments")
+			return fmt.Errorf("this command takes one arguments but got %+v", len(args))
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		errors := []error{}
-		for _, alertName := range args {
-			alertNamespace, crdNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			log.Infof("starting Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+		alertName := args[0]
 
-			// Get the Alert
-			currAlert, err := util.GetAlert(alertClient, crdNamespace, alertName, metav1.GetOptions{})
-			if err != nil {
-				errors = append(errors, fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err))
-				continue
-			}
-
-			// Make changes to Spec
-			currAlert.Spec.DesiredState = ""
-			// Update Alert
-			_, err = util.UpdateAlert(alertClient, crdNamespace, currAlert)
-			if err != nil {
-				errors = append(errors, fmt.Errorf("error starting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err))
-				continue
-			}
-
-			log.Infof("successfully submitted start Alert '%s' in namespace '%s'", alertName, alertNamespace)
+		instance, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("couldn't find instance %s in namespace %s", args[0], namespace)
 		}
-		if len(errors) > 0 {
-			return fmt.Errorf("%v", errors)
+
+		// Update the Helm Chart Location
+		configAlertData := instance.Config["alert"].(map[string]interface{})
+		configAlertVersion := configAlertData["imageTag"]
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			alertChartRepository = chartLocationFlag.Value.String()
+		} else {
+			alertChartRepository = fmt.Sprintf("%s/charts/alert-%s.tgz", baseChartRepository, configAlertVersion)
 		}
+
+		helmValuesMap := map[string]interface{}{"status": "Running"}
+
+		err = util.UpdateWithHelm3(alertName, namespace, alertChartRepository, helmValuesMap, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to create Alert resources: %+v", err)
+		}
+
+		log.Infof("successfully submitted start Alert '%s' in namespace '%s'", alertName, namespace)
+
 		return nil
 	},
 }
@@ -179,9 +178,13 @@ var startOpsSightCmd = &cobra.Command{
 }
 
 func init() {
+	startAlertCobraHelper = *alertctl.NewHelmValuesFromCobraFlags()
+
 	rootCmd.AddCommand(startCmd)
 
 	startAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(startAlertCmd.Flags(), "namespace")
+	addChartLocationPathFlag(startAlertCmd)
 	startCmd.AddCommand(startAlertCmd)
 
 	startBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
