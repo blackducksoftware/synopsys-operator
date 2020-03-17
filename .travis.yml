@@ -70,7 +70,6 @@ jobs:
     - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/test_synopsysctl_native.sh
 #    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.16.2 kind-v1.16.2
     - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.15.3 kind-v1.15.3
-    - script: /home/travis/gopath/src/github.com/blackducksoftware/synopsys-operator/hack/create_k8s_cluster_and_run_synopsysctl.sh kindest/node:v1.14.6 kind-v1.14.6
 
 # [TODO (ybhutwala)]: integrate kubeval (also conftest)
 
