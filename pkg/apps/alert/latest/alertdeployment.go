@@ -129,7 +129,7 @@ func (a *SpecConfig) getAlertContainer() (*components.Container, error) {
 
 	if len(a.alert.Spec.JavaKeyStore) > 0 || (len(a.alert.Spec.Certificate) > 0 && len(a.alert.Spec.CertificateKey) > 0) {
 		container.AddEnv(horizonapi.EnvConfig{
-			Type:         horizonapi.EnvFromName,
+			Type:         horizonapi.EnvVal,
 			NameOrPrefix: "RUN_SECRETS_DIR",
 			KeyOrVal:     "/tmp/secrets",
 		})

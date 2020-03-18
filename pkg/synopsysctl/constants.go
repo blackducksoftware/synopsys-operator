@@ -54,7 +54,7 @@ var nativeClusterType = clusterTypeKubernetes
 var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/master"
 
 // Chart Resources
-var synopsysChartRepository = "https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com"
+var synopsysChartRepository = "https://chartmuseum.cloudnative.sig-clops.synopsys.com"
 
 // Polaris Reporting Constants
 var polarisReportingVersion = "0.0.69"
