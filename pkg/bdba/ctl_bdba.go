@@ -130,15 +130,8 @@ type FlagTree struct {
 	ExternalPGClientSecret  string `json:"ExternalPgClientSecret"`
 
 	// Secrets
-	DjangoSecretKey        string `json:"djangoSecretKey"`
-	RabbitMQPassword       string `json:"rabbitMQPassword"`
-	RabbitMQErlangCookie   string `json:"rabbitMQErlangCookie"`
 	PGPassword             string `json:"pgPassword"`
-	MinioAccessKey         string `json:"minioAccessKey"`
-	MinioSecretKey         string `json:"minioSecretKey"`
-	RabbitMQExistingSecret string `json:"rabbitMQExistingSecret"`
 	PGExistingSecret       string `json:"pgExistingSecret"`
-	MinioExistingSecret    string `json:"minioExistingSecret"`
 }
 
 // NewHelmValuesFromCobraFlags returns an initialized HelmValuesFromCobraFlags
@@ -261,14 +254,8 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 		"external-postgres-rootca-secret", ctl.flagTree.ExternalPGRootCASecret, "Secret name for external PostgreSQL root certificate")
 
 	// Secrets
-	cmd.Flags().StringVar(&ctl.flagTree.DjangoSecretKey, "django-secret-key", "default", "Description")  // Helm chart autogenerates this on first install. Is this needed here?
-	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQPassword, "rabbitmq-password", "default", "RabbitMQ password")
-	cmd.Flags().StringVar(&ctl.flagTree.RabbitMQExistingSecret, "rabbitmq-secret", ctl.flagTree.RabbitMQExistingSecret, "Existing secret for RabbitMQ")
 	cmd.Flags().StringVar(&ctl.flagTree.PGPassword, "postgres-password", "default", "PostgreSQL password")
 	cmd.Flags().StringVar(&ctl.flagTree.PGExistingSecret, "postgres-secret", ctl.flagTree.PGExistingSecret, "Existing secret for PostgreSQL")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioAccessKey, "minio-access-key", "default", "Minio access key (20 characters)")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioSecretKey, "minio-secret-key", "default", "Minio secret key (40 characters)")
-	cmd.Flags().StringVar(&ctl.flagTree.MinioExistingSecret, "minio-secret", ctl.flagTree.MinioExistingSecret, "Existing secret for Minio")
 
 	cmd.Flags().SortFlags = false
 }
@@ -423,22 +410,10 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "clientSecretName"}, ctl.flagTree.ExternalPGClientSecret)
 		case "external-postgres-rootca-secret":
 			util.SetHelmValueInMap(ctl.args, []string{"frontend", "database", "rootCASecretName"}, ctl.flagTree.ExternalPGRootCASecret)
-		case "django-secret-key":  // ?
-			util.SetHelmValueInMap(ctl.args, []string{""}, ctl.flagTree.DjangoSecretKey) // ?
-		case "rabbitmq-password":
-			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "rabbitmq", "password"}, ctl.flagTree.RabbitMQPassword)
 		case "postgres-password":
 			util.SetHelmValueInMap(ctl.args, []string{"postgresql", "postgresqlPassword"}, ctl.flagTree.PGPassword)
-		case "minio-access-key":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "accessKey"}, ctl.flagTree.MinioAccessKey)
-		case "minio-secret-key":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "secretKey"}, ctl.flagTree.MinioSecretKey)
-		case "rabbitmq-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"rabbitmq", "rabbitmq", "existingPasswordSecret"}, ctl.flagTree.RabbitMQExistingSecret)
 		case "postgres-secret":
 			util.SetHelmValueInMap(ctl.args, []string{"global", "postgresql", "existingSecret"}, ctl.flagTree.PGExistingSecret)
-		case "minio-secret":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "existingSecret"}, ctl.flagTree.MinioExistingSecret)
 
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
