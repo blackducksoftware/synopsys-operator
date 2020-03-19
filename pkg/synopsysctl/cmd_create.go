@@ -23,10 +23,9 @@ package synopsysctl
 
 import (
 	"fmt"
-	"time"
-
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
@@ -662,7 +661,7 @@ var createPolarisCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get the flags to set Helm values
-		helmValuesMap, err := createPolarisReportingCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
+		helmValuesMap, err := createPolarisCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}

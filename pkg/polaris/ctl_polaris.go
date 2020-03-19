@@ -56,7 +56,7 @@ type FlagTree struct {
 	PostgresPassword string
 	PostgresSize     string
 	PostgresSSLMode  string
-	PostgresInternal string
+	PostgresInternal bool
 
 	SMTPHost                 string
 	SMTPPort                 int
@@ -114,10 +114,10 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	cmd.Flags().IntVar(&ctl.flagTree.SMTPPort, "smtp-port", 2525, "SMTP port")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPUsername, "smtp-username", ctl.flagTree.SMTPUsername, "SMTP username")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPPassword, "smtp-password", ctl.flagTree.SMTPPassword, "SMTP password")
-	cmd.Flags().StringVar(&ctl.flagTree.SMTPSenderEmail, "smtp-sender-email", ctl.flagTree.SMTPSenderEmail, "SMTP sender email")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsMode, "smtp-tls-mode", "require-starttls", "SMTP TLS mode [disable|try-starttls|require-starttls|require-tls]")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsTrustedHosts, "smtp-trusted-hosts", "*", "Whitespace separated list of trusted hosts")
-	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsIgnoreInvalidCert, "insecure-skip-smtp-tls-verify", "false", "SMTP server's certificates won't be validated\n")
+	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsIgnoreInvalidCert, "insecure-skip-smtp-tls-verify", "false", "SMTP server's certificates won't be validated")
+	cmd.Flags().StringVar(&ctl.flagTree.SMTPSenderEmail, "smtp-sender-email", ctl.flagTree.SMTPSenderEmail, "SMTP sender email\n")
 
 	if master {
 		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
@@ -129,14 +129,14 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 
 	// postgres specific flags
 	// these flags are specific for an external managed postgres
+	cmd.Flags().BoolVar(&ctl.flagTree.PostgresInternal, "enable-postgres-container", false, "If true, synopsysctl will deploy a postgres container backed by persistent volume (Not recommended for production usage)")
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresHost, "postgres-host", ctl.flagTree.PostgresHost, "Postgres host. If --enable-postgres-container=true, the defualt is \"postgres\"")
 	cmd.Flags().IntVar(&ctl.flagTree.PostgresPort, "postgres-port", 5432, "Postgres port")
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresSSLMode, "postgres-ssl-mode", ctl.flagTree.PostgresSSLMode, "Postgres ssl mode [disable|require]")
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresUsername, "postgres-username", ctl.flagTree.PostgresUsername, "Postgres username. If --enable-postgres-container=true, the defualt is \"postgres\"")
 	// if using in-cluster containerized Postgres, then currently we require "enable-postgres-container", "postgres-password" and optionally "postgres-size"
 	// [TODO: make the above point clear to customers]
-	cmd.Flags().StringVar(&ctl.flagTree.PostgresPassword, "postgres-password", ctl.flagTree.PostgresPassword, "Postgres password")
-	cmd.Flags().StringVar(&ctl.flagTree.PostgresInternal, "enable-postgres-container", "false", "If true, synopsysctl will deploy a postgres container backed by persistent volume (Not recommended for production usage)\n")
+	cmd.Flags().StringVar(&ctl.flagTree.PostgresPassword, "postgres-password", ctl.flagTree.PostgresPassword, "Postgres password\n")
 
 	// size parameters are not allowed to change during update because of Kubernetes not allowing storage to be decreased (although note that it does allow it to be increased, see https://kubernetes.io/docs/concepts/storage/persistent-volumes/#expanding-persistent-volumes-claims)
 	if master {
@@ -222,19 +222,19 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		case "fqdn":
 			util.SetHelmValueInMap(ctl.args, []string{"global", "rootDomain"}, ctl.flagTree.FQDN)
 		case "gcp-service-account-path":
-			_, err := util.ReadFileData(ctl.flagTree.GCPServiceAccountFilePath)
+			data, err := util.ReadFileData(ctl.flagTree.GCPServiceAccountFilePath)
 			if err != nil {
 				log.Fatalf("failed to read gcp service account file at path: %s, error: %+v", ctl.flagTree.GCPServiceAccountFilePath, err)
 			}
-			util.SetHelmValueInMap(ctl.args, []string{"imageCredentials", "password"}, ctl.flagTree.GCPServiceAccountFilePath)
+			util.SetHelmValueInMap(ctl.args, []string{"imageCredentials", "password"}, data)
 		case "coverity-license-path":
-			_, err := util.ReadFileData(ctl.flagTree.coverityLicensePath)
+			data, err := util.ReadFileData(ctl.flagTree.coverityLicensePath)
 			if err != nil {
 				log.Fatalf("failed to read coverity license file at path: %s, error: %+v", ctl.flagTree.coverityLicensePath, err)
 			}
-			util.SetHelmValueInMap(ctl.args, []string{"coverity", "license"}, ctl.flagTree.coverityLicensePath)
+			util.SetHelmValueInMap(ctl.args, []string{"coverity", "license"}, data)
 		case "enable-reporting":
-			util.SetHelmValueInMap(ctl.args, []string{"isReportingStandalone"}, ctl.flagTree.EnableReporting)
+			util.SetHelmValueInMap(ctl.args, []string{"enableReporting"}, ctl.flagTree.EnableReporting)
 		case "ingress-class":
 			util.SetHelmValueInMap(ctl.args, []string{"ingressClass"}, ctl.flagTree.IngressClass)
 		case "storage-class":
@@ -280,8 +280,7 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			b, _ := strconv.ParseBool(ctl.flagTree.SMTPTlsIgnoreInvalidCert)
 			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !b)
 		case "enable-postgres-container":
-			b, _ := strconv.ParseBool(ctl.flagTree.PostgresInternal)
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !b)
+			util.SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !ctl.flagTree.PostgresInternal)
 		case "postgres-host":
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "host"}, ctl.flagTree.PostgresHost)
 		case "postgres-port":
