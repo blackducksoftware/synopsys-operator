@@ -26,7 +26,7 @@ import (
 	"regexp"
 )
 
-var imageTagRegexp = regexp.MustCompile(`([0-9a-zA-Z-_:\\.]*)/([0-9a-zA-Z-_:\\.]*):([a-zA-Z0-9-\\._]+)$`)
+var imageTagRegexp = regexp.MustCompile(`([0-9a-zA-Z-_:/\\.]+)/([0-9a-zA-Z-_:\\.]+):([a-zA-Z0-9-\\._]+)$`)
 var imageVersionRegexp = regexp.MustCompile(`([0-9]+).([0-9]+).([0-9]+)$`)
 
 // ValidateImageString takes a docker image string and returns substring submatch if it's valid, and an error if it is not; Example:
@@ -69,4 +69,16 @@ func GetImageName(image string) (string, error) {
 	}
 	name := imageSubstringSubmatch[len(imageSubstringSubmatch)-2]
 	return name, nil
+}
+
+// GetImageRegistry takes a docker image string and returns the registry
+func GetImageRegistry(image string) (string, error) {
+	imageSubstringSubmatch, err := ValidateImageString(image)
+	if err != nil {
+		return "", err
+	}
+	fmt.Printf("%s\n", imageSubstringSubmatch)
+	// registry := strings.Join(imageSubstringSubmatch[0:len(imageSubstringSubmatch)-2], "")
+	registry := imageSubstringSubmatch[len(imageSubstringSubmatch)-3]
+	return registry, nil
 }

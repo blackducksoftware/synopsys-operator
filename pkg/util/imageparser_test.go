@@ -243,3 +243,42 @@ func TestGetImageName(t *testing.T) {
 		})
 	}
 }
+
+func TestGetImageRegistry(t *testing.T) {
+	testcases := []struct {
+		description      string
+		image            string
+		expectedRegistry string
+	}{
+		{
+			description:      "standard image format",
+			image:            "repo/name:tag",
+			expectedRegistry: "repo",
+		},
+		{
+			description:      "registry has a .",
+			image:            "docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
+			expectedRegistry: "docker.io/blackducksoftware",
+		},
+		{
+			description:      "registry has a :",
+			image:            "url.com:80/name:tag",
+			expectedRegistry: "url.com:80",
+		},
+		{
+			description:      "registry has a /",
+			image:            "url/com:80/name:tag",
+			expectedRegistry: "url/com:80",
+		},
+	}
+
+	for _, tc := range testcases {
+		gotRegistry, err := GetImageRegistry(tc.image)
+		if err != nil {
+			t.Errorf("Test Case '%s' failed...\nError: %s", tc.description, err)
+		}
+		if gotRegistry != tc.expectedRegistry {
+			t.Errorf("Test Case '%s' failed...\nError: %s != %s", tc.description, gotRegistry, tc.expectedRegistry)
+		}
+	}
+}
