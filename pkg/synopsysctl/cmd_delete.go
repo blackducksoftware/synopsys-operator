@@ -151,8 +151,8 @@ var deletePolarisCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Delete Polaris-Reporting Resources
-		err := util.DeleteWithHelm3(polarisReportingName, namespace, kubeConfigPath)
+		// Delete Polaris Resources
+		err := util.DeleteWithHelm3(polarisName, namespace, kubeConfigPath)
 		if err != nil {
 			return fmt.Errorf("failed to delete Polaris resources: %+v", err)
 		}

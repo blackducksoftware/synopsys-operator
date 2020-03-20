@@ -24,7 +24,6 @@ package polaris
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -64,7 +63,7 @@ type FlagTree struct {
 	SMTPPassword             string
 	SMTPSenderEmail          string
 	SMTPTlsMode              string
-	SMTPTlsIgnoreInvalidCert string
+	SMTPTlsIgnoreInvalidCert bool
 	SMTPTlsTrustedHosts      string
 
 	UploadDownloadServerSize string
@@ -116,7 +115,7 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPPassword, "smtp-password", ctl.flagTree.SMTPPassword, "SMTP password")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsMode, "smtp-tls-mode", "require-starttls", "SMTP TLS mode [disable|try-starttls|require-starttls|require-tls]")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsTrustedHosts, "smtp-trusted-hosts", "*", "Whitespace separated list of trusted hosts")
-	cmd.Flags().StringVar(&ctl.flagTree.SMTPTlsIgnoreInvalidCert, "insecure-skip-smtp-tls-verify", "false", "SMTP server's certificates won't be validated")
+	cmd.Flags().BoolVar(&ctl.flagTree.SMTPTlsIgnoreInvalidCert, "insecure-skip-smtp-tls-verify", false, "SMTP server's certificates won't be validated")
 	cmd.Flags().StringVar(&ctl.flagTree.SMTPSenderEmail, "smtp-sender-email", ctl.flagTree.SMTPSenderEmail, "SMTP sender email\n")
 
 	if master {
@@ -156,37 +155,6 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 
 // CheckValuesFromFlags returns an error if a value set by a flag is invalid
 func (ctl *HelmValuesFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
-	var errMessage string
-
-	// Hosts
-	if !validateFQDN(flagset.Lookup("fqdn").Value.String()) {
-		errMessage += fmt.Sprintf("%s is not a valid FQDN\n", flagset.Lookup("fqdn").Value.String())
-	}
-
-	// If using external postgres, host and username must be set
-	if flagset.Lookup("enable-postgres-container").Value.String() == "false" {
-		if !flagset.Lookup("postgres-host").Changed {
-			errMessage += fmt.Sprintf("if enable-postgres-container=false, you must set postgres-host\n")
-		}
-		if !flagset.Lookup("postgres-username").Changed {
-			errMessage += fmt.Sprintf("if enable-postgres-container=false, you must set postgres-username\n")
-		}
-	}
-
-	// Emails
-	if !validateEmail(flagset.Lookup("smtp-sender-email").Value.String()) {
-		errMessage += fmt.Sprintf("%s is not a valid SMTP sender email address\n", flagset.Lookup("smtp-sender-email").Value.String())
-	}
-
-	// Ports
-	port, _ := strconv.Atoi(flagset.Lookup("smtp-port").Value.String())
-	if port < 1 || port > 65535 {
-		errMessage += fmt.Sprintf("%d is not a valid SMTP port\n", port)
-	}
-
-	if len(errMessage) > 0 {
-		return fmt.Errorf("%s", errMessage)
-	}
 	return nil
 }
 
@@ -216,21 +184,29 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 // AddHelmValueByCobraFlag adds the helm chart field and value based on the flag set
 // in synopsysctl
 func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
+	var isErrorExist bool
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "fqdn":
+			// Hosts
+			if !validateFQDN(ctl.flagTree.FQDN) {
+				log.Errorf("%s is not a valid FQDN", ctl.flagTree.FQDN)
+				isErrorExist = true
+			}
 			util.SetHelmValueInMap(ctl.args, []string{"global", "rootDomain"}, ctl.flagTree.FQDN)
 		case "gcp-service-account-path":
 			data, err := util.ReadFileData(ctl.flagTree.GCPServiceAccountFilePath)
 			if err != nil {
-				log.Fatalf("failed to read gcp service account file at path: %s, error: %+v", ctl.flagTree.GCPServiceAccountFilePath, err)
+				log.Errorf("failed to read gcp service account file at path: %s, error: %+v", ctl.flagTree.GCPServiceAccountFilePath, err)
+				isErrorExist = true
 			}
 			util.SetHelmValueInMap(ctl.args, []string{"imageCredentials", "password"}, data)
 		case "coverity-license-path":
 			data, err := util.ReadFileData(ctl.flagTree.coverityLicensePath)
 			if err != nil {
-				log.Fatalf("failed to read coverity license file at path: %s, error: %+v", ctl.flagTree.coverityLicensePath, err)
+				log.Errorf("failed to read coverity license file at path: %s, error: %+v", ctl.flagTree.coverityLicensePath, err)
+				isErrorExist = true
 			}
 			util.SetHelmValueInMap(ctl.args, []string{"coverity", "license"}, data)
 		case "enable-reporting":
@@ -252,13 +228,25 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		case "smtp-host":
 			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "host"}, ctl.flagTree.SMTPHost)
 		case "smtp-port":
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "port"}, fmt.Sprintf("%d", ctl.flagTree.SMTPPort))
+			// Ports
+			port := ctl.flagTree.SMTPPort
+			if port < 1 || port > 65535 {
+				log.Errorf("%d is not a valid SMTP port", port)
+				isErrorExist = true
+			}
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "port"}, port)
 		case "smtp-username":
 			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "user"}, ctl.flagTree.SMTPUsername)
 		case "smtp-password":
 			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "password"}, ctl.flagTree.SMTPPassword)
 		case "smtp-sender-email":
+			// Emails
+			if !validateEmail(ctl.flagTree.SMTPSenderEmail) {
+				log.Errorf("%s is not a valid SMTP sender email address", ctl.flagTree.SMTPSenderEmail)
+				isErrorExist = true
+			}
 			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "sender_email"}, ctl.flagTree.SMTPSenderEmail)
+			util.SetHelmValueInMap(ctl.args, []string{"swip-onprem", "smtp", "sender_email"}, ctl.flagTree.SMTPSenderEmail)
 		case "smtp-tls-mode":
 			var tlsMode SMTPTLSMode
 			switch SMTPTLSMode(ctl.flagTree.SMTPTlsMode) {
@@ -271,15 +259,26 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			case SMTPTLSModeRequireTLS:
 				tlsMode = SMTPTLSModeRequireTLS
 			default:
-				log.Fatalf("%s is an invalid value for --smtp-tls-mode", ctl.flagTree.SMTPTlsMode)
+				log.Errorf("%s is an invalid value for --smtp-tls-mode", ctl.flagTree.SMTPTlsMode)
+				isErrorExist = true
 			}
 			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_mode"}, tlsMode)
 		case "smtp-trusted-hosts":
 			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_trusted_hosts"}, ctl.flagTree.SMTPTlsTrustedHosts)
 		case "insecure-skip-smtp-tls-verify":
-			b, _ := strconv.ParseBool(ctl.flagTree.SMTPTlsIgnoreInvalidCert)
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !b)
+			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !ctl.flagTree.SMTPTlsIgnoreInvalidCert)
 		case "enable-postgres-container":
+			// If using external postgres, host and username must be set
+			if ctl.flagTree.PostgresInternal == false {
+				if len(ctl.flagTree.PostgresHost) == 0 {
+					log.Errorf("you must set external postgres database postgres-host")
+					isErrorExist = true
+				}
+				if len(ctl.flagTree.PostgresUsername) == 0 {
+					log.Errorf("you must set external postgres database postgres-host")
+					isErrorExist = true
+				}
+			}
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !ctl.flagTree.PostgresInternal)
 		case "postgres-host":
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "host"}, ctl.flagTree.PostgresHost)
@@ -288,6 +287,10 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		case "postgres-username":
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "user"}, ctl.flagTree.PostgresUsername)
 		case "postgres-password":
+			if len(ctl.flagTree.PostgresPassword) == 0 {
+				log.Errorf("you must set postgres-password")
+				isErrorExist = true
+			}
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "password"}, ctl.flagTree.PostgresPassword)
 		case "postgres-size":
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "size"}, ctl.flagTree.PostgresSize)
@@ -303,7 +306,8 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			case PostgresSSLModeRequire:
 				sslMode = PostgresSSLModeRequire
 			default:
-				log.Fatalf("%s is an invalid value for --postgres-ssl-mode", ctl.flagTree.PostgresSSLMode)
+				log.Errorf("%s is an invalid value for --postgres-ssl-mode", ctl.flagTree.PostgresSSLMode)
+				isErrorExist = true
 			}
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "sslMode"}, sslMode)
 		default:
@@ -311,5 +315,8 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		}
 	} else {
 		log.Debugf("flag '%s': UNCHANGED", f.Name)
+	}
+	if isErrorExist {
+		log.Fatalf("please fix all the above errors to continue")
 	}
 }
