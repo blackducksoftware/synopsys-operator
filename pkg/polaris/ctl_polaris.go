@@ -66,10 +66,11 @@ type FlagTree struct {
 	SMTPTlsIgnoreInvalidCert bool
 	SMTPTlsTrustedHosts      string
 
-	UploadDownloadServerSize string
-	EventstoreSize           string
-	MongoDBSize              string
-	ReportStorageSize        string
+	DownloadServerSize string
+	UploadServerSize   string
+	EventstoreSize     string
+	MongoDBSize        string
+	ReportStorageSize  string
 
 	EnableReporting bool
 
@@ -141,7 +142,8 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	if master {
 		cmd.Flags().StringVar(&ctl.flagTree.EventstoreSize, "eventstore-size", EVENTSTORE_PV_SIZE, "Persistent volume claim size for eventstore")
 		cmd.Flags().StringVar(&ctl.flagTree.MongoDBSize, "mongodb-size", MONGODB_PV_SIZE, "Persistent volume claim size for mongodb")
-		cmd.Flags().StringVar(&ctl.flagTree.UploadDownloadServerSize, "upload-download-server-size", UPLOAD_DOWNLOAD_SERVER_PV_SIZE, "Persistent volume claim size for downloadserver")
+		cmd.Flags().StringVar(&ctl.flagTree.DownloadServerSize, "downloadserver-size", DOWNLOAD_SERVER_PV_SIZE, "Persistent volume claim size for download server")
+		cmd.Flags().StringVar(&ctl.flagTree.UploadServerSize, "uploadserver-size", UPLOAD_SERVER_PV_SIZE, "Persistent volume claim size for upload server")
 		cmd.Flags().StringVar(&ctl.flagTree.PostgresSize, "postgres-size", POSTGRES_PV_SIZE, "Persistent volume claim size to use for postgres. Only applicable if --enable-postgres-container is set to true")
 		cmd.Flags().StringVar(&ctl.flagTree.StorageClass, "storage-class", ctl.flagTree.StorageClass, "Set the storage class to use for all persistent volume claims\n")
 	}
@@ -216,13 +218,18 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 		case "storage-class":
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "storageClass"}, ctl.flagTree.StorageClass)
 			util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+			util.SetHelmValueInMap(ctl.args, []string{"minio", "downloadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+			util.SetHelmValueInMap(ctl.args, []string{"minio", "uploadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+			util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
 			util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "storageClass"}, ctl.flagTree.StorageClass)
 		case "eventstore-size":
 			util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "size"}, ctl.flagTree.EventstoreSize)
-		case "upload-download-server-size":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+		case "downloadserver-size":
+			util.SetHelmValueInMap(ctl.args, []string{"minio", "downloadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+		case "uploadserver-size":
+			util.SetHelmValueInMap(ctl.args, []string{"minio", "uploadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
 		case "mongodb-size":
-			util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+			util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "size"}, ctl.flagTree.MongoDBSize)
 		case "reportstorage-size":
 			util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "size"}, ctl.flagTree.ReportStorageSize)
 		case "smtp-host":
