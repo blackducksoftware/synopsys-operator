@@ -1309,8 +1309,8 @@ func addUpdateOperatorFlags(cmd *cobra.Command) {
 // updatePolarisCmd updates a Polaris instance
 var updatePolarisCmd = &cobra.Command{
 	Use:           "polaris",
-	Example:       "",
-	Short:         "Update a Polaris instance",
+	Example:       "synopsyctl update polaris -n <namespace>",
+	Short:         "Update a Polaris instance. (Please make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {

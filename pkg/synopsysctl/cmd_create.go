@@ -684,7 +684,7 @@ var createPolarisCmd = &cobra.Command{
 			return fmt.Errorf("failed to create Polaris resources: %+v", err)
 		}
 
-		// Deploy Polaris-Reporting Resources
+		// Deploy Polaris Resources
 		err = util.CreateWithHelm3(polarisName, namespace, polarisChartRepository, helmValuesMap, kubeConfigPath, false)
 		if err != nil {
 			return fmt.Errorf("failed to create Polaris resources: %+v", err)
@@ -720,34 +720,18 @@ var createPolarisNativeCmd = &cobra.Command{
 		// Update the Helm Chart Location
 		chartLocationFlag := cmd.Flag("chart-location-path")
 		if chartLocationFlag.Changed {
-			polarisReportingChartRepository = chartLocationFlag.Value.String()
+			polarisChartRepository = chartLocationFlag.Value.String()
 		} else {
 			versionFlag := cmd.Flag("version")
 			if versionFlag.Changed {
-				polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-%s.tgz", baseChartRepository, versionFlag.Value.String())
+				polarisChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-%s.tgz", baseChartRepository, versionFlag.Value.String())
 			}
 		}
 
-		// Get Secret For the GCP Key
-		gcpServiceAccountPath := cmd.Flag("gcp-service-account-path").Value.String()
-		gcpServiceAccountData, err := util.ReadFileData(gcpServiceAccountPath)
+		// Print Polaris Resources
+		err = util.TemplateWithHelm3(polarisName, namespace, polarisChartRepository, helmValuesMap)
 		if err != nil {
-			return fmt.Errorf("failed to read gcp service account file at location: '%s', error: %+v", gcpServiceAccountPath, err)
-		}
-		gcpServiceAccountSecrets, err := polarisreporting.GetPolarisReportingSecrets(namespace, gcpServiceAccountData)
-		if err != nil {
-			return fmt.Errorf("failed to create GCP Service Account Secrets: %+v", err)
-		}
-
-		// Print the Secret
-		for _, obj := range gcpServiceAccountSecrets {
-			PrintComponent(obj, "YAML") // helm only supports yaml
-		}
-
-		// Print Polaris-Reporting Resources
-		err = util.TemplateWithHelm3(polarisReportingName, namespace, polarisReportingChartRepository, helmValuesMap)
-		if err != nil {
-			return fmt.Errorf("failed to generate Polaris-Reporting resources: %+v", err)
+			return fmt.Errorf("failed to generate Polaris resources: %+v", err)
 		}
 
 		return nil
