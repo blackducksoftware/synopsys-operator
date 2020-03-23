@@ -1480,6 +1480,7 @@ func init() {
 	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	updatePolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
 	updatePolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
+	updateBDBACobraHelper = *bdba.NewHelmValuesFromCobraFlags()
 
 	rootCmd.AddCommand(updateCmd)
 
