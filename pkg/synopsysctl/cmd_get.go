@@ -27,7 +27,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -204,11 +203,11 @@ var getOpsSightCmd = &cobra.Command{
 	},
 }
 
-// getPolarisCmd display the polaris instance
+// getPolarisCmd display the Polaris  instance
 var getPolarisCmd = &cobra.Command{
 	Use:           "polaris",
 	Example:       "synopsysctl get polaris -n <namespace>",
-	Short:         "Display polaris instance",
+	Short:         "Display the polaris instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -222,22 +221,12 @@ var getPolarisCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		polarisObj, err := getPolarisFromSecret()
+		helmRelease, err := util.GetWithHelm3(polarisName, namespace, kubeConfigPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get Polaris values: %+v", err)
 		}
-
-		fmt.Printf("Namespace: %s\n", polarisObj.Namespace)
-		fmt.Printf("Version: %s\n", polarisObj.Version)
-		if len(polarisObj.Registry) > 0 {
-			fmt.Printf("Registry: %s\n", polarisObj.Registry)
-		}
-		fmt.Printf("Reporting: %s\n", strconv.FormatBool(polarisObj.EnableReporting))
-		fmt.Printf("Image pull secret: %s\n", polarisObj.ImagePullSecrets)
-		fmt.Printf("Organization Name: %s\n", polarisObj.OrganizationDetails.OrganizationProvisionOrganizationName)
-		fmt.Printf("Organization Description: %s\n", polarisObj.OrganizationDetails.OrganizationProvisionOrganizationDescription)
-		fmt.Printf("Postgres Internal: %s\n", strconv.FormatBool(polarisObj.PolarisDBSpec.PostgresDetails.IsInternal))
-
+		helmSetValues := helmRelease.Config
+		PrintComponent(helmSetValues, "YAML")
 		return nil
 	},
 }

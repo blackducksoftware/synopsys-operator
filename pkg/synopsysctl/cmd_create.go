@@ -22,14 +22,10 @@ under the License.
 package synopsysctl
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"regexp"
-	"time"
-
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
@@ -58,7 +54,7 @@ import (
 var createAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
-var createPolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var createPolarisCobraHelper polaris.HelmValuesFromCobraFlags
 var createPolarisReportingCobraHelper polarisreporting.HelmValuesFromCobraFlags
 
 // Default Base Specs for Create
@@ -648,170 +644,98 @@ var createOpsSightNativeCmd = &cobra.Command{
 	},
 }
 
-// createCmd creates a Polaris instance
+// createPolarisCmd creates a Polaris instance
 var createPolarisCmd = &cobra.Command{
-	Use: "polaris",
-	Example: "\nRequried flags for setup with external database:\n\n 	synopsysctl create polaris --namespace 'onprem' --version '2019.11' --gcp-service-account-path '<PATH>/gcp-service-account-file.json' --polaris-license-path '<PATH>/polaris-license-file.json' --coverity-license-path '<PATH>/coverity-license-file.xml' --fqdn 'example.polaris.com' --smtp-host 'example.smtp.com' --smtp-port 25 --smtp-username 'example' --smtp-password 'example' --smtp-sender-email 'example.email.com' --postgres-host 'example.postgres.com' --postgres-port 5432 --postgres-username 'example' --postgres-password 'example' --organization-description 'Your organization' --organization-admin-email 'example.email.com' --organization-admin-name 'example' --organization-admin-username 'example'",
+	Use:           "polaris",
 	Short:         "Create a Polaris instance. (Please make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	Example: "\nRequried flags for setup with external database:\n\n 	synopsysctl create polaris --namespace 'onprem' --version '2020.03' --gcp-service-account-path '<PATH>/gcp-service-account-file.json' --coverity-license-path '<PATH>/coverity-license-file.xml' --fqdn 'example.polaris.com' --smtp-host 'example.smtp.com' --smtp-port 25 --smtp-username 'example' --smtp-password 'example' --smtp-sender-email 'example.email.com' --postgres-host 'example.postgres.com' --postgres-port 5432 --postgres-username 'example' --postgres-password 'example' ",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument")
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
 		}
-		if err := polarisPostgresCheck(cmd.Flags()); err != nil {
-			return err
-		}
-		return nil
-	},
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		err := createPolarisCobraHelper.SetPredefinedCRSpec("")
-		if err != nil {
-			cmd.Help()
-			return err
-		}
-		cobra.MarkFlagRequired(cmd.Flags(), "version")
-		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
-		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
-
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-port")
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-username")
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-sender-email")
-
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-description")
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-name")
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-username")
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-email")
-		cobra.MarkFlagRequired(cmd.Flags(), "polaris-license-path")
-		cobra.MarkFlagRequired(cmd.Flags(), "coverity-license-path")
-		cobra.MarkFlagRequired(cmd.Flags(), "gcp-service-account-path")
-
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		polarisObj, err := updatePolarisSpecWithFlags(cmd, namespace)
+		// Get the flags to set Helm values
+		helmValuesMap, err := createPolarisCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
 
-		if len(polarisObj.ImagePullSecrets) > 0 && cmd.Flags().Lookup("pull-secret").Changed {
-			if _, err := kubeClient.CoreV1().Secrets(namespace).Get(polarisObj.ImagePullSecrets, metav1.GetOptions{}); err != nil {
-				return err
+		// Update the Helm Chart Location
+		// TODO: allow user to specify --version and --chart-location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			polarisChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				polarisChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-%s.tgz", baseChartRepository, versionFlag.Value.String())
 			}
 		}
 
-		if err := CheckVersionExists(baseURL, polarisObj.Version); err != nil {
-			return err
+		// Check Dry Run before deploying any resources
+		err = util.CreateWithHelm3(polarisName, namespace, polarisChartRepository, helmValuesMap, kubeConfigPath, true)
+		if err != nil {
+			return fmt.Errorf("failed to create Polaris resources: %+v", err)
 		}
 
-		if err := ensurePolaris(polarisObj, false); err != nil {
-			return err
+		// Deploy Polaris Resources
+		err = util.CreateWithHelm3(polarisName, namespace, polarisChartRepository, helmValuesMap, kubeConfigPath, false)
+		if err != nil {
+			return fmt.Errorf("failed to create Polaris resources: %+v", err)
 		}
 
-		log.Info("Polaris has been successfully deployed!")
+		log.Infof("Polaris has been successfully Created!")
 		return nil
 	},
 }
 
-//createPolarisNativeCmd prints the Kubernetes resources for creating a Polaris instance
+// createPolarisNativeCmd prints the Kubernetes resources for creating a Polaris instance
 var createPolarisNativeCmd = &cobra.Command{
 	Use:           "native",
-	Example:       "synopsysctl create polaris native",
-	Short:         "Print the Kubernetes resources for creating a Polaris instance (Please make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview])",
+	Short:         "Print Kubernetes resources for creating a Polaris instance (Please make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	Example: "\nRequried flags for setup with external database:\n\n 	synopsysctl create polaris native --namespace 'onprem' --version '2020.04' --gcp-service-account-path '<PATH>/gcp-service-account-file.json' --coverity-license-path '<PATH>/coverity-license-file.xml' --fqdn 'example.polaris.com' --smtp-host 'example.smtp.com' --smtp-port 25 --smtp-username 'example' --smtp-password 'example' --smtp-sender-email 'example.email.com' --postgres-host 'example.postgres.com' --postgres-port 5432 --postgres-username 'example' --postgres-password 'example' ",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 arguments")
+			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
 		}
-		if err := polarisPostgresCheck(cmd.Flags()); err != nil {
-			return err
-		}
-		return nil
-	},
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		err := createPolarisCobraHelper.SetPredefinedCRSpec("")
-		if err != nil {
-			cmd.Help()
-			return err
-		}
-		cobra.MarkFlagRequired(cmd.Flags(), "version")
-		cobra.MarkFlagRequired(cmd.Flags(), "environment-dns")
-		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
-
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-host")
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-port")
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-username")
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-password")
-		cobra.MarkFlagRequired(cmd.Flags(), "smtp-sender-email")
-
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-description")
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-name")
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-username")
-		cobra.MarkFlagRequired(cmd.Flags(), "organization-admin-email")
-		cobra.MarkFlagRequired(cmd.Flags(), "polaris-license-path")
-		cobra.MarkFlagRequired(cmd.Flags(), "coverity-license-path")
-		cobra.MarkFlagRequired(cmd.Flags(), "gcp-service-account-path")
-
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		polarisObj, err := updatePolarisSpecWithFlags(cmd, namespace)
+		// Get the flags to set Helm values
+		helmValuesMap, err := createPolarisCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
 
-		if err := CheckVersionExists(baseURL, polarisObj.Version); err != nil {
-			return err
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			polarisChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				polarisChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-%s.tgz", baseChartRepository, versionFlag.Value.String())
+			}
 		}
 
-		components, err := polaris.GetComponents(baseURL, *polarisObj)
+		// Print Polaris Resources
+		err = util.TemplateWithHelm3(polarisName, namespace, polarisChartRepository, helmValuesMap)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to generate Polaris resources: %+v", err)
 		}
-
-		var objectArr []interface{}
-		for _, v := range components {
-			objectArr = append(objectArr, v)
-		}
-
-		PrintComponents(objectArr, nativeFormat)
 
 		return nil
 	},
-}
-
-func updatePolarisSpecWithFlags(cmd *cobra.Command, namespace string) (*polaris.Polaris, error) {
-	// Update Spec with user's flags
-	log.Debugf("updating spec with user's flags")
-	polarisInterface, err := createPolarisCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
-	if err != nil {
-		return nil, err
-	}
-
-	polarisSpec, ok := polarisInterface.(polaris.Polaris)
-	if !ok {
-		panic("Couldn't cast polarisInterface to polarisSpec")
-	}
-	polarisSpec.Namespace = namespace
-
-	// Unmarshal the platform license and set the organization name according to the license
-	var plaformLicense *polaris.PlatformLicense
-	if err := json.Unmarshal([]byte(polarisSpec.Licenses.Polaris), &plaformLicense); err != nil {
-		return nil, fmt.Errorf("the Polaris license is in an invalid format and has to have a IssuedTo field: %s", polarisSpec.Licenses.Polaris)
-	}
-	polarisSpec.OrganizationDetails.OrganizationProvisionOrganizationName = plaformLicense.License.IssuedTo
-
-	if err := validatePolaris(polarisSpec); err != nil {
-		return nil, err
-	}
-	return &polarisSpec, nil
 }
 
 func polarisPostgresCheck(flagset *pflag.FlagSet) error {
@@ -831,57 +755,6 @@ func polarisPostgresCheck(flagset *pflag.FlagSet) error {
 		cobra.MarkFlagRequired(flagset, "postgres-host")
 		cobra.MarkFlagRequired(flagset, "postgres-port")
 		cobra.MarkFlagRequired(flagset, "postgres-username")
-	}
-
-	if flagset.Lookup("reportstorage-size").Changed && !flagset.Lookup("enable-reporting").Changed {
-		return fmt.Errorf("reporting pvc size is configured but the reporting module is not enabled (--enable-reporting)")
-	}
-
-	return nil
-}
-
-func validatePolaris(polarisConf polaris.Polaris) error {
-	var errMessage string
-
-	// Emails
-	if !validateEmail(polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail) {
-		errMessage += fmt.Sprintf("\n%s is not a valid email address", polarisConf.OrganizationDetails.OrganizationProvisionAdminEmail)
-	}
-
-	// Hosts
-	if !validateFQDN(polarisConf.EnvironmentDNS) {
-		errMessage += fmt.Sprintf("\n%s is not a valid FQDN", polarisConf.EnvironmentDNS)
-	}
-	if !validateFQDN(polarisConf.PolarisDBSpec.SMTPDetails.Host) {
-		errMessage += fmt.Sprintf("\n%s is not a valid FQDN", polarisConf.PolarisDBSpec.SMTPDetails.Host)
-	}
-
-	// Ports
-	if polarisConf.PolarisDBSpec.SMTPDetails.Port < 1 || polarisConf.PolarisDBSpec.SMTPDetails.Port > 65535 {
-		errMessage += fmt.Sprintf("\n%d is not a valid port", polarisConf.PolarisDBSpec.SMTPDetails.Port)
-	}
-
-	// Organization
-	Re := regexp.MustCompile(`^[A-Za-z0-9]{1,53}$`)
-	if !Re.MatchString(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationName) {
-		errMessage += fmt.Sprintf("\norganization name must be between 1 and 53 alphanumeric characters (no punctuations)")
-	}
-	if len(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationDescription) > 512 && len(polarisConf.OrganizationDetails.OrganizationProvisionOrganizationDescription) == 0 {
-		errMessage += fmt.Sprintf("\n organization description must be between 1 and 512 characters")
-	}
-
-	// User
-	Re = regexp.MustCompile(`^^[A-Za-z0-9_][A-Za-z0-9-_]{0,255}$`)
-	if !Re.MatchString(polarisConf.OrganizationDetails.OrganizationProvisionAdminUsername) {
-		errMessage += fmt.Sprintf("\n admin username cannot start with a - and its length must be between 1 and 256 characters. The username must only contain alphanumeric characters, underscores or dashes")
-	}
-
-	if len(polarisConf.OrganizationDetails.OrganizationProvisionAdminName) < 1 && len(polarisConf.OrganizationDetails.OrganizationProvisionAdminName) > 256 {
-		errMessage += fmt.Sprintf("\n admin name must be between 1 and 256 characters")
-	}
-
-	if len(errMessage) > 0 {
-		return errors.New(errMessage)
 	}
 
 	return nil
@@ -1019,7 +892,7 @@ func init() {
 	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	createBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
-	createPolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
+	createPolarisCobraHelper = *polaris.NewHelmValuesFromCobraFlags()
 	createPolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
 
 	rootCmd.AddCommand(createCmd)
@@ -1062,13 +935,13 @@ func init() {
 
 	// Add Polaris commands
 	createPolarisCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	createPolarisCobraHelper.AddCRSpecFlagsToCommand(createPolarisCmd, true)
-	addbaseURLFlag(createPolarisCmd)
+	cobra.MarkFlagRequired(createPolarisCmd.PersistentFlags(), "namespace")
+	createPolarisCobraHelper.AddCobraFlagsToCommand(createPolarisCmd, true)
+	addChartLocationPathFlag(createPolarisCmd)
 	createCmd.AddCommand(createPolarisCmd)
 
-	createPolarisCobraHelper.AddCRSpecFlagsToCommand(createPolarisNativeCmd, true)
-	addNativeFormatFlag(createPolarisNativeCmd)
-	addbaseURLFlag(createPolarisNativeCmd)
+	createPolarisCobraHelper.AddCobraFlagsToCommand(createPolarisNativeCmd, true)
+	addChartLocationPathFlag(createPolarisNativeCmd)
 	createPolarisCmd.AddCommand(createPolarisNativeCmd)
 
 	// Add Polaris-Reporting commands

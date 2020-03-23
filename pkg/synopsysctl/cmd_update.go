@@ -23,7 +23,6 @@ package synopsysctl
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -62,7 +61,7 @@ import (
 var updateAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
-var updatePolarisCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var updatePolarisCobraHelper polaris.HelmValuesFromCobraFlags
 var updatePolarisReportingCobraHelper polarisreporting.HelmValuesFromCobraFlags
 
 var updateMockFormat = "json"
@@ -1307,33 +1306,6 @@ func addUpdateOperatorFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the Synopsys Operator instance")
 }
 
-func updatePolaris(polarisObj polaris.Polaris, flagset *pflag.FlagSet) (*polaris.Polaris, error) {
-	if err := updatePolarisCobraHelper.SetCRSpec(polarisObj); err != nil {
-		return nil, err
-	}
-
-	spec, err := updatePolarisCobraHelper.GenerateCRSpecFromFlags(flagset)
-	if err != nil {
-		return nil, err
-	}
-	newSpec := spec.(polaris.Polaris)
-
-	// Unmarshal the platform license and set the organization name according to the license
-	var plaformLicense *polaris.PlatformLicense
-	if err := json.Unmarshal([]byte(newSpec.Licenses.Polaris), &plaformLicense); err != nil {
-		return nil, fmt.Errorf("the Polaris license is in an invalid format and has to have a IssuedTo field: %s", newSpec.Licenses.Polaris)
-	}
-
-	if strings.Compare(newSpec.OrganizationDetails.OrganizationProvisionOrganizationName, plaformLicense.License.IssuedTo) != 0 {
-		return nil, fmt.Errorf("the Polaris license provided is not valid for organizationd: %s", newSpec.OrganizationDetails.OrganizationProvisionOrganizationName)
-	}
-
-	if err := validatePolaris(newSpec); err != nil {
-		return nil, err
-	}
-	return &newSpec, nil
-}
-
 // updatePolarisCmd updates a Polaris instance
 var updatePolarisCmd = &cobra.Command{
 	Use:           "polaris",
@@ -1342,43 +1314,38 @@ var updatePolarisCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
+		// Check the Number of Arguments
 		if len(args) != 0 {
-			return fmt.Errorf("this command takes 0 arguments")
-		}
-		return nil
-	},
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		polarisObj, err := getPolarisFromSecret()
-		if err != nil {
-			return err
-		}
-		reportingIsAlreadyEnabled := polarisObj.EnableReporting
-		if cmd.Flags().Changed("reportstorage-size") && reportingIsAlreadyEnabled {
-			return fmt.Errorf("reportstorage-size cannot be changed, you can only set it if you are enabling reporting for the first time")
+			cmd.Help()
+			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		polarisObj, err := getPolarisFromSecret()
+		// Get the flags to set Helm values
+		helmValuesMap, err := updatePolarisCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
 
-		if polarisObj == nil {
-			return fmt.Errorf("either namespace does not exist or secret does not exist because this instance of polaris was not created via synopsysctl")
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			polarisChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				polarisChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-%s.tgz", baseChartRepository, versionFlag.Value.String())
+			}
 		}
 
-		newPolaris, err := updatePolaris(*polarisObj, cmd.Flags())
+		// Deploy Polaris Resources
+		err = util.UpdateWithHelm3(polarisName, namespace, polarisChartRepository, helmValuesMap, kubeConfigPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update Polaris resources due to %+v", err)
 		}
 
-		if err := CheckVersionExists(baseURL, newPolaris.Version); err != nil {
-			return err
-		}
-		if err := ensurePolaris(newPolaris, true); err != nil {
-			return err
-		}
+		log.Infof("Polaris has been successfully Updated in namespace '%s'!", namespace)
 		return nil
 	},
 }
@@ -1432,7 +1399,7 @@ func init() {
 	updateBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
 	updateOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
-	updatePolarisCobraHelper = polaris.NewCRSpecBuilderFromCobraFlags()
+	updatePolarisCobraHelper = *polaris.NewHelmValuesFromCobraFlags()
 	updatePolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
 
 	rootCmd.AddCommand(updateCmd)
@@ -1505,8 +1472,9 @@ func init() {
 
 	// Polaris
 	updatePolarisCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	updatePolarisCobraHelper.AddCRSpecFlagsToCommand(updatePolarisCmd, false)
-	addbaseURLFlag(updatePolarisCmd)
+	cobra.MarkFlagRequired(updatePolarisCmd.PersistentFlags(), "namespace")
+	updatePolarisCobraHelper.AddCobraFlagsToCommand(updatePolarisCmd, false)
+	addChartLocationPathFlag(updatePolarisCmd)
 	updateCmd.AddCommand(updatePolarisCmd)
 
 	// Polaris-Reporting
