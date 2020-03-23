@@ -22,6 +22,7 @@
 package bdba
 
 import (
+	"fmt"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -121,7 +122,7 @@ type FlagTree struct {
 	// External PostgreSQL
 	ExternalPG			  bool `json:ExternalPg`
 	ExternalPGHost        string `json:"ExternalPgHost"`
-	ExternalPGPort        string `json:"ExternalPgPort"`
+	ExternalPGPort        int `json:"ExternalPgPort"`
 	ExternalPGUser        string `json:"ExternalPgUser"`
 	ExternalPGPassword    string `json:"ExternalPgUser"`
 	ExternalPGDataBase    string `json:"ExternalPgDataBase"`
@@ -190,8 +191,8 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	cmd.Flags().IntVar(&ctl.flagTree.EmailSMTPPort, "email-smtp-port", 25, "SMTP server port")
 	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPUser, "email-smtp-user", ctl.flagTree.EmailSMTPUser, "SMTP user")
 	cmd.Flags().StringVar(&ctl.flagTree.EmailSMTPPassword, "email-smtp-password", ctl.flagTree.EmailSMTPPassword, "SMTP password")
-	cmd.Flags().StringVar(&ctl.flagTree.EmailFrom, "email-from", "default", "Email sender address")
-	cmd.Flags().StringVar(&ctl.flagTree.EmailSecurity, "email-security", "noreply@bdba.local", "Email security mode [none|ssl|starttls]")
+	cmd.Flags().StringVar(&ctl.flagTree.EmailFrom, "email-from", "noreply@bdba.local", "Email sender address")
+	cmd.Flags().StringVar(&ctl.flagTree.EmailSecurity, "email-security", "none", "Email security mode [none|ssl|starttls]")
 	cmd.Flags().BoolVar(&ctl.flagTree.EmailVerify, "verify-email", false, "Verify SMTP server certificate")
 
 	// LDAP Authentication
@@ -238,8 +239,8 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 		"external-postgres", false, "Use external PostgreSQL")
 	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGHost,
 		"external-postgres-host", ctl.flagTree.ExternalPGHost, "Hostname for external postgresql database")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGPort,
-		"external-postgres-port", ctl.flagTree.ExternalPGPort, "Port for external PostgreSQL database")
+	cmd.Flags().IntVar(&ctl.flagTree.ExternalPGPort,
+		"external-postgres-port", 5432, "Port for external PostgreSQL database")
 	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGDataBase,
 		"external-postgres-database", ctl.flagTree.ExternalPGDataBase, "Database for external PostgreSQL database")
 	cmd.Flags().StringVar(&ctl.flagTree.ExternalPGUser,
@@ -262,6 +263,95 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 
 // CheckValuesFromFlags returns an error if a value set by a flag is invalid
 func (ctl *HelmValuesFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
+	if flagset.Lookup("enable-email").Value.String() == "true" {
+		if !flagset.Lookup("email-smtp-host").Changed {
+			return fmt.Errorf("--email-smtp-host my be set for email")
+		}
+	}
+
+	if flagset.Lookup("enable-offline-mode").Value.String() == "false" {
+		if !flagset.Lookup("license-username").Changed {
+			return fmt.Errorf("--license-username must be set if not in offline mode")
+		}
+
+		if !flagset.Lookup("license-password").Changed {
+			return fmt.Errorf("--license-password must be set if not in offline mode")
+		}
+	}
+
+	if flagset.Lookup("enable-ldap").Value.String() == "true" {
+		if !flagset.Lookup("ldap-server-uri").Changed {
+			return fmt.Errorf("--ldap-server-uri must be set for LDAP")
+		}
+
+		if !flagset.Lookup("ldap-user-dn-template").Changed {
+			return fmt.Errorf("--ldap-user-dn-template must be set for LDAP")
+		}
+
+		if flagset.Lookup("ldap-require-group").Changed {
+			if !flagset.Lookup("ldap-user-search").Changed {
+				return fmt.Errorf("--ldap-user-search must be set for --ldap-require-group")
+			}
+
+			if !flagset.Lookup("ldap-user-search-scope").Changed {
+				return fmt.Errorf("--ldap-user-search-scope must be set for --ldap-require-group")
+			}
+
+			if !flagset.Lookup("ldap-group-search").Changed {
+				return fmt.Errorf("--ldap-group-search must be set for --ldap-require-group")
+			}
+
+			if !flagset.Lookup("ldap-group-search-scope").Changed {
+				return fmt.Errorf("--ldap-group-search-scope must be set for --ldap-require-group")
+			}
+		}
+
+		if flagset.Lookup("ldap-bind-dn").Changed {
+			if !flagset.Lookup("ldap-bind-password").Changed {
+				return fmt.Errorf("--ldap-bind-password must be set for --ldap-bind-dn")
+			}
+		}
+
+		if flagset.Lookup("enable-ingress").Value.String() == "true" {
+			if !flagset.Lookup("ingress-host").Changed {
+				return fmt.Errorf("--ingress-host must be set for ingress")
+			}
+
+			if flagset.Lookup("enable-ingress-tls").Value.String() == "true" {
+				if !flagset.Lookup("ingress-tls-secret").Changed {
+					return fmt.Errorf("--ingress-tls-secret must be set for TLS-enabled ingress")
+				}
+			}
+		}
+
+		if flagset.Lookup("external-postgres").Value.String() == "false" {
+			if !flagset.Lookup("postgres-password").Changed && !flagset.Lookup("postgres-secret").Changed {
+				return fmt.Errorf("--postgres-password or --postgres-secret must be provided for internal postgres")
+			}
+
+			if flagset.Lookup("postgres-password").Changed && flagset.Lookup("postgres-secret").Changed {
+				return fmt.Errorf("--postgres-password and --postgres-secret are mutually exclusive")
+			}
+
+		}
+
+		if flagset.Lookup("external-postgres").Value.String() == "true" {
+			if !flagset.Lookup("external-postgres-host").Changed {
+				return fmt.Errorf("--external-postgres-host must be provided for external postgresql")
+			}
+
+			if !flagset.Lookup("external-postgres-database").Changed {
+				return fmt.Errorf("--external-postgres-database must be provided for external postgresql")
+			}
+
+			if !flagset.Lookup("external-postgres-password").Changed && !flagset.Lookup("external-postgres-client-secret").Changed {
+				return fmt.Errorf("--external-postgres-password or --external-postgres-client-secret must be provided for external postgres")
+			}
+
+		}
+
+	}
+
 	return nil
 }
 
