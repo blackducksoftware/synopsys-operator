@@ -177,153 +177,150 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 	if err != nil {
 		return nil, err
 	}
-	ctl.args["global"] = map[string]interface{}{"environment": "onprem"}
-	flagset.VisitAll(ctl.AddHelmValueByCobraFlag)
-
-	return ctl.args, nil
-}
-
-// AddHelmValueByCobraFlag adds the helm chart field and value based on the flag set
-// in synopsysctl
-func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 	var isErrorExist bool
-	if f.Changed {
-		log.Debugf("flag '%s': CHANGED", f.Name)
-		switch f.Name {
-		case "fqdn":
-			// Hosts
-			if !validateFQDN(ctl.flagTree.FQDN) {
-				log.Errorf("%s is not a valid FQDN", ctl.flagTree.FQDN)
-				isErrorExist = true
-			}
-			util.SetHelmValueInMap(ctl.args, []string{"global", "rootDomain"}, ctl.flagTree.FQDN)
-		case "gcp-service-account-path":
-			data, err := util.ReadFileData(ctl.flagTree.GCPServiceAccountFilePath)
-			if err != nil {
-				log.Errorf("failed to read gcp service account file at path: %s, error: %+v", ctl.flagTree.GCPServiceAccountFilePath, err)
-				isErrorExist = true
-			}
-			util.SetHelmValueInMap(ctl.args, []string{"imageCredentials", "password"}, data)
-		case "coverity-license-path":
-			data, err := util.ReadFileData(ctl.flagTree.coverityLicensePath)
-			if err != nil {
-				log.Errorf("failed to read coverity license file at path: %s, error: %+v", ctl.flagTree.coverityLicensePath, err)
-				isErrorExist = true
-			}
-			util.SetHelmValueInMap(ctl.args, []string{"coverity", "license"}, data)
-		case "enable-reporting":
-			util.SetHelmValueInMap(ctl.args, []string{"enableReporting"}, ctl.flagTree.EnableReporting)
-		case "ingress-class":
-			util.SetHelmValueInMap(ctl.args, []string{"ingressClass"}, ctl.flagTree.IngressClass)
-		case "storage-class":
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "storageClass"}, ctl.flagTree.StorageClass)
-			util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "downloadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "uploadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
-			util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
-			util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "storageClass"}, ctl.flagTree.StorageClass)
-		case "eventstore-size":
-			util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "size"}, ctl.flagTree.EventstoreSize)
-		case "downloadserver-size":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "downloadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
-		case "uploadserver-size":
-			util.SetHelmValueInMap(ctl.args, []string{"minio", "uploadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
-		case "mongodb-size":
-			util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "size"}, ctl.flagTree.MongoDBSize)
-		case "reportstorage-size":
-			util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "size"}, ctl.flagTree.ReportStorageSize)
-		case "smtp-host":
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "host"}, ctl.flagTree.SMTPHost)
-		case "smtp-port":
-			// Ports
-			port := ctl.flagTree.SMTPPort
-			if port < 1 || port > 65535 {
-				log.Errorf("%d is not a valid SMTP port", port)
-				isErrorExist = true
-			}
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "port"}, port)
-		case "smtp-username":
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "user"}, ctl.flagTree.SMTPUsername)
-		case "smtp-password":
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "password"}, ctl.flagTree.SMTPPassword)
-		case "smtp-sender-email":
-			// Emails
-			if !validateEmail(ctl.flagTree.SMTPSenderEmail) {
-				log.Errorf("%s is not a valid SMTP sender email address", ctl.flagTree.SMTPSenderEmail)
-				isErrorExist = true
-			}
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "sender_email"}, ctl.flagTree.SMTPSenderEmail)
-			util.SetHelmValueInMap(ctl.args, []string{"swip-onprem", "smtp", "sender_email"}, ctl.flagTree.SMTPSenderEmail)
-		case "smtp-tls-mode":
-			var tlsMode SMTPTLSMode
-			switch SMTPTLSMode(ctl.flagTree.SMTPTlsMode) {
-			case SMTPTLSModeDisable:
-				tlsMode = SMTPTLSModeDisable
-			case SMTPTLSModeTryStartTLS:
-				tlsMode = SMTPTLSModeTryStartTLS
-			case SMTPTLSModeRequireStartTLS:
-				tlsMode = SMTPTLSModeRequireStartTLS
-			case SMTPTLSModeRequireTLS:
-				tlsMode = SMTPTLSModeRequireTLS
-			default:
-				log.Errorf("%s is an invalid value for --smtp-tls-mode", ctl.flagTree.SMTPTlsMode)
-				isErrorExist = true
-			}
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_mode"}, tlsMode)
-		case "smtp-trusted-hosts":
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_trusted_hosts"}, ctl.flagTree.SMTPTlsTrustedHosts)
-		case "insecure-skip-smtp-tls-verify":
-			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !ctl.flagTree.SMTPTlsIgnoreInvalidCert)
-		case "enable-postgres-container":
-			// If using external postgres, host and username must be set
-			if ctl.flagTree.PostgresInternal == false {
-				if len(ctl.flagTree.PostgresHost) == 0 {
-					log.Errorf("you must set external postgres database postgres-host")
+	ctl.args["global"] = map[string]interface{}{"environment": "onprem"}
+	flagset.VisitAll(func(f *pflag.Flag) {
+		if f.Changed {
+			log.Debugf("flag '%s': CHANGED", f.Name)
+			switch f.Name {
+			case "fqdn":
+				// Hosts
+				if !validateFQDN(ctl.flagTree.FQDN) {
+					log.Errorf("%s is not a valid FQDN", ctl.flagTree.FQDN)
 					isErrorExist = true
 				}
-				if len(ctl.flagTree.PostgresUsername) == 0 {
-					log.Errorf("you must set external postgres database postgres-host")
+				util.SetHelmValueInMap(ctl.args, []string{"global", "rootDomain"}, ctl.flagTree.FQDN)
+			case "gcp-service-account-path":
+				data, err := util.ReadFileData(ctl.flagTree.GCPServiceAccountFilePath)
+				if err != nil {
+					log.Errorf("failed to read gcp service account file at path: %s, error: %+v", ctl.flagTree.GCPServiceAccountFilePath, err)
 					isErrorExist = true
 				}
-			}
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !ctl.flagTree.PostgresInternal)
-		case "postgres-host":
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "host"}, ctl.flagTree.PostgresHost)
-		case "postgres-port":
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "port"}, fmt.Sprintf("%d", ctl.flagTree.PostgresPort))
-		case "postgres-username":
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "user"}, ctl.flagTree.PostgresUsername)
-		case "postgres-password":
-			if len(ctl.flagTree.PostgresPassword) == 0 {
-				log.Errorf("you must set postgres-password")
-				isErrorExist = true
-			}
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "password"}, ctl.flagTree.PostgresPassword)
-		case "postgres-size":
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "size"}, ctl.flagTree.PostgresSize)
-		case "postgres-ssl-mode":
-			var sslMode PostgresSSLMode
-			switch PostgresSSLMode(ctl.flagTree.PostgresSSLMode) {
-			case PostgresSSLModeDisable:
-				sslMode = PostgresSSLModeDisable
-			//case PostgresSSLModeAllow:
-			//  ctl.args["postgres.sslMode"] = fmt.Sprintf("%s", PostgresSSLModeAllow)
-			//case PostgresSSLModePrefer:
-			//  ctl.args["postgres.sslMode"] = fmt.Sprintf("%s", PostgresSSLModePrefer)
-			case PostgresSSLModeRequire:
-				sslMode = PostgresSSLModeRequire
+				util.SetHelmValueInMap(ctl.args, []string{"imageCredentials", "password"}, data)
+			case "coverity-license-path":
+				data, err := util.ReadFileData(ctl.flagTree.coverityLicensePath)
+				if err != nil {
+					log.Errorf("failed to read coverity license file at path: %s, error: %+v", ctl.flagTree.coverityLicensePath, err)
+					isErrorExist = true
+				}
+				util.SetHelmValueInMap(ctl.args, []string{"coverity", "license"}, data)
+			case "enable-reporting":
+				util.SetHelmValueInMap(ctl.args, []string{"enableReporting"}, ctl.flagTree.EnableReporting)
+			case "ingress-class":
+				util.SetHelmValueInMap(ctl.args, []string{"ingressClass"}, ctl.flagTree.IngressClass)
+			case "storage-class":
+				util.SetHelmValueInMap(ctl.args, []string{"postgres", "storageClass"}, ctl.flagTree.StorageClass)
+				util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+				util.SetHelmValueInMap(ctl.args, []string{"minio", "downloadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+				util.SetHelmValueInMap(ctl.args, []string{"minio", "uploadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+				util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+				util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "storageClass"}, ctl.flagTree.StorageClass)
+			case "eventstore-size":
+				util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+			case "downloadserver-size":
+				util.SetHelmValueInMap(ctl.args, []string{"minio", "downloadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+			case "uploadserver-size":
+				util.SetHelmValueInMap(ctl.args, []string{"minio", "uploadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+			case "mongodb-size":
+				util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "size"}, ctl.flagTree.MongoDBSize)
+			case "reportstorage-size":
+				util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "size"}, ctl.flagTree.ReportStorageSize)
+			case "smtp-host":
+				util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "host"}, ctl.flagTree.SMTPHost)
+			case "smtp-port":
+				// Ports
+				port := ctl.flagTree.SMTPPort
+				if port < 1 || port > 65535 {
+					log.Errorf("%d is not a valid SMTP port", port)
+					isErrorExist = true
+				}
+				util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "port"}, port)
+			case "smtp-username":
+				util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "user"}, ctl.flagTree.SMTPUsername)
+			case "smtp-password":
+				util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "password"}, ctl.flagTree.SMTPPassword)
+			case "smtp-sender-email":
+				// Emails
+				if !validateEmail(ctl.flagTree.SMTPSenderEmail) {
+					log.Errorf("%s is not a valid SMTP sender email address", ctl.flagTree.SMTPSenderEmail)
+					isErrorExist = true
+				}
+				util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "smtp", "sender_email"}, ctl.flagTree.SMTPSenderEmail)
+				util.SetHelmValueInMap(ctl.args, []string{"swip-onprem", "smtp", "sender_email"}, ctl.flagTree.SMTPSenderEmail)
+			case "smtp-tls-mode":
+				var tlsMode SMTPTLSMode
+				switch SMTPTLSMode(ctl.flagTree.SMTPTlsMode) {
+				case SMTPTLSModeDisable:
+					tlsMode = SMTPTLSModeDisable
+				case SMTPTLSModeTryStartTLS:
+					tlsMode = SMTPTLSModeTryStartTLS
+				case SMTPTLSModeRequireStartTLS:
+					tlsMode = SMTPTLSModeRequireStartTLS
+				case SMTPTLSModeRequireTLS:
+					tlsMode = SMTPTLSModeRequireTLS
+				default:
+					log.Errorf("%s is an invalid value for --smtp-tls-mode", ctl.flagTree.SMTPTlsMode)
+					isErrorExist = true
+				}
+				util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_mode"}, tlsMode)
+			case "smtp-trusted-hosts":
+				util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_trusted_hosts"}, ctl.flagTree.SMTPTlsTrustedHosts)
+			case "insecure-skip-smtp-tls-verify":
+				util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !ctl.flagTree.SMTPTlsIgnoreInvalidCert)
+			case "enable-postgres-container":
+				// If using external postgres, host and username must be set
+				if ctl.flagTree.PostgresInternal == false {
+					if len(ctl.flagTree.PostgresHost) == 0 {
+						log.Errorf("you must set external postgres database postgres-host")
+						isErrorExist = true
+					}
+					if len(ctl.flagTree.PostgresUsername) == 0 {
+						log.Errorf("you must set external postgres database postgres-host")
+						isErrorExist = true
+					}
+				}
+				util.SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !ctl.flagTree.PostgresInternal)
+			case "postgres-host":
+				util.SetHelmValueInMap(ctl.args, []string{"postgres", "host"}, ctl.flagTree.PostgresHost)
+			case "postgres-port":
+				util.SetHelmValueInMap(ctl.args, []string{"postgres", "port"}, fmt.Sprintf("%d", ctl.flagTree.PostgresPort))
+			case "postgres-username":
+				util.SetHelmValueInMap(ctl.args, []string{"postgres", "user"}, ctl.flagTree.PostgresUsername)
+			case "postgres-password":
+				if len(ctl.flagTree.PostgresPassword) == 0 {
+					log.Errorf("you must set postgres-password")
+					isErrorExist = true
+				}
+				util.SetHelmValueInMap(ctl.args, []string{"postgres", "password"}, ctl.flagTree.PostgresPassword)
+			case "postgres-size":
+				util.SetHelmValueInMap(ctl.args, []string{"postgres", "size"}, ctl.flagTree.PostgresSize)
+			case "postgres-ssl-mode":
+				var sslMode PostgresSSLMode
+				switch PostgresSSLMode(ctl.flagTree.PostgresSSLMode) {
+				case PostgresSSLModeDisable:
+					sslMode = PostgresSSLModeDisable
+				//case PostgresSSLModeAllow:
+				//  ctl.args["postgres.sslMode"] = fmt.Sprintf("%s", PostgresSSLModeAllow)
+				//case PostgresSSLModePrefer:
+				//  ctl.args["postgres.sslMode"] = fmt.Sprintf("%s", PostgresSSLModePrefer)
+				case PostgresSSLModeRequire:
+					sslMode = PostgresSSLModeRequire
+				default:
+					log.Errorf("%s is an invalid value for --postgres-ssl-mode", ctl.flagTree.PostgresSSLMode)
+					isErrorExist = true
+				}
+				util.SetHelmValueInMap(ctl.args, []string{"postgres", "sslMode"}, sslMode)
 			default:
-				log.Errorf("%s is an invalid value for --postgres-ssl-mode", ctl.flagTree.PostgresSSLMode)
-				isErrorExist = true
+				log.Debugf("flag '%s': NOT FOUND", f.Name)
 			}
-			util.SetHelmValueInMap(ctl.args, []string{"postgres", "sslMode"}, sslMode)
-		default:
-			log.Debugf("flag '%s': NOT FOUND", f.Name)
+		} else {
+			log.Debugf("flag '%s': UNCHANGED", f.Name)
 		}
-	} else {
-		log.Debugf("flag '%s': UNCHANGED", f.Name)
-	}
+	})
+
 	if isErrorExist {
 		log.Fatalf("please fix all the above errors to continue")
 	}
+
+	return ctl.args, nil
 }
