@@ -107,7 +107,7 @@ func TestAddPVCValuesToBlackDuckSpec(t *testing.T) {
 		cmd.Flags().Set("version", test.blackDuckVersion)
 
 		// Execute the function being tested
-		finalBlackDuckSpec, err := addPVCValuesToBlackDuckSpec(cmd, "", "", blackDuckSpec)
+		finalBlackDuckSpec, err := addPVCValuesToBlackDuckSpec(cmd, "", "", *blackDuckSpec)
 		if err != nil {
 			t.Errorf("failed to add PVC values: %s", err)
 		}

@@ -128,16 +128,14 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 
 	// postgres specific flags
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresInternal, "enable-postgres-container", "false", "If true, synopsysctl will deploy a postgres container backed by persistent volume (Not recommended for production usage)")
-	cmd.Flags().StringVar(&ctl.flagTree.PostgresHost, "postgres-host", ctl.flagTree.PostgresHost, "Postgres host")
+	cmd.Flags().StringVar(&ctl.flagTree.PostgresHost, "postgres-host", ctl.flagTree.PostgresHost, "Postgres host. If --enable-postgres-container=true, the default is \"postgres\"")
 	cmd.Flags().IntVar(&ctl.flagTree.PostgresPort, "postgres-port", 5432, "Postgres port")
-	cmd.Flags().StringVar(&ctl.flagTree.PostgresUsername, "postgres-username", ctl.flagTree.PostgresUsername, "Postgres username")
+	cmd.Flags().StringVar(&ctl.flagTree.PostgresUsername, "postgres-username", ctl.flagTree.PostgresUsername, "Postgres username. If --enable-postgres-container=true, the default is \"postgres\"")
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresPassword, "postgres-password", ctl.flagTree.PostgresPassword, "Postgres password")
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresSize, "postgres-size", "50Gi", "Persistent volume claim size to use for postgres. Only applicable if --enable-postgres-container is set to true\n")
 	cmd.Flags().StringVar(&ctl.flagTree.PostgresSSLMode, "postgres-ssl-mode", "require", "Postgres ssl mode [disable|require]")
 
 	if master {
-		cobra.MarkFlagRequired(cmd.Flags(), "postgres-host")
-		cobra.MarkFlagRequired(cmd.Flags(), "postgres-username")
 		cobra.MarkFlagRequired(cmd.Flags(), "postgres-password")
 	}
 
@@ -146,6 +144,15 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 
 // CheckValuesFromFlags returns an error if a value set by a flag is invalid
 func (ctl *HelmValuesFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
+	// If using external postgres, host and username must be set
+	if flagset.Lookup("enable-postgres-container").Value.String() == "false" {
+		if !flagset.Lookup("postgres-host").Changed {
+			return fmt.Errorf("if enable-postgres-container=false, you must set postgres-host")
+		}
+		if !flagset.Lookup("postgres-username").Changed {
+			return fmt.Errorf("if enable-postgres-container=false, you must set postgres-username")
+		}
+	}
 	return nil
 }
 

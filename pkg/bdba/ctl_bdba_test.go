@@ -72,29 +72,26 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 	}{
 		// case
 		{
-			flagName:    "version",
-			changedCtl:  &HelmValuesFromCobraFlags{},
-			changedArgs: map[string]interface{}{},
+			flagName: "cluster-domain",
+			changedCtl: &HelmValuesFromCobraFlags{
+				flagTree: FlagTree{
+					ClusterDomain: "clusterDomainName",
+				},
+			},
+			changedArgs: map[string]interface{}{
+				"rabbitmq": map[string]interface{}{
+					"rabbitmq": map[string]interface{}{
+						"clustering": map[string]interface{}{
+							"k8s_domain": "clusterDomainName",
+						},
+					},
+				},
+				"minio": map[string]interface{}{
+					"clusterDomain": "clusterDomainName",
+				},
+			},
 		},
-		// case
-		{
-			flagName:    "hostname",
-			changedCtl:  &HelmValuesFromCobraFlags{},
-			changedArgs: map[string]interface{}{},
-		},
-		// case
-		{
-			flagName:    "rabbitmq-domain",
-			changedCtl:  &HelmValuesFromCobraFlags{},
-			changedArgs: map[string]interface{}{},
-		},
-		// case
-		{
-			flagName:    "psql-storage-class",
-			changedCtl:  &HelmValuesFromCobraFlags{},
-			changedArgs: map[string]interface{}{},
-		},
-		// TODO: More test cases and fix the ones above ^
+		// TODO: More test cases ...
 	}
 
 	// get the flagset
@@ -111,7 +108,8 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 		}
 		// test setting the flag
 		f := &pflag.Flag{Changed: true, Name: test.flagName}
-		bdbaCobraHelper = NewHelmValuesFromCobraFlags() // clear the bdbaCobraHelper
+		bdbaCobraHelper = test.changedCtl
+		bdbaCobraHelper.args = map[string]interface{}{}
 		bdbaCobraHelper.AddHelmValueByCobraFlag(f)
 		assert.Equal(test.changedArgs, bdbaCobraHelper.GetArgs())
 	}

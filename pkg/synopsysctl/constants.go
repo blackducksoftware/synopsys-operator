@@ -53,15 +53,17 @@ var nativeClusterType = clusterTypeKubernetes
 
 var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/master"
 
-// Chart Resources
-var synopsysChartRepository = "https://chartmuseum.cloudnative.sig-clops.synopsys.com"
+var baseChartRepository = "https://chartmuseum.cloudnative.sig-clops.synopsys.com"
+var synopsysChartRepository = "https://chartmuseum.polaris-cc-staging.sig-clops.synopsys.com"
+
+var polarisName = "polaris"
+var polarisChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-2020.03.tgz", baseChartRepository)
 
 // Polaris Reporting Constants
-var polarisReportingVersion = "0.0.69"
-var polarisReportingChartRepository = fmt.Sprintf("%s/%s/charts/polaris-helmchart-reporting-%s.tgz", synopsysChartRepository, polarisReportingVersion)
 var polarisReportingName = "polaris-reporting"
+var polarisReportingChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-reporting-2020.03.tgz", baseChartRepository)
 
 // BDBA Constants
-var bdbaVersion = "0.0.1"
-var bdbaChartRepository = fmt.Sprintf("%s/%s/charts/bdba-%s.tgz", synopsysChartRepository, polarisReportingVersion)
 var bdbaName = "bdba"
+var bdbaVersion = "0.0.1"
+var bdbaChartRepository = fmt.Sprintf("%s/charts/bdba-%s.tgz", synopsysChartRepository, bdbaVersion)

@@ -57,7 +57,6 @@ type CRSpecBuilderFromCobraFlags struct {
 	PVCSize                string
 	AlertMemory            string
 	CfsslMemory            string
-	DesiredState           string
 	Registry               string
 	RegistryNamespace      string
 	PullSecrets            []string
@@ -132,7 +131,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation of the persistent volume claim")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation of Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation of CFSSL")
-	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of Alert")
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
@@ -140,9 +138,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to the PEM certificate key for Alert")
 	cmd.Flags().StringVar(&ctl.JavaKeyStoreFilePath, "java-keystore-file-path", ctl.JavaKeyStoreFilePath, "Absolute path to the Java Keystore to use for Alert")
 	// cmd.Flags().StringVar(&ctl.SecurityContextFilePath, "security-context-file-path", ctl.SecurityContextFilePath, "Absolute path to a file containing a map of pod names to security contexts runAsUser, fsGroup, and runAsGroup")
-
-	// TODO: Remove this flag in next release
-	cmd.Flags().MarkDeprecated("alert-desired-state", "alert-desired-state flag is deprecated and will be removed by the next release")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
@@ -222,8 +217,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.alertSpec.CfsslMemory = ctl.CfsslMemory
 		case "environs":
 			ctl.alertSpec.Environs = ctl.Environs
-		case "alert-desired-state":
-			ctl.alertSpec.DesiredState = ctl.DesiredState
 		case "registry":
 			if ctl.alertSpec.RegistryConfiguration == nil {
 				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}

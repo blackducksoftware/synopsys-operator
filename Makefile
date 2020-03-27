@@ -95,12 +95,3 @@ build:
 
 test:
 	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.12 go test -ldflags "-X main.version=${TAG}" ./cmd/... ./pkg/...
-
-ui:
-	set -e # exit if any command fails
-	cd /tmp;git clone https://sig-gitlab.internal.synopsys.com/clops/onprem-ui.git --branch ${UI_BRANCH}
-	cd /tmp/onprem-ui;npm install;ember build --environment production
-	cp -rf /tmp/onprem-ui/ pkg/operator-ui-ember/
-	rm -Rf /tmp/onprem-ui
-	packr
-	rm -Rf pkg/operator-ember-ui
