@@ -211,16 +211,16 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 			case "storage-class":
 				util.SetHelmValueInMap(ctl.args, []string{"postgres", "storageClass"}, ctl.flagTree.StorageClass)
 				util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
-				util.SetHelmValueInMap(ctl.args, []string{"minio", "downloadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
-				util.SetHelmValueInMap(ctl.args, []string{"minio", "uploadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+				util.SetHelmValueInMap(ctl.args, []string{"polaris-helmchart-minio", "downloadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
+				util.SetHelmValueInMap(ctl.args, []string{"polaris-helmchart-minio", "uploadServer", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
 				util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "storageClass"}, ctl.flagTree.StorageClass)
 				util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "report-storage", "volume", "storageClass"}, ctl.flagTree.StorageClass)
 			case "eventstore-size":
 				util.SetHelmValueInMap(ctl.args, []string{"eventstore", "persistence", "size"}, ctl.flagTree.EventstoreSize)
 			case "downloadserver-size":
-				util.SetHelmValueInMap(ctl.args, []string{"minio", "downloadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+				util.SetHelmValueInMap(ctl.args, []string{"polaris-helmchart-minio", "downloadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
 			case "uploadserver-size":
-				util.SetHelmValueInMap(ctl.args, []string{"minio", "uploadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
+				util.SetHelmValueInMap(ctl.args, []string{"polaris-helmchart-minio", "uploadServer", "persistence", "size"}, ctl.flagTree.EventstoreSize)
 			case "mongodb-size":
 				util.SetHelmValueInMap(ctl.args, []string{"mongodb", "persistence", "size"}, ctl.flagTree.MongoDBSize)
 			case "reportstorage-size":
