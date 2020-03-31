@@ -1322,6 +1322,11 @@ var updatePolarisCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		helmRelease, err := util.GetWithHelm3(polarisName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to get previous user defined values: %+v", err)
+		}
+		updatePolarisCobraHelper.SetArgs(helmRelease.Config)
 		// Get the flags to set Helm values
 		helmValuesMap, err := updatePolarisCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
@@ -1366,6 +1371,12 @@ var updatePolarisReportingCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		helmRelease, err := util.GetWithHelm3(polarisReportingName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to get previous user defined values: %+v", err)
+		}
+		updatePolarisReportingCobraHelper.SetArgs(helmRelease.Config)
+
 		// Get the flags to set Helm values
 		helmValuesMap, err := updatePolarisReportingCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {

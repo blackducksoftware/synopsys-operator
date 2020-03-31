@@ -68,7 +68,7 @@ type FlagTree struct {
 // NewHelmValuesFromCobraFlags returns an initialized HelmValuesFromCobraFlags
 func NewHelmValuesFromCobraFlags() *HelmValuesFromCobraFlags {
 	return &HelmValuesFromCobraFlags{
-		args:     map[string]interface{}{},
+		args:     make(map[string]interface{}, 0),
 		flagTree: FlagTree{},
 	}
 }
@@ -76,6 +76,13 @@ func NewHelmValuesFromCobraFlags() *HelmValuesFromCobraFlags {
 // GetArgs returns the map of helm chart fields to values
 func (ctl *HelmValuesFromCobraFlags) GetArgs() map[string]interface{} {
 	return ctl.args
+}
+
+// SetArgs set the map to values
+func (ctl *HelmValuesFromCobraFlags) SetArgs(args map[string]interface{}) {
+	for key, value := range args {
+		ctl.args[key] = value
+	}
 }
 
 // AddCobraFlagsToCommand adds flags for the Polaris-Reporting helm chart to the cmd
@@ -144,15 +151,6 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 
 // CheckValuesFromFlags returns an error if a value set by a flag is invalid
 func (ctl *HelmValuesFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
-	// If using external postgres, host and username must be set
-	if flagset.Lookup("enable-postgres-container").Value.String() == "false" {
-		if !flagset.Lookup("postgres-host").Changed {
-			return fmt.Errorf("if enable-postgres-container=false, you must set postgres-host")
-		}
-		if !flagset.Lookup("postgres-username").Changed {
-			return fmt.Errorf("if enable-postgres-container=false, you must set postgres-username")
-		}
-	}
 	return nil
 }
 
@@ -163,7 +161,7 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 	if err != nil {
 		return nil, err
 	}
-	ctl.args["global"] = map[string]interface{}{"environment": "onprem"}
+	util.SetHelmValueInMap(ctl.args, []string{"global", "environment"}, "onprem")
 	flagset.VisitAll(ctl.AddHelmValueByCobraFlag)
 
 	return ctl.args, nil
@@ -218,6 +216,15 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			b, _ := strconv.ParseBool(ctl.flagTree.SMTPTlsIgnoreInvalidCert)
 			util.SetHelmValueInMap(ctl.args, []string{"onprem-auth-service", "auth-server", "smtp", "tls_check_server_identity"}, !b)
 		case "enable-postgres-container":
+			// If using external postgres, host and username must be set
+			if ctl.flagTree.PostgresInternal == "false" {
+				if len(ctl.flagTree.PostgresHost) == 0 {
+					log.Fatalf("if enable-postgres-container=false, you must set postgres-host")
+				}
+				if len(ctl.flagTree.PostgresUsername) == 0 {
+					log.Fatalf("if enable-postgres-container=false, you must set postgres-username")
+				}
+			}
 			b, _ := strconv.ParseBool(ctl.flagTree.PostgresInternal)
 			util.SetHelmValueInMap(ctl.args, []string{"postgres", "isExternal"}, !b)
 		case "postgres-host":

@@ -80,7 +80,7 @@ type FlagTree struct {
 // NewHelmValuesFromCobraFlags returns an initialized HelmValuesFromCobraFlags
 func NewHelmValuesFromCobraFlags() *HelmValuesFromCobraFlags {
 	return &HelmValuesFromCobraFlags{
-		args:     map[string]interface{}{},
+		args:     make(map[string]interface{}, 0),
 		flagTree: FlagTree{},
 	}
 }
@@ -88,6 +88,13 @@ func NewHelmValuesFromCobraFlags() *HelmValuesFromCobraFlags {
 // GetArgs returns the map of helm chart fields to values
 func (ctl *HelmValuesFromCobraFlags) GetArgs() map[string]interface{} {
 	return ctl.args
+}
+
+// SetArgs set the map to values
+func (ctl *HelmValuesFromCobraFlags) SetArgs(args map[string]interface{}) {
+	for key, value := range args {
+		ctl.args[key] = value
+	}
 }
 
 // AddCobraFlagsToCommand adds flags for the Polaris helm chart to the cmd
@@ -178,7 +185,7 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 		return nil, err
 	}
 	var isErrorExist bool
-	ctl.args["global"] = map[string]interface{}{"environment": "onprem"}
+	util.SetHelmValueInMap(ctl.args, []string{"global", "environment"}, "onprem")
 	flagset.VisitAll(func(f *pflag.Flag) {
 		if f.Changed {
 			log.Debugf("flag '%s': CHANGED", f.Name)
