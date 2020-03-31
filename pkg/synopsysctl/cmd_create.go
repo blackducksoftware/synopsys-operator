@@ -647,7 +647,7 @@ var createOpsSightNativeCmd = &cobra.Command{
 // createPolarisCmd creates a Polaris instance
 var createPolarisCmd = &cobra.Command{
 	Use:           "polaris",
-	Short:         "Create a Polaris instance. (Please make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview])",
+	Short:         "Create a Polaris instance. (Please make sure you have read and understand prerequisites before installing Polaris: https://sig-confluence.internal.synopsys.com/display/DD/Polaris+on-premises])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Example: "\nRequried flags for setup with external database:\n\n 	synopsysctl create polaris --namespace 'onprem' --version '2020.03' --gcp-service-account-path '<PATH>/gcp-service-account-file.json' --coverity-license-path '<PATH>/coverity-license-file.xml' --fqdn 'example.polaris.com' --smtp-host 'example.smtp.com' --smtp-port 25 --smtp-username 'example' --smtp-password 'example' --smtp-sender-email 'example.email.com' --postgres-host 'example.postgres.com' --postgres-port 5432 --postgres-username 'example' --postgres-password 'example' ",
@@ -698,7 +698,7 @@ var createPolarisCmd = &cobra.Command{
 // createPolarisNativeCmd prints the Kubernetes resources for creating a Polaris instance
 var createPolarisNativeCmd = &cobra.Command{
 	Use:           "native",
-	Short:         "Print Kubernetes resources for creating a Polaris instance (Please make sure you have read and understand prerequisites before installing Polaris: [https://synopsys.atlassian.net/wiki/spaces/POP/overview])",
+	Short:         "Print Kubernetes resources for creating a Polaris instance (Please make sure you have read and understand prerequisites before installing Polaris: https://sig-confluence.internal.synopsys.com/display/DD/Polaris+on-premises])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Example: "\nRequried flags for setup with external database:\n\n 	synopsysctl create polaris native --namespace 'onprem' --version '2020.04' --gcp-service-account-path '<PATH>/gcp-service-account-file.json' --coverity-license-path '<PATH>/coverity-license-file.xml' --fqdn 'example.polaris.com' --smtp-host 'example.smtp.com' --smtp-port 25 --smtp-username 'example' --smtp-password 'example' --smtp-sender-email 'example.email.com' --postgres-host 'example.postgres.com' --postgres-port 5432 --postgres-username 'example' --postgres-password 'example' ",
