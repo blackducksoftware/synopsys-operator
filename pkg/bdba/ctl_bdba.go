@@ -154,7 +154,7 @@ func (ctl *HelmValuesFromCobraFlags) GetArgs() map[string]interface{} {
 func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, master bool) {
 	// [DEV NOTE:] please organize flags in order of importance and group related flags
 
-	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", "default", "Description")
+	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", ctl.flagTree.Version, "Version of BDBA you want to install [Example: 2020.03]")
 	// if master {
 	// 	cobra.MarkFlagRequired(cmd.Flags(), "version")
 	// }
