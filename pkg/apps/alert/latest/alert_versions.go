@@ -53,6 +53,10 @@ var imageTags = map[string]map[string]string{
 		"blackduck-alert": "5.0.2",
 		"blackduck-cfssl": "1.0.0",
 	},
+	"5.0.3": {
+		"blackduck-alert": "5.0.3",
+		"blackduck-cfssl": "1.0.0",
+	},
 	"5.1.0": {
 		"blackduck-alert": "5.1.0",
 		"blackduck-cfssl": "1.0.0",
