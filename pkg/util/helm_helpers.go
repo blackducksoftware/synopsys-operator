@@ -127,7 +127,7 @@ func UpdateWithHelm3(releaseName, namespace, chartURL string, vals map[string]in
 		client.Version = ">0.0.0-0"
 	}
 	client.Namespace = namespace
-	client.ReuseValues = true                     // rememeber the values that have been set previously
+	client.ResetValues = true                     // reset values always to apply the new chart value
 	_, err = client.Run(releaseName, chart, vals) // updates the release in the namespace from the actionConfig
 	if err != nil {
 		return fmt.Errorf("failed to run upgrade: %+v", err)
