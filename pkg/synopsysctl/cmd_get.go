@@ -24,14 +24,12 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"time"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 // Get Command flag for -output functionality
@@ -99,21 +97,25 @@ var getAlertCmd = &cobra.Command{
 // getBlackDuckCmd display one or many Black Duck instances
 var getBlackDuckCmd = &cobra.Command{
 	Use:           "blackduck [NAME...]",
-	Example:       "synopsysctl get blackducks\nsynopsysctl get blackduck <name>\nsynopsysctl get blackducks <name1> <name2>\nsynopsysctl get blackducks -n <namespace>\nsynopsysctl get blackduck <name> -n <namespace>\nsynopsysctl get blackducks <name1> <name2> -n <namespace>",
+	Example:       "synopsysctl get blackduck <name> -n <namespace>",
 	Aliases:       []string{"blackducks"},
 	Short:         "Display one or many Black Duck instances",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 1 arguments")
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting Black Duck instances...")
-		out, err := RunKubeCmd(restconfig, kubeClient, generateKubectlGetCommand("blackducks", args)...)
+		helmRelease, err := util.GetWithHelm3(args[0], namespace, kubeConfigPath)
 		if err != nil {
-			return fmt.Errorf("error getting Black Duck instances due to %+v - %s", out, err)
+			return fmt.Errorf("failed to get Blackduck values: %+v", err)
 		}
-		fmt.Printf("%+v", out)
+		helmSetValues := helmRelease.Config
+		PrintComponent(helmSetValues, "YAML")
 		return nil
 	},
 }
@@ -147,12 +149,6 @@ func getBlackDuckMasterKey(namespace string, name string, filePath string) error
 
 	sealKey := string(secret.Data["SEAL_KEY"])
 
-	// retrieve the Black Duck configmap
-	cm, err := util.GetConfigMap(kubeClient, namespace, fmt.Sprintf("%s-blackduck-config", name))
-	if err != nil {
-		return fmt.Errorf("unable to find Black Duck config map (%s-blackduck-config) in namespace '%s' due to %+v", name, namespace, err)
-	}
-
 	// Filter the upload cache pod to get the master key using the seal key
 	uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, util.GetResourceName(name, util.BlackDuckName, "uploadcache"))
 	if err != nil {
@@ -161,12 +157,8 @@ func getBlackDuckMasterKey(namespace string, name string, filePath string) error
 
 	// Create the exec into Kubernetes pod request
 	req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
-	uploadCache := "uploadcache"
-	if isVersionGreaterThanorEqualTo, err := util.IsVersionGreaterThanOrEqualTo(cm.Data["HUB_VERSION"], 2019, time.August, 0); err == nil && isVersionGreaterThanorEqualTo {
-		uploadCache = util.GetResourceName(name, util.BlackDuckName, "uploadcache")
-	}
 
-	stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://%s:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)), uploadCache)})
+	stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://localhost:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
 	if err != nil {
 		return fmt.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", namespace, err)
 	}
@@ -292,10 +284,6 @@ func init() {
 
 	// Black Duck
 	getBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	getBlackDuckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
-	getBlackDuckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-	getBlackDuckCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
-
 	getBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
 	getCmd.AddCommand(getBlackDuckCmd)

@@ -8,6 +8,7 @@ require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190911111923-ecfe977594f1 // indirect
 	github.com/fatih/color v1.9.0 // indirect
+	github.com/ghodss/yaml v1.0.0
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0 // indirect

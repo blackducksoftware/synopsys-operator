@@ -55,6 +55,7 @@ var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/mast
 
 var baseChartRepository = "https://chartmuseum.cloudnative.sig-clops.synopsys.com"
 
+var blackduckChartRepository = fmt.Sprintf("%s/charts/blackduck-2020.4.0.tgz", baseChartRepository)
 var polarisName = "polaris"
 var polarisChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-2020.03.tgz", baseChartRepository)
 
