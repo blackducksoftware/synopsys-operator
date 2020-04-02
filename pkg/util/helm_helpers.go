@@ -256,12 +256,18 @@ func GetWithHelm3(releaseName, namespace, kubeConfig string) (*release.Release, 
 	if err != nil {
 		return nil, err
 	}
-	client := action.NewGet(actionConfig)
-	release, err := client.Run(releaseName) // lists the releases in the namespace from the actionConfig
+	// Check if the Release Exists
+	aList := action.NewList(actionConfig) // NewGet provides bad error message if release doesn't exist
+	charts, err := aList.Run()
 	if err != nil {
-		return nil, fmt.Errorf("failed to run get: %+v", err)
+		return nil, fmt.Errorf("failed to run get: %+v", "err")
 	}
-	return release, nil
+	for _, release := range charts {
+		if release.Name == releaseName && release.Namespace == namespace {
+			return release, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to find instance '%+v' in namespace %+v", releaseName, namespace)
 }
 
 // CreateHelmActionConfiguration creates an action.Configuration that points to the specified cluster and namespace
