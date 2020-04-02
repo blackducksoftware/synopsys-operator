@@ -217,9 +217,6 @@ var deleteBDBACmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Delete the extra resources like secrets...
-		// ...
-
 		// Delete Resources
 		err := util.DeleteWithHelm3(bdbaName, namespace, kubeConfigPath)
 		if err != nil {

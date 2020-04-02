@@ -929,9 +929,6 @@ var createBDBACmd = &cobra.Command{
 			return fmt.Errorf("failed to create BDBA resources: %+v", err)
 		}
 
-		// Deploy initial resources like secrets...
-		// ...
-
 		// Deploy Resources
 		err = util.CreateWithHelm3(bdbaName, namespace, bdbaChartRepository, helmValuesMap, kubeConfigPath, false)
 		if err != nil {
@@ -975,9 +972,6 @@ var createBDBANativeCmd = &cobra.Command{
 				bdbaChartRepository = fmt.Sprintf("%s/charts/bdba-%s.tgz", baseChartRepository, versionFlag.Value.String())
 			}
 		}
-
-		// Print extra resources like secrets...
-		// ...
 
 		// Print Resources
 		err = util.TemplateWithHelm3(bdbaName, namespace, bdbaChartRepository, helmValuesMap)
