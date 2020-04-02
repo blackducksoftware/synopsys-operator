@@ -267,7 +267,7 @@ func GetWithHelm3(releaseName, namespace, kubeConfig string) (*release.Release, 
 			return release, nil
 		}
 	}
-	return nil, fmt.Errorf("%+v does not exist in namespace %+v", releaseName, namespace)
+	return nil, fmt.Errorf("unable to find instance '%+v' in namespace %+v", releaseName, namespace)
 }
 
 // CreateHelmActionConfiguration creates an action.Configuration that points to the specified cluster and namespace
