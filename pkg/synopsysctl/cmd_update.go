@@ -1412,6 +1412,12 @@ var updateBDBACmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		helmRelease, err := util.GetWithHelm3(bdbaName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to get previous user defined values: %+v", err)
+		}
+		updateBDBACobraHelper.SetArgs(helmRelease.Config)
+
 		// Get the flags to set Helm values
 		helmValuesMap, err := updateBDBACobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {

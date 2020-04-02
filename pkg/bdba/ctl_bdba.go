@@ -23,6 +23,7 @@ package bdba
 
 import (
 	"fmt"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -111,7 +112,7 @@ type FlagTree struct {
 	HTTPNoProxy  string `json:"httpNoProxy"`
 
 	// Minio
-	MinioMode  string `json:"minioMode"`
+	MinioMode string `json:"minioMode"`
 
 	// Ingress
 	IngressEnabled       bool   `json:"ingressEnabled"`
@@ -120,25 +121,25 @@ type FlagTree struct {
 	IngressTLSSecretName string `json:"ingressTLSSecretName"`
 
 	// External PostgreSQL
-	ExternalPG			  bool `json:ExternalPg`
-	ExternalPGHost        string `json:"ExternalPgHost"`
-	ExternalPGPort        int `json:"ExternalPgPort"`
-	ExternalPGUser        string `json:"ExternalPgUser"`
-	ExternalPGPassword    string `json:"ExternalPgUser"`
-	ExternalPGDataBase    string `json:"ExternalPgDataBase"`
-	ExternalPGSSLMode     string `json:"ExternalPgSSLMode"`
-	ExternalPGRootCASecret  string `json:"ExternalPgRootCASecret"`
-	ExternalPGClientSecret  string `json:"ExternalPgClientSecret"`
+	ExternalPG             bool   `json:ExternalPg`
+	ExternalPGHost         string `json:"ExternalPgHost"`
+	ExternalPGPort         int    `json:"ExternalPgPort"`
+	ExternalPGUser         string `json:"ExternalPgUser"`
+	ExternalPGPassword     string `json:"ExternalPgUser"`
+	ExternalPGDataBase     string `json:"ExternalPgDataBase"`
+	ExternalPGSSLMode      string `json:"ExternalPgSSLMode"`
+	ExternalPGRootCASecret string `json:"ExternalPgRootCASecret"`
+	ExternalPGClientSecret string `json:"ExternalPgClientSecret"`
 
 	// Secrets
-	PGPassword             string `json:"pgPassword"`
-	PGExistingSecret       string `json:"pgExistingSecret"`
+	PGPassword       string `json:"pgPassword"`
+	PGExistingSecret string `json:"pgExistingSecret"`
 }
 
 // NewHelmValuesFromCobraFlags returns an initialized HelmValuesFromCobraFlags
 func NewHelmValuesFromCobraFlags() *HelmValuesFromCobraFlags {
 	return &HelmValuesFromCobraFlags{
-		args:     map[string]interface{}{},
+		args:     make(map[string]interface{}, 0),
 		flagTree: FlagTree{},
 	}
 }
@@ -146,6 +147,13 @@ func NewHelmValuesFromCobraFlags() *HelmValuesFromCobraFlags {
 // GetArgs returns the map of helm chart fields to values
 func (ctl *HelmValuesFromCobraFlags) GetArgs() map[string]interface{} {
 	return ctl.args
+}
+
+// SetArgs set the map to values
+func (ctl *HelmValuesFromCobraFlags) SetArgs(args map[string]interface{}) {
+	for key, value := range args {
+		ctl.args[key] = value
+	}
 }
 
 // AddCobraFlagsToCommand adds flags for the BDBA helm chart to the cmd
