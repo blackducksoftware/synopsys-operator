@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -75,31 +76,30 @@ var deleteAlertCmd = &cobra.Command{
 
 // deleteBlackDuckCmd deletes Black Duck instances from the cluster
 var deleteBlackDuckCmd = &cobra.Command{
-	Use:           "blackduck NAME...",
-	Example:       "synopsysctl delete blackduck <name>\nsynopsysctl delete blackduck <name1> <name2> <name3>\nsynopsysctl delete blackduck <name> -n <namespace>\nsynopsysctl delete blackduck <name1> <name2> <name3> -n <namespace>",
+	Use:           "blackduck NAME",
+	Example:       "synopsysctl delete blackduck <name> -n <namespace>",
 	Short:         "Delete one or many Black Duck instances",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		if len(args) != 1 {
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 or more arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		for _, blackDuckName := range args {
-			blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
-			if err != nil {
-				return err
-			}
-			log.Infof("deleting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-			err = util.DeleteBlackduck(blackDuckClient, blackDuckName, crdNamespace, &metav1.DeleteOptions{})
-			if err != nil {
-				return fmt.Errorf("error deleting Black Duck '%s' in namespace '%s' due to '%s'", blackDuckName, blackDuckNamespace, err)
-			}
-			log.Infof("successfully submitted delete Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+		err := util.DeleteWithHelm3(args[0], namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to delete Blackduck resources: %+v", err)
 		}
+		secrets := []string{"-webserver-certificate", "-proxy-certificate", "-authca-certificate"}
+		for _, v := range secrets {
+			if err := kubeClient.CoreV1().Secrets(namespace).Delete(fmt.Sprintf("%s%s", args[0], v), &metav1.DeleteOptions{}); !k8serrors.IsNotFound(err) {
+				log.Warnf("couldn't delete secret %s", v)
+			}
+		}
+
 		return nil
 	},
 }

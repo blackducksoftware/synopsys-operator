@@ -99,8 +99,6 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(version string) {
 	rootCmd.Version = version
-	synopsysOperatorImage = fmt.Sprintf("docker.io/blackducksoftware/synopsys-operator:%s", version)
-	initFlags()
 	if err := rootCmd.Execute(); err != nil {
 		log.Errorf("synopsyctl failed: %+v", err)
 		os.Exit(1)

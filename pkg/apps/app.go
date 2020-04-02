@@ -23,7 +23,6 @@ package apps
 
 import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"k8s.io/client-go/rest"
 )
@@ -42,9 +41,4 @@ func NewApp(config *protoform.Config, kubeConfig *rest.Config) *App {
 // Alert will return an Alert
 func (a *App) Alert() *alert.Alert {
 	return alert.NewAlert(a.config, a.kubeConfig)
-}
-
-// Blackduck will return a Blackduck
-func (a *App) Blackduck() *blackduck.Blackduck {
-	return blackduck.NewBlackduck(a.config, a.kubeConfig)
 }

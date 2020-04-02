@@ -30,10 +30,14 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func publicKey(priv interface{}) interface{} {
@@ -115,4 +119,79 @@ func CreateSelfSignedCert() (string, string) {
 	pem.Encode(certificate, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	pem.Encode(key, pemBlockForKey(priv))
 	return certificate.String(), key.String()
+}
+
+func GetCertificateSecretFromFile(secretName, namespace, certPath, keyPath string) (*corev1.Secret, error) {
+	cert, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return GetCertificateSecret(secretName, namespace, cert, key)
+}
+
+func GetCertificateSecret(secretName string, namespace string, cert []byte, key []byte) (*corev1.Secret, error) {
+	return &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"environment": namespace,
+			},
+		},
+		Data: map[string][]byte{
+			"WEBSERVER_CUSTOM_CERT_FILE": cert,
+			"WEBSERVER_CUSTOM_KEY_FILE":  key,
+		},
+		Type: corev1.SecretTypeOpaque,
+	}, nil
+}
+
+func GetProxyCertificateSecret(secretName string, namespace string, cert []byte) (*corev1.Secret, error) {
+	return &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"environment": namespace,
+			},
+		},
+		Data: map[string][]byte{
+			"HUB_PROXY_CERT_FILE": cert,
+		},
+		Type: corev1.SecretTypeOpaque,
+	}, nil
+}
+
+func GetAuthCertificateSecret(secretName string, namespace string, cert []byte) (*corev1.Secret, error) {
+	return &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"environment": namespace,
+			},
+		},
+		Data: map[string][]byte{
+			"AUTH_CUSTOM_CA": cert,
+		},
+		Type: corev1.SecretTypeOpaque,
+	}, nil
 }

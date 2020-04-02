@@ -68,36 +68,6 @@ var editAlertCmd = &cobra.Command{
 	},
 }
 
-// editBlackDuckCmd edits a Black Duck instance by using the kube/oc editor
-var editBlackDuckCmd = &cobra.Command{
-	Use:           "blackduck NAME",
-	Example:       "synopsysctl edit blackduck <name>\nsynopsysctl edit blackduck <name> -n <namespace>",
-	Short:         "Edit a Black Duck instance",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName := args[0]
-		blackDuckNamespace, _, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
-		if err != nil {
-			return err
-		}
-		log.Infof("editing Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		err = RunKubeEditorCmd(restconfig, kubeClient, "edit", "blackduck", blackDuckName, "-n", blackDuckNamespace)
-		if err != nil {
-			return fmt.Errorf("error editing Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-		}
-		log.Infof("successfully edited Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		return nil
-	},
-}
-
 // editOpsSightCmd edits an OpsSight instance by using the kube/oc editor
 var editOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME",
@@ -133,9 +103,6 @@ func init() {
 
 	editAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	editCmd.AddCommand(editAlertCmd)
-
-	editBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	editCmd.AddCommand(editBlackDuckCmd)
 
 	editOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	editCmd.AddCommand(editOpsSightCmd)

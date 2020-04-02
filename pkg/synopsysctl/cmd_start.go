@@ -91,47 +91,38 @@ var startAlertCmd = &cobra.Command{
 // startBlackDuckCmd starts a Black Duck instance
 var startBlackDuckCmd = &cobra.Command{
 	Use:           "blackduck NAME",
-	Example:       "synopsysctl start blackduck <name>\nsynopsysctl start blackduck <name1> <name2>\nsynopsysctl start blackduck <name> -n <namespace>\nsynopsysctl start blackduck <name1> <name2> -n <namespace>",
+	Example:       "synopsysctl start blackduck <name> -n <namespace>",
 	Short:         "Start a Black Duck instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		if len(args) != 1 {
 			cmd.Help()
 			return fmt.Errorf("this command takes one or more arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		errors := []error{}
-		for _, blackDuckName := range args {
-			blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			log.Infof("starting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
-			// Get the Black Duck
-			currBlackDuck, err := util.GetBlackduck(blackDuckClient, crdNamespace, blackDuckName, metav1.GetOptions{})
-			if err != nil {
-				errors = append(errors, fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err))
-				continue
-			}
-
-			// Make changes to Spec
-			currBlackDuck.Spec.DesiredState = ""
-			// Update Blackduck
-			_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck)
-			if err != nil {
-				errors = append(errors, fmt.Errorf("error starting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err))
-				continue
-			}
-
-			log.Infof("successfully submitted start Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+		instance, err := util.GetWithHelm3(args[0], namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("couldn't find instance %s in namespace %s", args[0], namespace)
 		}
-		if len(errors) > 0 {
-			return fmt.Errorf("%v", errors)
+
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			blackduckChartRepository = chartLocationFlag.Value.String()
+		} else {
+			blackduckChartRepository = fmt.Sprintf("%s/charts/blackduck-%s.tgz", baseChartRepository, instance.Chart.Values["imageTag"])
+		}
+
+		helmValuesMap := make(map[string]interface{})
+		util.SetHelmValueInMap(helmValuesMap, []string{"status"}, "Running")
+
+		err = util.UpdateWithHelm3(args[0], namespace, blackduckChartRepository, helmValuesMap, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to create Blackduck resources: %+v", err)
 		}
 		return nil
 	},
@@ -194,6 +185,7 @@ func init() {
 
 	startBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	startCmd.AddCommand(startBlackDuckCmd)
+	addChartLocationPathFlag(startBlackDuckCmd)
 
 	startOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	startCmd.AddCommand(startOpsSightCmd)

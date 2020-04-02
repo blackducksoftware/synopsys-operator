@@ -24,6 +24,7 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"github.com/ghodss/yaml"
 	"net/http"
 	"path/filepath"
 	"regexp"
@@ -40,6 +41,8 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
+
+	"github.com/imdario/mergo"
 )
 
 var settings = cli.New()
@@ -47,7 +50,7 @@ var settings = cli.New()
 // CreateWithHelm3 uses the helm NewInstall action to create a resource in the cluster
 // Modified from https://github.com/openshift/console/blob/cdf6b189b71e488033ecaba7d90258d9f9453478/pkg/helm/actions/install_chart.go
 // Helm Actions: https://github.com/helm/helm/tree/9bc7934f350233fa72a11d2d29065aa78ab62792/pkg/action
-func CreateWithHelm3(releaseName, namespace, chartURL string, vals map[string]interface{}, kubeConfig string, dryRun bool) error {
+func CreateWithHelm3(releaseName, namespace, chartURL string, vals map[string]interface{}, kubeConfig string, dryRun bool, extraFiles ...string) error {
 	actionConfig, err := CreateHelmActionConfiguration(kubeConfig, "", namespace)
 	if err != nil {
 		return err
@@ -96,6 +99,11 @@ func CreateWithHelm3(releaseName, namespace, chartURL string, vals map[string]in
 	client.ReleaseName = releaseName
 	client.Namespace = namespace
 	client.DryRun = dryRun
+
+	if err := mergeExtraFilesToConfig(chart, vals, extraFiles); err != nil {
+		return err
+	}
+
 	_, err = client.Run(chart, vals) // deploy the chart into the namespace from the actionConfig
 	if err != nil {
 		return fmt.Errorf("failed to run install: %+v", err)
@@ -104,7 +112,7 @@ func CreateWithHelm3(releaseName, namespace, chartURL string, vals map[string]in
 }
 
 // UpdateWithHelm3 uses the helm NewUpgrade action to update a resource in the cluster
-func UpdateWithHelm3(releaseName, namespace, chartURL string, vals map[string]interface{}, kubeConfig string) error {
+func UpdateWithHelm3(releaseName, namespace, chartURL string, vals map[string]interface{}, kubeConfig string, extraFiles ...string) error {
 	actionConfig, err := CreateHelmActionConfiguration(kubeConfig, "", namespace)
 	if err != nil {
 		return err
@@ -127,7 +135,12 @@ func UpdateWithHelm3(releaseName, namespace, chartURL string, vals map[string]in
 		client.Version = ">0.0.0-0"
 	}
 	client.Namespace = namespace
-	client.ResetValues = true                     // reset values always to apply the new chart value
+
+	if err := mergeExtraFilesToConfig(chart, vals, extraFiles); err != nil {
+		return err
+	}
+
+	client.ResetValues = true                     // rememeber the values that have been set previously
 	_, err = client.Run(releaseName, chart, vals) // updates the release in the namespace from the actionConfig
 	if err != nil {
 		return fmt.Errorf("failed to run upgrade: %+v", err)
@@ -142,6 +155,9 @@ func TemplateWithHelm3(releaseName, namespace, chartURL string, vals map[string]
 		return err
 	}
 	chart, err := LoadChart(chartURL, actionConfig)
+	if err != nil {
+		return err
+	}
 	validInstallableChart, err := isChartInstallable(chart)
 	if !validInstallableChart {
 		return err
@@ -351,6 +367,29 @@ func ReleaseExists(releaseName, namespace, kubeConfig string) bool {
 		return false
 	}
 	return true
+}
+
+func mergeExtraFilesToConfig(ch *chart.Chart, vals map[string]interface{}, extraFiles []string) error {
+	for _, fileName := range extraFiles {
+		found := false
+		for _, chartFile := range ch.Files {
+			if fileName == chartFile.Name {
+				found = true
+				patch := make(map[string]interface{})
+				if err := yaml.Unmarshal(chartFile.Data, &patch); err != nil {
+					return err
+				}
+				if err := mergo.Merge(&vals, patch, mergo.WithOverride); err != nil {
+					return err
+				}
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("couldn't find file %s in chart", fileName)
+		}
+	}
+	return nil
 }
 
 // SetHelmValueInMap adds the finalValue into the valueMapPointer at the location specified

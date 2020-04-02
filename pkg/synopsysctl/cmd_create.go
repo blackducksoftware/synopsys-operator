@@ -24,22 +24,17 @@ package synopsysctl
 import (
 	"fmt"
 	"sort"
-	"strings"
-	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
 	"github.com/blackducksoftware/synopsys-operator/pkg/polaris"
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 
-	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	alertapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
-	blackduckapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -47,13 +42,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Create Command CRSpecBuilderFromCobraFlagsInterface
 var createAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
-var createBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var createBlackDuckCobraHelper blackduck.HelmValuesFromCobraFlags
 var createOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var createPolarisCobraHelper polaris.HelmValuesFromCobraFlags
 var createPolarisReportingCobraHelper polarisreporting.HelmValuesFromCobraFlags
@@ -67,8 +62,6 @@ var baseOpsSightSpec string
 var namespace string
 
 var alertNativePVC bool
-var blackDuckNativeDatabase bool
-var blackDuckNativePVC bool
 
 // createCmd creates a Synopsys resource in the cluster
 var createCmd = &cobra.Command{
@@ -227,13 +220,12 @@ Create Black Duck Commands
 */
 
 func checkPasswords(flagset *pflag.FlagSet) {
-	if flagset.Lookup("external-postgres-host").Changed ||
-		flagset.Lookup("external-postgres-port").Changed ||
-		flagset.Lookup("external-postgres-admin").Changed ||
-		flagset.Lookup("external-postgres-user").Changed ||
-		flagset.Lookup("external-postgres-ssl").Changed ||
-		flagset.Lookup("external-postgres-admin-password").Changed ||
-		flagset.Lookup("external-postgres-user-password").Changed {
+	if flagset.Lookup("admin-password").Changed ||
+		flagset.Lookup("user-password").Changed {
+		// user is explicitly required to set the postgres passwords for: 'admin', 'postgres', and 'user'
+		cobra.MarkFlagRequired(flagset, "admin-password")
+		cobra.MarkFlagRequired(flagset, "user-password")
+	} else {
 		// require all external-postgres parameters
 		cobra.MarkFlagRequired(flagset, "external-postgres-host")
 		cobra.MarkFlagRequired(flagset, "external-postgres-port")
@@ -242,104 +234,11 @@ func checkPasswords(flagset *pflag.FlagSet) {
 		cobra.MarkFlagRequired(flagset, "external-postgres-ssl")
 		cobra.MarkFlagRequired(flagset, "external-postgres-admin-password")
 		cobra.MarkFlagRequired(flagset, "external-postgres-user-password")
-	} else {
-		// user is explicitly required to set the postgres passwords for: 'admin', 'postgres', and 'user'
-		cobra.MarkFlagRequired(flagset, "admin-password")
-		cobra.MarkFlagRequired(flagset, "postgres-password")
-		cobra.MarkFlagRequired(flagset, "user-password")
 	}
 }
 
 func checkSealKey(flagset *pflag.FlagSet) {
 	cobra.MarkFlagRequired(flagset, "seal-key")
-}
-
-var createBlackDuckPreRun = func(cmd *cobra.Command, args []string) error {
-	// Set the base spec
-	if !cmd.Flags().Lookup("template").Changed {
-		baseBlackDuckSpec = defaultBaseBlackDuckSpec
-	}
-	log.Debugf("setting Black Duck's base spec to '%s'", baseBlackDuckSpec)
-	err := createBlackDuckCobraHelper.SetPredefinedCRSpec(baseBlackDuckSpec)
-	if err != nil {
-		cmd.Help()
-		return err
-	}
-	return nil
-}
-
-func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blackDuckNamespace string) (*blackduckv1.Blackduck, error) {
-	// Update Spec with user's flags
-	log.Debugf("updating spec with user's flags")
-	blackDuckInterface, err := createBlackDuckCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate the spec from the flags: %s", err)
-	}
-
-	// Set Namespace in Spec
-	blackDuckSpec, _ := blackDuckInterface.(blackduckv1.BlackduckSpec)
-	blackDuckSpec.Namespace = blackDuckNamespace
-
-	// Create and Deploy Black Duck CRD
-	blackDuck := &blackduckv1.Blackduck{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      blackDuckName,
-			Namespace: blackDuckNamespace,
-		},
-		Spec: blackDuckSpec,
-	}
-	blackDuck.Kind = "Blackduck"
-	blackDuck.APIVersion = "synopsys.com/v1"
-
-	return blackDuck, nil
-}
-
-// addPVCValuesToBlackDuckSpec returns the baseBlackDuckSpec with it's PVC values
-func addPVCValuesToBlackDuckSpec(cmd *cobra.Command, blackDuckName string, blackDuckNamespace string, baseBlackDuckSpec blackduckv1.BlackduckSpec) (*blackduckv1.BlackduckSpec, error) {
-	// Create a Black Duck configuration based on the flags
-	blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update Spec with flags: %+v", err)
-	}
-	// Get the PVCs based on the Black Duck configuration
-	defaultPvcComponentsList, err := getBlackDuckPVCValues(blackDuck)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Black Duck PVC values: %+v", err)
-	}
-	// Add the PVCs to the base Black Duck spec
-	baseBlackDuckSpec.PVC = convertHorizonPVCComponentToBlackDuckPVC(defaultPvcComponentsList)
-	return &baseBlackDuckSpec, nil
-}
-
-func getBlackDuckPVCValues(bd *blackduckv1.Blackduck) ([]*components.PersistentVolumeClaim, error) {
-	app, err := getDefaultApp(nativeClusterType)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Default App: %+v", err)
-	}
-	defaultPvcComponentsList, err := app.Blackduck().GetComponents(&blackduckv1.Blackduck{Spec: bd.Spec}, blackduckapp.PVCResources)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get PVC Components List: %+v", err)
-	}
-	return defaultPvcComponentsList.PersistentVolumeClaims, nil
-}
-
-func convertHorizonPVCComponentToBlackDuckPVC(horizonPVCList []*components.PersistentVolumeClaim) []blackduckv1.PVC {
-	blackDuckPVC := []blackduckv1.PVC{}
-	for _, defaultPvcComponent := range horizonPVCList {
-		defaultPvcComponentResourceQuantitySize := defaultPvcComponent.Spec.Resources.Requests[v1.ResourceStorage]
-		pvc := blackduckv1.PVC{
-			Name: defaultPvcComponent.Name[1:],
-			Size: defaultPvcComponentResourceQuantitySize.String(),
-		}
-		if defaultPvcComponent.Spec.StorageClassName != nil {
-			pvc.StorageClass = *defaultPvcComponent.Spec.StorageClassName
-		}
-		if defaultPvcComponent.Spec.VolumeName != "" {
-			pvc.VolumeName = defaultPvcComponent.Spec.VolumeName
-		}
-		blackDuckPVC = append(blackDuckPVC, pvc)
-	}
-	return blackDuckPVC
 }
 
 // createBlackDuckCmd creates a Black Duck instance
@@ -356,103 +255,55 @@ var createBlackDuckCmd = &cobra.Command{
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		checkPasswords(cmd.Flags())
+		cobra.MarkFlagRequired(cmd.Flags(), "certificate-file-path")
+		cobra.MarkFlagRequired(cmd.Flags(), "certificate-key-file-path")
+		checkSealKey(cmd.Flags())
 		return nil
 	},
-	PreRunE: createBlackDuckPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		mockMode := cmd.Flags().Lookup("mock").Changed
-		blackDuckName := args[0]
-		blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(mockMode, util.BlackDuckCRDName, "", namespace, blackDuckName)
+		helmValuesMap, err := createBlackDuckCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
 
-		// If mock mode, return and don't create resources
-		if mockMode {
-			log.Debugf("generating CRD for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-
-			// Update the BlackDuck spec in 'createBlackDuckCobraHelper' with the correct PVC values
-			blackDuckSpecInterface := createBlackDuckCobraHelper.GetCRSpec()
-			baseBlackDuckSpec, _ := blackDuckSpecInterface.(blackduckv1.BlackduckSpec)
-			baseBlackDuckSpecWithPVCs, err := addPVCValuesToBlackDuckSpec(cmd, blackDuckName, blackDuckNamespace, baseBlackDuckSpec)
-			if err != nil {
-				return fmt.Errorf("failed to add PVCs to Black Duck spec: %+v", err)
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			blackduckChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				blackduckChartRepository = fmt.Sprintf("%s/charts/blackduck-%s.tgz", baseChartRepository, versionFlag.Value.String())
 			}
-
-			err = createBlackDuckCobraHelper.SetCRSpec(*baseBlackDuckSpecWithPVCs)
-			if err != nil {
-				return fmt.Errorf("error setting Spec with PVC values: %s", err)
-			}
-
-			// Update the CR in createBlackDuckCobraHelper with user's flags
-			cmd.Flag("pvc-file-path").Changed = false // we already did the special logic above to set the PVCs
-			blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
-			if err != nil {
-				return err
-			}
-
-			// add versions
-			if len(blackDuck.Spec.Version) == 0 {
-				// versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
-				// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-				// TODO: fix the sort logic for Black Duck version
-				blackDuck.Spec.Version = "2020.2.1"
-			}
-			versionSupportsSecurityContexts, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.December, 0)
-			if err != nil {
-				return fmt.Errorf("failed to check Black Duck version: %s", err)
-			}
-			if !versionSupportsSecurityContexts && cmd.Flags().Changed("security-context-file-path") {
-				log.Warnf("security contexts from --security-context-file-path are ignored for versions before 2019.12.0, you're using version %s", blackDuck.Spec.Version)
-			}
-
-			return PrintResource(*blackDuck, mockFormat, false)
 		}
 
-		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+		secrets, err := blackduck.GetCertsFromFlagsAndSetHelmValue(args[0], namespace, cmd.Flags(), helmValuesMap)
 		if err != nil {
 			return err
 		}
-
-		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		if len(blackDuck.Spec.Version) == 0 {
-			// versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
-			// sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-			// TODO: fix the sort logic for Black Duck version
-			blackDuck.Spec.Version = "2020.2.1"
-		}
-		versionSupportsSecurityContexts, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.December, 0)
-		if err != nil {
-			return fmt.Errorf("failed to check Black Duck version: %s", err)
-		}
-		if !versionSupportsSecurityContexts && cmd.Flags().Changed("security-context-file-path") {
-			return fmt.Errorf("security contexts from --security-context-file-path cannot be set for versions before 2019.12.0, you're using version %s", blackDuck.Spec.Version)
-		}
-		if util.IsOpenshift(kubeClient) && cmd.Flags().Changed("security-context-file-path") {
-			return fmt.Errorf("cannot set security contexts with --security-context-file-path in an Openshift environment")
-		}
-
-		if isBlackDuckVersionSupportMultipleInstance, _ := util.IsBlackDuckVersionSupportMultipleInstance(blackDuck.Spec.Version); !isBlackDuckVersionSupportMultipleInstance {
-			// Verifying only one Black Duck instance per namespace
-			blackducks, err := util.ListBlackduck(blackDuckClient, crdNamespace, metav1.ListOptions{})
-			if err != nil {
-				return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackDuckNamespace, err)
-			}
-
-			for _, v := range blackducks.Items {
-				if strings.EqualFold(v.Spec.Namespace, blackDuckNamespace) {
-					return fmt.Errorf("a Black Duck instance already exists in namespace '%s', only one instance per namespace is allowed", blackDuckNamespace)
-				}
+		for _, v := range secrets {
+			if _, err := kubeClient.CoreV1().Secrets(namespace).Create(&v); err != nil && !k8serrors.IsAlreadyExists(err) {
+				return fmt.Errorf("failed to create certifacte secret: %+v", err)
 			}
 		}
 
-		// Deploy the Black Duck instance
-		log.Debugf("deploying Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
-		_, err = util.CreateBlackduck(blackDuckClient, crdNamespace, blackDuck)
-		if err != nil {
-			return fmt.Errorf("error creating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
+		var extraFiles []string
+		size, found := helmValuesMap["size"]
+		if found {
+			extraFiles = append(extraFiles, fmt.Sprintf("%s.yaml", size.(string)))
 		}
-		log.Infof("successfully submitted Black Duck '%s' into namespace '%s'", blackDuckName, blackDuckNamespace)
+
+		// Check Dry Run before deploying any resources
+		err = util.CreateWithHelm3(args[0], namespace, blackduckChartRepository, helmValuesMap, kubeConfigPath, true, extraFiles...)
+		if err != nil {
+			return fmt.Errorf("failed to create Blackduck resources: %+v", err)
+		}
+
+		// Deploy Resources
+		err = util.CreateWithHelm3(args[0], namespace, blackduckChartRepository, helmValuesMap, kubeConfigPath, false, extraFiles...)
+		if err != nil {
+			return fmt.Errorf("failed to create Blackduck resources: %+v", err)
+		}
 		return nil
 	},
 }
@@ -470,58 +321,45 @@ var createBlackDuckNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 arguments")
 		}
-		if blackDuckNativeDatabase && blackDuckNativePVC {
-			return fmt.Errorf("cannot enable --output-database and --output-pvc, please only specify one")
-		}
-		if blackDuckNativeDatabase {
-			checkPasswords(cmd.Flags())
-		}
+		checkPasswords(cmd.Flags())
+		cobra.MarkFlagRequired(cmd.Flags(), "certificate-file-path")
+		cobra.MarkFlagRequired(cmd.Flags(), "certificate-key-file-path")
 		checkSealKey(cmd.Flags())
 		return nil
 	},
-	PreRunE: createBlackDuckPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName := args[0]
-		blackDuckNamespace, _, _, err := getInstanceInfo(true, util.BlackDuckCRDName, "", namespace, blackDuckName)
-		if err != nil {
-			return err
-		}
-		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+
+		helmValuesMap, err := createBlackDuckCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
 
-		// Security Contexts check
-		newVersionIsGreaterThanOrEqualv2019x12x0, err := util.IsVersionGreaterThanOrEqualTo(blackDuck.Spec.Version, 2019, time.December, 0)
-		if err != nil {
-			return err
-		}
-		if !newVersionIsGreaterThanOrEqualv2019x12x0 && cmd.Flags().Changed("security-context-file-path") {
-			return fmt.Errorf("security contexts from --security-context-file-path cannot be set for versions before 2019.12.0, you're using version %s", blackDuck.Spec.Version)
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			blackduckChartRepository = chartLocationFlag.Value.String()
+		} else {
+			versionFlag := cmd.Flag("version")
+			if versionFlag.Changed {
+				blackduckChartRepository = fmt.Sprintf("%s/charts/blackduck-%s.tgz", baseChartRepository, versionFlag.Value.String())
+			}
 		}
 
-		log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		app, err := getDefaultApp(nativeClusterType)
+		secrets, err := blackduck.GetCertsFromFlagsAndSetHelmValue(args[0], namespace, cmd.Flags(), helmValuesMap)
 		if err != nil {
 			return err
 		}
-		var cList *api.ComponentList
-		blackDuck.Spec.LivenessProbes = true // enable LivenessProbes when generating Kubernetes resources for customers
-		switch {
-		case !blackDuckNativeDatabase && !blackDuckNativePVC:
-			return PrintResource(*blackDuck, nativeFormat, true)
-		case blackDuckNativeDatabase:
-			cList, err = app.Blackduck().GetComponents(blackDuck, blackduckapp.DatabaseResources)
-		case blackDuckNativePVC:
-			cList, err = app.Blackduck().GetComponents(blackDuck, blackduckapp.PVCResources)
+		for _, v := range secrets {
+			PrintComponent(v, "YAML") // helm only supports yaml
 		}
+
+		// Check Dry Run before deploying any resources
+		err = util.TemplateWithHelm3(args[0], namespace, blackduckChartRepository, helmValuesMap)
 		if err != nil {
-			return fmt.Errorf("failed to generate Black Duck components due to %+v", err)
+			return fmt.Errorf("failed to create Blackduck resources: %+v", err)
 		}
-		if cList == nil {
-			return fmt.Errorf("unable to genreate Black Duck components")
-		}
-		return PrintComponentListKube(cList, nativeFormat)
+
+		return nil
 	},
 }
 
@@ -986,7 +824,7 @@ var createBDBANativeCmd = &cobra.Command{
 func init() {
 	// initialize global resource ctl structs for commands to use
 	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
-	createBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
+	createBlackDuckCobraHelper = *blackduck.NewHelmValuesFromCobraFlags()
 	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 	createPolarisCobraHelper = *polaris.NewHelmValuesFromCobraFlags()
 	createPolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
@@ -1009,14 +847,14 @@ func init() {
 	// Add Black Duck Command
 	createBlackDuckCmd.PersistentFlags().StringVar(&baseBlackDuckSpec, "template", baseBlackDuckSpec, "Base resource configuration to modify with flags [empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled]")
 	createBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(createBlackDuckCmd.PersistentFlags(), "namespace")
+	addChartLocationPathFlag(createBlackDuckCmd)
 	createBlackDuckCobraHelper.AddCRSpecFlagsToCommand(createBlackDuckCmd, true)
-	addMockFlag(createBlackDuckCmd)
 	createCmd.AddCommand(createBlackDuckCmd)
 
 	createBlackDuckCobraHelper.AddCRSpecFlagsToCommand(createBlackDuckNativeCmd, true)
 	addNativeFormatFlag(createBlackDuckNativeCmd)
-	createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativeDatabase, "output-database", blackDuckNativeDatabase, "If true, output resources for only Black Duck's database")
-	createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativePVC, "output-pvc", blackDuckNativePVC, "If true, output resources for only Black Duck's persistent volume claims")
+	addChartLocationPathFlag(createBlackDuckNativeCmd)
 	createBlackDuckCmd.AddCommand(createBlackDuckNativeCmd)
 
 	// Add OpsSight Command
