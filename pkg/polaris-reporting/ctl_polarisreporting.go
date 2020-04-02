@@ -162,6 +162,8 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 		return nil, err
 	}
 	util.SetHelmValueInMap(ctl.args, []string{"global", "environment"}, "onprem")
+	// TODO: Need to remove it as part of 2020.4.0. It's a work around to fix the report storage chart issue
+	util.SetHelmValueInMap(ctl.args, []string{"rp-storage-service", "environment"}, "onprem")
 	flagset.VisitAll(ctl.AddHelmValueByCobraFlag)
 
 	return ctl.args, nil
