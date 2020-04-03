@@ -176,14 +176,14 @@ var updateAlertCmd = &cobra.Command{
 
 // updateBlackDuckCmd updates a Black Duck instance
 var updateBlackDuckCmd = &cobra.Command{
-	Use:           "blackduck NAME",
+	Use:           "blackduck NAME -n NAMESPACE",
 	Example:       "synopsyctl update blackduck <name> -n <namespace> --size medium",
 	Short:         "Update a Black Duck instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return fmt.Errorf("this command takes 1 or more arguments")
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		return nil
 	},
@@ -347,14 +347,14 @@ func setBlackDuckFileOwnershipJob(namespace string, name string, pvcName string,
 // updateBlackDuckMasterKeyCmd create new Black Duck master key for source code upload in the cluster
 var updateBlackDuckMasterKeyCmd = &cobra.Command{
 	Use:           "masterkey BLACK_DUCK_NAME DIRECTORY_PATH_OF_STORED_MASTER_KEY NEW_SEAL_KEY -n NAMESPACE",
-	Example:       "synopsysctl update blackduck masterkey <Black Duck name> <directory path of the stored master key> <new seal key> -n <namespace>",
+	Example:       "synopsysctl update blackduck masterkey <name> <directory path of the stored master key> <new seal key> -n <namespace>",
 	Short:         "Update the master key of the Black Duck instance that is used for source code upload",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 3 arguments")
+			return fmt.Errorf("this command takes 3 arguments, but got %+v", args)
 		}
 
 		if len(args[2]) != 32 {
@@ -376,15 +376,15 @@ var updateBlackDuckMasterKeyCmd = &cobra.Command{
 
 // updateBlackDuckMasterKeyNativeCmd create new Black Duck master key for source code upload in the cluster
 var updateBlackDuckMasterKeyNativeCmd = &cobra.Command{
-	Use:           "native BLACK_DUCK_NAME DIRECTORY_PATH_OF_STORED_MASTER_KEY NEW_SEAL_KEY -n NAMESPACE",
-	Example:       "synopsysctl update blackduck masterkey native <Black Duck name> <directory path of the stored master key> <new seal key> -n <namespace>",
+	Use:           "native NAME DIRECTORY_PATH_OF_STORED_MASTER_KEY NEW_SEAL_KEY -n NAMESPACE",
+	Example:       "synopsysctl update blackduck masterkey native <name> <directory path of the stored master key> <new seal key> -n <namespace>",
 	Short:         "Update the master key of the Black Duck instance that is used for source code upload",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 3 arguments")
+			return fmt.Errorf("this command takes 3 arguments, but got %+v", args)
 		}
 
 		if len(args[2]) != 32 {
@@ -465,15 +465,15 @@ func updateMasterKey(namespace string, name string, oldMasterKeyFilePath string,
 
 // updateBlackDuckAddEnvironCmd adds an Environment Variable to a Black Duck instance
 var updateBlackDuckAddEnvironCmd = &cobra.Command{
-	Use:           "addenviron BLACK_DUCK_NAME (ENVIRON_NAME:ENVIRON_VALUE)",
-	Example:       "synopsysctl update blackduck addenviron <name> USE_ALERT:1\nsynopsysctl update blackduck addenviron <name> USE_ALERT:1 -n <namespace>",
+	Use:           "addenviron NAME (ENVIRON_NAME:ENVIRON_VALUE) -n NAMESPACE",
+	Example:       "synopsysctl update blackduck addenviron <name> USE_ALERT:1 -n <namespace>",
 	Short:         "Add an Environment Variable to a Black Duck instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 2 arguments")
+			return fmt.Errorf("this command takes 2 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -807,7 +807,7 @@ var updateOpsSightAddRegistryNativeCmd = &cobra.Command{
 
 // updatePolarisCmd updates a Polaris instance
 var updatePolarisCmd = &cobra.Command{
-	Use:           "polaris",
+	Use:           "polaris -n NAMESPACE",
 	Example:       "synopsyctl update polaris -n <namespace>",
 	Short:         "Update a Polaris instance. (Please make sure you have read and understand prerequisites before installing Polaris: https://sig-confluence.internal.synopsys.com/display/DD/Polaris+on-premises])",
 	SilenceUsage:  true,
@@ -816,7 +816,7 @@ var updatePolarisCmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -856,8 +856,8 @@ var updatePolarisCmd = &cobra.Command{
 
 // updatePolarisReportingCmd updates a Polaris-Reporting instance
 var updatePolarisReportingCmd = &cobra.Command{
-	Use:           "polaris-reporting",
-	Example:       "",
+	Use:           "polaris-reporting -n NAMESPACE",
+	Example:       "synopsysctl update polaris-reporting -n <namespace>",
 	Short:         "Update a Polaris-Reporting instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -906,8 +906,8 @@ var updatePolarisReportingCmd = &cobra.Command{
 
 // updateBDBACmd updates a BDBA instance
 var updateBDBACmd = &cobra.Command{
-	Use:           "bdba",
-	Example:       "",
+	Use:           "bdba -n NAMESPACE",
+	Example:       "synopsysctl update bdba -n <namespace>",
 	Short:         "Update a BDBA instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -915,7 +915,7 @@ var updateBDBACmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -975,7 +975,7 @@ func init() {
 
 	// updateBlackDuckCmd
 	updateBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	cobra.MarkFlagRequired(updateBlackDuckCmd.Flags(), "namespace")
+	cobra.MarkFlagRequired(updateBlackDuckCmd.PersistentFlags(), "namespace")
 	addChartLocationPathFlag(updateBlackDuckCmd)
 	updateBlackDuckCobraHelper.AddCRSpecFlagsToCommand(updateBlackDuckCmd, false)
 	updateCmd.AddCommand(updateBlackDuckCmd)
