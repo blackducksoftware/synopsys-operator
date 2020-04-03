@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -130,48 +131,39 @@ var startBlackDuckCmd = &cobra.Command{
 
 // startOpsSightCmd starts an OpsSight instance
 var startOpsSightCmd = &cobra.Command{
-	Use:           "opssight NAME",
-	Example:       "synopsysctl start opssight <name>\nsynopsysctl start opssight <name1> <name2>",
+	Use:           "opssight NAME -n NAMESPACE",
+	Example:       "synopsysctl start opssight <name> -n <namespace>",
 	Short:         "Start an OpsSight instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes one or more arguments")
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		errors := []error{}
-		for _, opsSightName := range args {
-			opsSightNamespace, crdNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			log.Infof("starting OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-
-			// Get the OpsSight
-			currOpsSight, err := util.GetOpsSight(opsSightClient, crdNamespace, opsSightName, metav1.GetOptions{})
-			if err != nil {
-				errors = append(errors, fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err))
-				continue
-			}
-
-			// Make changes to Spec
-			currOpsSight.Spec.DesiredState = ""
-			// Update OpsSight
-			_, err = util.UpdateOpsSight(opsSightClient, crdNamespace, currOpsSight)
-			if err != nil {
-				errors = append(errors, fmt.Errorf("error starting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err))
-				continue
-			}
-
-			log.Infof("successfully submitted start OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+		opssightName := args[0]
+		instance, err := util.GetWithHelm3(opssightName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("couldn't find instance %s in namespace %s", opssightName, namespace)
 		}
-		if len(errors) > 0 {
-			return fmt.Errorf("%v", errors)
+
+		// Update the Helm Chart Location
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			opssightChartRepository = chartLocationFlag.Value.String()
+		} else {
+			opssightChartRepository = fmt.Sprintf("%s/charts/opssight-%s.tgz", baseChartRepository, instance.Chart.Values["imageTag"])
+		}
+
+		helmValuesMap := make(map[string]interface{})
+		util.SetHelmValueInMap(helmValuesMap, []string{"status"}, "Running")
+
+		err = util.UpdateWithHelm3(opssightName, namespace, opssightChartRepository, helmValuesMap, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to create OpsSight resources: %+v", err)
 		}
 		return nil
 	},
@@ -188,5 +180,7 @@ func init() {
 	addChartLocationPathFlag(startBlackDuckCmd)
 
 	startOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(startOpsSightCmd.PersistentFlags(), "namespace")
+	addChartLocationPathFlag(startOpsSightCmd)
 	startCmd.AddCommand(startOpsSightCmd)
 }

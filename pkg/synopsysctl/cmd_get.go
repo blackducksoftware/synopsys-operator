@@ -24,12 +24,13 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 // Get Command flag for -output functionality
@@ -173,24 +174,29 @@ func getBlackDuckMasterKey(namespace string, name string, filePath string) error
 	return nil
 }
 
-// getOpsSightCmd display one or many OpsSight instances
+// getOpsSightCmd display an OpsSight instance
 var getOpsSightCmd = &cobra.Command{
-	Use:           "opssight [NAME...]",
-	Example:       "synopsysctl get opssights\nsynopsysctl get opssight <name>\nsynopsysctl get opssights <name1> <name2>",
+	Use:           "opssight NAME -n NAMESPACE",
+	Example:       "synopsysctl get opssight -n <namespace>",
 	Aliases:       []string{"opssights"},
-	Short:         "Display one or many OpsSight instances",
+	Short:         "Display an OpsSight instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting OpsSight instances...")
-		out, err := RunKubeCmd(restconfig, kubeClient, generateKubectlGetCommand("opssights", args)...)
+		opssightName := args[0]
+		helmRelease, err := util.GetWithHelm3(opssightName, namespace, kubeConfigPath)
 		if err != nil {
-			return fmt.Errorf("error getting OpsSight instances due to %+v - %s", out, err)
+			return fmt.Errorf("failed to get OpsSight values: %+v", err)
 		}
-		fmt.Printf("%+v", out)
+		helmSetValues := helmRelease.Config
+		PrintComponent(helmSetValues, "YAML")
 		return nil
 	},
 }

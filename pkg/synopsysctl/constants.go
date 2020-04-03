@@ -55,7 +55,14 @@ var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/mast
 
 var baseChartRepository = "https://chartmuseum.cloudnative.sig-clops.synopsys.com"
 
+// Black Duck Constants
 var blackduckChartRepository = fmt.Sprintf("%s/charts/blackduck-2020.4.0.tgz", baseChartRepository)
+
+// Opssight Constants
+var opssightVersion = "0.0.0"
+var opssightChartRepository = fmt.Sprintf("%s/charts/opssight-%s.tgz", baseChartRepository, opssightVersion)
+
+// Polaris Constants
 var polarisName = "polaris"
 var polarisChartRepository = fmt.Sprintf("%s/charts/polaris-helmchart-2020.03.tgz", baseChartRepository)
 
