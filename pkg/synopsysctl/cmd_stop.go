@@ -96,15 +96,15 @@ var stopAlertCmd = &cobra.Command{
 
 // stopBlackDuckCmd stops a Black Duck instance
 var stopBlackDuckCmd = &cobra.Command{
-	Use:           "blackduck NAME",
-	Example:       "synopsysctl stop blackduck <name>\nsynopsysctl stop blackduck <name1> <name2>\nsynopsysctl stop blackduck <name> -n <namespace>\nsynopsysctl stop blackduck <name1> <name2> -n <namespace>",
+	Use:           "blackduck NAME -n NAMESPACE",
+	Example:       "synopsysctl stop blackduck <name> -n <namespace>",
 	Short:         "Stop a Black Duck instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes one or more arguments")
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		return nil
 	},
@@ -193,8 +193,9 @@ func init() {
 	stopCmd.AddCommand(stopAlertCmd)
 
 	stopBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	stopCmd.AddCommand(stopBlackDuckCmd)
+	cobra.MarkFlagRequired(stopBlackDuckCmd.Flags(), "namespace")
 	addChartLocationPathFlag(stopBlackDuckCmd)
+	stopCmd.AddCommand(stopBlackDuckCmd)
 
 	stopCmd.AddCommand(stopOpsSightCmd)
 }

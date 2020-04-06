@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
@@ -76,15 +77,15 @@ var deleteAlertCmd = &cobra.Command{
 
 // deleteBlackDuckCmd deletes Black Duck instances from the cluster
 var deleteBlackDuckCmd = &cobra.Command{
-	Use:           "blackduck NAME",
+	Use:           "blackduck NAME -n NAMESPACE",
 	Example:       "synopsysctl delete blackduck <name> -n <namespace>",
-	Short:         "Delete one or many Black Duck instances",
+	Short:         "Delete a Black Duck instances",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 or more arguments")
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		return nil
 	},
@@ -137,7 +138,7 @@ var deleteOpsSightCmd = &cobra.Command{
 
 // deletePolarisCmd deletes a Polaris instance
 var deletePolarisCmd = &cobra.Command{
-	Use:           "polaris",
+	Use:           "polaris -n NAMESPACE",
 	Example:       "synopsysctl delete polaris -n <namespace>",
 	Short:         "Delete a Polaris instance",
 	SilenceUsage:  true,
@@ -146,7 +147,7 @@ var deletePolarisCmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -164,7 +165,7 @@ var deletePolarisCmd = &cobra.Command{
 
 // deletePolarisReportingCmd deletes a Polaris-Reporting instance
 var deletePolarisReportingCmd = &cobra.Command{
-	Use:           "polaris-reporting",
+	Use:           "polaris-reporting -n NAMESPACE",
 	Example:       "synopsysctl delete polaris-reportinng -n <namespace>",
 	Short:         "Delete a Polaris-Reporting instance",
 	SilenceUsage:  true,
@@ -173,7 +174,7 @@ var deletePolarisReportingCmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -203,7 +204,7 @@ var deletePolarisReportingCmd = &cobra.Command{
 
 // deleteBDBACmd deletes a BDBA instance
 var deleteBDBACmd = &cobra.Command{
-	Use:           "bdba",
+	Use:           "bdba -n NAMESPACE",
 	Example:       "synopsysctl delete bdba -n <namespace>",
 	Short:         "Delete a BDBA instance",
 	SilenceUsage:  true,
@@ -212,7 +213,7 @@ var deleteBDBACmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -240,6 +241,7 @@ func init() {
 
 	// Add Delete Black Duck Command
 	deleteBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(deleteBlackDuckCmd.Flags(), "namespace")
 	deleteCmd.AddCommand(deleteBlackDuckCmd)
 
 	// Add Delete OpsSight Command

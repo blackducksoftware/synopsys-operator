@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -90,7 +91,7 @@ var startAlertCmd = &cobra.Command{
 
 // startBlackDuckCmd starts a Black Duck instance
 var startBlackDuckCmd = &cobra.Command{
-	Use:           "blackduck NAME",
+	Use:           "blackduck NAME -n NAMESPACE",
 	Example:       "synopsysctl start blackduck <name> -n <namespace>",
 	Short:         "Start a Black Duck instance",
 	SilenceUsage:  true,
@@ -98,7 +99,7 @@ var startBlackDuckCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes one or more arguments")
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		return nil
 	},
@@ -184,8 +185,9 @@ func init() {
 	startCmd.AddCommand(startAlertCmd)
 
 	startBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	startCmd.AddCommand(startBlackDuckCmd)
+	cobra.MarkFlagRequired(startBlackDuckCmd.Flags(), "namespace")
 	addChartLocationPathFlag(startBlackDuckCmd)
+	startCmd.AddCommand(startBlackDuckCmd)
 
 	startOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	startCmd.AddCommand(startOpsSightCmd)

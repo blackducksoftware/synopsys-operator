@@ -24,12 +24,13 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 // Get Command flag for -output functionality
@@ -94,18 +95,18 @@ var getAlertCmd = &cobra.Command{
 	},
 }
 
-// getBlackDuckCmd display one or many Black Duck instances
+// getBlackDuckCmd display a Black Duck instances
 var getBlackDuckCmd = &cobra.Command{
-	Use:           "blackduck [NAME...]",
+	Use:           "blackduck NAME -n NAMESPACE",
 	Example:       "synopsysctl get blackduck <name> -n <namespace>",
 	Aliases:       []string{"blackducks"},
-	Short:         "Display one or many Black Duck instances",
+	Short:         "Display a Black Duck instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 arguments")
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		return nil
 	},
@@ -122,7 +123,7 @@ var getBlackDuckCmd = &cobra.Command{
 
 // getBlackDuckRootKeyCmd get Black Duck master key for source code upload in the cluster
 var getBlackDuckRootKeyCmd = &cobra.Command{
-	Use:           "masterkey BLACK_DUCK_NAME DIRECTORY_PATH_TO_STORE_MASTER_KEY -n NAMESPACE",
+	Use:           "masterkey NAME DIRECTORY_PATH_TO_STORE_MASTER_KEY -n NAMESPACE",
 	Example:       "synopsysctl get blackduck masterkey <name> <directory path to store the master key> -n <namespace>",
 	Short:         "Get the master key of the Black Duck instance that is used for source code upload and store it in the host",
 	SilenceUsage:  true,
@@ -130,7 +131,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 2 arguments")
+			return fmt.Errorf("this command takes 2 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -197,18 +198,14 @@ var getOpsSightCmd = &cobra.Command{
 
 // getPolarisCmd display the Polaris  instance
 var getPolarisCmd = &cobra.Command{
-	Use:           "polaris",
+	Use:           "polaris -n NAMESPACE",
 	Example:       "synopsysctl get polaris -n <namespace>",
 	Short:         "Display the polaris instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
-			return fmt.Errorf("this command takes 0 arguments")
-		}
-
-		if !cmd.Flags().Lookup("namespace").Changed {
-			return fmt.Errorf("a namespace must be specified using the --namespace flag")
+			return fmt.Errorf("this command takes 0 arguments but got %+v", len(args))
 		}
 		return nil
 	},
@@ -225,14 +222,14 @@ var getPolarisCmd = &cobra.Command{
 
 // getPolarisReportingCmd display the Polaris Reporting instance
 var getPolarisReportingCmd = &cobra.Command{
-	Use:           "polaris-reporting",
+	Use:           "polaris-reporting -n NAMESPACE",
 	Example:       "synopsysctl get polaris-reporting -n <namespace>",
 	Short:         "Display the polaris-reporting instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
-			return fmt.Errorf("this command takes 0 arguments")
+			return fmt.Errorf("this command takes 0 arguments but got %+v", len(args))
 		}
 		return nil
 	},
@@ -249,14 +246,14 @@ var getPolarisReportingCmd = &cobra.Command{
 
 // getBDBACmd display the BDBA instance
 var getBDBACmd = &cobra.Command{
-	Use:           "bdba",
+	Use:           "bdba -n NAMESPACE",
 	Example:       "synopsysctl get bdba -n <namespace>",
 	Short:         "Display the BDBA instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
-			return fmt.Errorf("this command takes 0 arguments")
+			return fmt.Errorf("this command takes 0 arguments but got %+v", len(args))
 		}
 		return nil
 	},
@@ -283,10 +280,11 @@ func init() {
 	getCmd.AddCommand(getAlertCmd)
 
 	// Black Duck
-	getBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	getBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
+	getBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(getBlackDuckCmd.PersistentFlags(), "namespace")
 	getCmd.AddCommand(getBlackDuckCmd)
+
+	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
 
 	// OpsSight
 	getOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
@@ -297,6 +295,7 @@ func init() {
 
 	// Polaris
 	getPolarisCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(getPolarisCmd.Flags(), "namespace")
 	getCmd.AddCommand(getPolarisCmd)
 
 	// Polaris Reporting

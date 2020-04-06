@@ -243,8 +243,8 @@ func checkSealKey(flagset *pflag.FlagSet) {
 
 // createBlackDuckCmd creates a Black Duck instance
 var createBlackDuckCmd = &cobra.Command{
-	Use:           "blackduck NAME",
-	Example:       "synopsysctl create blackduck <name>\nsynopsysctl create blackduck <name> -n <namespace>\nsynopsysctl create blackduck <name> --mock json",
+	Use:           "blackduck NAME -n NAMESPACE",
+	Example:       "synopsysctl create blackduck <name> -n <namespace>",
 	Short:         "Create a Black Duck instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -252,7 +252,7 @@ var createBlackDuckCmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		checkPasswords(cmd.Flags())
 		cobra.MarkFlagRequired(cmd.Flags(), "certificate-file-path")
@@ -310,8 +310,8 @@ var createBlackDuckCmd = &cobra.Command{
 
 // createBlackDuckNativeCmd prints the Kubernetes resources for creating a Black Duck instance
 var createBlackDuckNativeCmd = &cobra.Command{
-	Use:           "native NAME",
-	Example:       "synopsysctl create blackduck native <name>\nsynopsysctl create blackduck native <name> -n <namespace>\nsynopsysctl create blackduck native <name> -o yaml",
+	Use:           "native NAME -n NAMESPACE",
+	Example:       "synopsysctl create blackduck native <name> -n <namespace>",
 	Short:         "Print the Kubernetes resources for creating a Black Duck instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -319,7 +319,7 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 arguments")
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		checkPasswords(cmd.Flags())
 		cobra.MarkFlagRequired(cmd.Flags(), "certificate-file-path")
@@ -486,7 +486,7 @@ var createOpsSightNativeCmd = &cobra.Command{
 
 // createPolarisCmd creates a Polaris instance
 var createPolarisCmd = &cobra.Command{
-	Use:           "polaris",
+	Use:           "polaris -n NAMESPACE",
 	Short:         "Create a Polaris instance. (Please make sure you have read and understand prerequisites before installing Polaris: https://sig-confluence.internal.synopsys.com/display/DD/Polaris+on-premises])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -537,7 +537,7 @@ var createPolarisCmd = &cobra.Command{
 
 // createPolarisNativeCmd prints the Kubernetes resources for creating a Polaris instance
 var createPolarisNativeCmd = &cobra.Command{
-	Use:           "native",
+	Use:           "native -n NAMESPACE",
 	Short:         "Print Kubernetes resources for creating a Polaris instance (Please make sure you have read and understand prerequisites before installing Polaris: https://sig-confluence.internal.synopsys.com/display/DD/Polaris+on-premises])",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -546,7 +546,7 @@ var createPolarisNativeCmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -602,8 +602,8 @@ func polarisPostgresCheck(flagset *pflag.FlagSet) error {
 
 // createPolarisReportingCmd creates a Polaris-Reporting instance
 var createPolarisReportingCmd = &cobra.Command{
-	Use:           "polaris-reporting",
-	Example:       "",
+	Use:           "polaris-reporting -n NAMESPACE",
+	Example:       "synopsysctl create polaris-reporting -n <namespace>",
 	Short:         "Create a Polaris-Reporting instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -670,8 +670,8 @@ var createPolarisReportingCmd = &cobra.Command{
 
 // createPolarisReportingNativeCmd prints Polaris-Reporting resources
 var createPolarisReportingNativeCmd = &cobra.Command{
-	Use:           "native",
-	Example:       "",
+	Use:           "native -n NAMESPACE",
+	Example:       "synopsysctl create polaris-reporting native -n <namespace>",
 	Short:         "Print Kubernetes resources for creating a Polaris-Reporting instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -679,7 +679,7 @@ var createPolarisReportingNativeCmd = &cobra.Command{
 		// Check the Number of Arguments
 		if len(args) != 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 0 argument, but got %+v", args)
+			return fmt.Errorf("this command takes 0 arguments, but got %+v", args)
 		}
 		return nil
 	},
@@ -729,8 +729,8 @@ var createPolarisReportingNativeCmd = &cobra.Command{
 
 // createBDBACmd creates a BDBA instance
 var createBDBACmd = &cobra.Command{
-	Use:           "bdba",
-	Example:       "",
+	Use:           "bdba -n NAMESPACE",
+	Example:       "synopsysctl create bdba -n <namespace>",
 	Short:         "Create a BDBA instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -780,8 +780,8 @@ var createBDBACmd = &cobra.Command{
 
 // createBDBANativeCmd prints BDBA resources
 var createBDBANativeCmd = &cobra.Command{
-	Use:           "native",
-	Example:       "",
+	Use:           "native -n NAMESPACE",
+	Example:       "synopsysctl create bdba -n <namespace>",
 	Short:         "Print Kubernetes resources for creating a BDBA instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -853,7 +853,6 @@ func init() {
 	createCmd.AddCommand(createBlackDuckCmd)
 
 	createBlackDuckCobraHelper.AddCRSpecFlagsToCommand(createBlackDuckNativeCmd, true)
-	addNativeFormatFlag(createBlackDuckNativeCmd)
 	addChartLocationPathFlag(createBlackDuckNativeCmd)
 	createBlackDuckCmd.AddCommand(createBlackDuckNativeCmd)
 
