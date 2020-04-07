@@ -58,7 +58,7 @@ import (
 // Update Command ResourceCtlSpecBuilders
 var updateAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
 var updateBlackDuckCobraHelper blackduck.HelmValuesFromCobraFlags
-var updateOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var updateOpsSightCobraHelper opssight.HelmValuesFromCobraFlags
 var updatePolarisCobraHelper polaris.HelmValuesFromCobraFlags
 var updatePolarisReportingCobraHelper polarisreporting.HelmValuesFromCobraFlags
 var updateBDBACobraHelper bdba.HelmValuesFromCobraFlags
@@ -530,66 +530,54 @@ func updateBlackDuckSetImageRegistry(bd *blackduckapi.Blackduck, imageRegistry s
 Update OpsSight Commands
 */
 
-func updateOpsSight(ops *opssightapi.OpsSight, flagset *pflag.FlagSet) (*opssightapi.OpsSight, error) {
-	updateOpsSightCobraHelper.SetCRSpec(ops.Spec)
-	opsSightInterface, err := updateOpsSightCobraHelper.GenerateCRSpecFromFlags(flagset)
-	if err != nil {
-		return nil, err
-	}
-	newSpec := opsSightInterface.(opssightapi.OpsSightSpec)
-	ops.Spec = newSpec
-	return ops, nil
-}
-
 // updateOpsSightCmd updates an OpsSight instance
 var updateOpsSightCmd = &cobra.Command{
-	Use:           "opssight NAME",
-	Example:       "synopsyctl update opssight <name> --blackduck-max-count 2\nsynopsyctl update opssight <name> --blackduck-max-count 2 -n <namespace>\nsynopsyctl update opssight <name> --blackduck-max-count 2 --mock json",
+	Use:           "opssight NAME -n NAMESPACE",
+	Example:       "synopsyctl update opssight <name> -n <namespace> --blackduck-max-count 2",
 	Short:         "Update an OpsSight instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
+			return fmt.Errorf("this command takes 1 argument, but got %+v", args)
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		mockMode := cmd.Flags().Lookup("mock").Changed
-		opsSightName := args[0]
-		opsSightNamespace, crdnamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
-		if err != nil {
-			return err
-		}
-		currOpsSight, err := util.GetOpsSight(opsSightClient, crdnamespace, opsSightName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-		}
-		newOpsSight, err := updateOpsSight(currOpsSight, cmd.Flags())
-		if err != nil {
-			return err
-		}
+		opssightName := args[0]
 
-		// update the namespace label if the version of the app got changed
-		// TODO: when opssight versioning PR is merged, the hard coded 2.2.5 version to be replaced with OpsSight
-		_, err = util.CheckAndUpdateNamespace(kubeClient, util.OpsSightName, opsSightNamespace, opsSightName, "2.2.5", false)
+		mockMode := cmd.Flags().Lookup("mock").Changed
+
+		// Set flags from the current release in the updateOpsSightCobraHelper
+		helmRelease, err := util.GetWithHelm3(opssightName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to get previous user defined values: %+v", err)
+		}
+		updateOpsSightCobraHelper.SetArgs(helmRelease.Config)
+
+		// Update Helm Values with flags
+		helmValuesMap, err := updateOpsSightCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
 
 		// If mock mode, return and don't create resources
 		if mockMode {
-			log.Debugf("generating updates to the CRD for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-			return PrintResource(*newOpsSight, mockFormat, false)
+			_, err = PrintComponent(helmValuesMap, "YAML")
+			return err
 		}
 
-		log.Infof("updating OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-		_, err = util.UpdateOpsSight(opsSightClient, crdnamespace, newOpsSight)
+		// Update any initial resources that were created...
+
+		// Update OpsSight Resources
+		err = util.UpdateWithHelm3(opssightName, namespace, opssightChartRepository, helmValuesMap, kubeConfigPath)
 		if err != nil {
-			return fmt.Errorf("error updating OpsSight '%s' due to %+v", newOpsSight.Name, err)
+			return fmt.Errorf("failed to update OpsSight resources due to %+v", err)
 		}
-		log.Infof("successfully submitted updates to OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+
+		log.Infof("OpsSight has been successfully updated in namespace '%s'!", namespace)
+
 		return nil
 	},
 }
@@ -617,8 +605,8 @@ func updateOpsSightExternalHost(ops *opssightapi.OpsSight, scheme, domain, port,
 
 // updateOpsSightExternalHostCmd updates an external host for an OpsSight intance's component
 var updateOpsSightExternalHostCmd = &cobra.Command{
-	Use:           "externalhost NAME SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT",
-	Example:       "synopsysctl update opssight externalhost <name> scheme domain 80 user pass 50\nsynopsysctl update opssight externalhost <name> scheme domain 80 user pass 50 -n <namespace>",
+	Use:           "externalhost NAME SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT -n NAMESPACE",
+	Example:       "synopsysctl update opssight externalhost <name> scheme domain 80 user pass 50 -n <namespace>",
 	Short:         "Update an external host for an OpsSight intance's component",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -640,6 +628,8 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// TODO - convert to update for Helm
+		// In order to call this function they must have already upgraded to use helm (add a check)
 		mockMode := cmd.Flags().Lookup("mock").Changed
 		opsSightName := args[0]
 		opsSightNamespace, crdnamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
@@ -673,8 +663,8 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 
 // updateOpsSightExternalHostNativeCmd prints the Kubernetes resources with updates to an external host for an OpsSight intance's component
 var updateOpsSightExternalHostNativeCmd = &cobra.Command{
-	Use:           "externalhost NAME SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT",
-	Example:       "synopsysctl update opssight externalhost native <name> scheme domain 80 user pass 50\nsynopsysctl update opssight externalhost native <name> scheme domain 80 user pass 50 -n <namespace>",
+	Use:           "externalhost NAME SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT -n NAMESPACE",
+	Example:       "synopsysctl update opssight externalhost native <name> scheme domain 80 user pass 50 -n <namespace>",
 	Short:         "Print the Kubernetes resources with updates to an external host for an OpsSight intance's component",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -696,6 +686,8 @@ var updateOpsSightExternalHostNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// TODO - convert to update for Helm
+		// In order to call this function they must have already upgraded to use helm (add a check)
 		opsSightName := args[0]
 		opsSightNamespace, crdnamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
 		if err != nil {
@@ -727,8 +719,8 @@ func updateOpsSightAddRegistry(ops *opssightapi.OpsSight, url, user, pass string
 
 // updateOpsSightAddRegistryCmd adds an internal registry to an OpsSight instance's ImageFacade
 var updateOpsSightAddRegistryCmd = &cobra.Command{
-	Use:           "registry NAME URL USER PASSWORD",
-	Example:       "synopsysctl update opssight registry <name> reg_url reg_username reg_password\nsynopsysctl update opssight registry <name> reg_url reg_username reg_password -n <namespace>",
+	Use:           "registry NAME URL USER PASSWORD -n NAMESPACE",
+	Example:       "synopsysctl update opssight registry <name> reg_url reg_username reg_password -n <namespace>",
 	Short:         "Add an internal registry to an OpsSight instance's ImageFacade",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -740,6 +732,8 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// TODO - convert to update for Helm
+		// In order to call this function they must have already upgraded to use helm (add a check)
 		mockMode := cmd.Flags().Lookup("mock").Changed
 		opsSightName := args[0]
 		opsSightNamespace, crdnamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
@@ -773,8 +767,8 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 
 // updateOpsSightAddRegistryNativeCmd prints the Kubernetes resources with updates from adding an internal registry to an OpsSight instance's ImageFacade
 var updateOpsSightAddRegistryNativeCmd = &cobra.Command{
-	Use:           "native NAME URL USER PASSWORD",
-	Example:       "synopsysctl update opssight registry native <name> reg_url reg_username reg_password\nsynopsysctl update opssight registry native <name> reg_url reg_username reg_password -n <namespace>",
+	Use:           "native NAME URL USER PASSWORD -n NAMESPACE",
+	Example:       "synopsysctl update opssight registry native <name> reg_url reg_username reg_password -n <namespace>",
 	Short:         "Print the Kubernetes resources with updates from adding an internal registry to an OpsSight instance's ImageFacade",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -786,6 +780,8 @@ var updateOpsSightAddRegistryNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// TODO - convert to update for Helm
+		// In order to call this function they must have already upgraded to use helm (add a check)
 		opsSightName := args[0]
 		opsSightNamespace, crdnamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
 		if err != nil {
@@ -957,7 +953,7 @@ var updateBDBACmd = &cobra.Command{
 func init() {
 	// initialize global resource ctl structs for commands to use
 	updateBlackDuckCobraHelper = *blackduck.NewHelmValuesFromCobraFlags()
-	updateOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
+	updateOpsSightCobraHelper = *opssight.NewHelmValuesFromCobraFlags()
 	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 	updatePolarisCobraHelper = *polaris.NewHelmValuesFromCobraFlags()
 	updatePolarisReportingCobraHelper = *polarisreporting.NewHelmValuesFromCobraFlags()
@@ -993,7 +989,7 @@ func init() {
 
 	// updateOpsSightCmd
 	updateOpsSightCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	updateOpsSightCobraHelper.AddCRSpecFlagsToCommand(updateOpsSightCmd, false)
+	updateOpsSightCobraHelper.AddCobraFlagsToCommand(updateOpsSightCmd, false)
 	addMockFlag(updateOpsSightCmd)
 	updateCmd.AddCommand(updateOpsSightCmd)
 

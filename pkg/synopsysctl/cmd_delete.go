@@ -105,33 +105,31 @@ var deleteBlackDuckCmd = &cobra.Command{
 	},
 }
 
-// deleteOpsSightCmd deletes OpsSight instances from the cluster
+// deleteOpsSightCmd deletes an OpsSight instance from the cluster
 var deleteOpsSightCmd = &cobra.Command{
-	Use:           "opssight NAME...",
-	Example:       "synopsysctl delete opssight <name>\nsynopsysctl delete opssight <name1> <name2> <name3>\nsynopsysctl delete opssight <name> -n <namespace>\nsynopsysctl delete opssight <name1> <name2> <name3> -n <namespace>",
-	Short:         "Delete one or many OpsSight instances",
+	Use:           "opssight NAME -n NAMESPACE",
+	Example:       "synopsysctl delete opssight <name> -n <namespace>",
+	Short:         "Delete an OpsSight instances",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 or more arguments")
+			return fmt.Errorf("this command takes 1 argument but got %+v", len(args))
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		for _, opsSightName := range args {
-			opsSightNamespace, crdNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
-			if err != nil {
-				return err
-			}
-			log.Infof("deleting OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-			err = util.DeleteOpsSight(opsSightClient, opsSightName, crdNamespace, &metav1.DeleteOptions{})
-			if err != nil {
-				return fmt.Errorf("error deleting OpsSight '%s' in namespace '%s' due to '%s'", opsSightName, opsSightNamespace, err)
-			}
-			log.Infof("successfully submitted delete OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+		opssightName := args[0]
+		// TODO Delete any initial resources...
+
+		// Delete Opssight Resources
+		err := util.DeleteWithHelm3(opssightName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to delete OpsSight resources: %+v", err)
 		}
+
+		log.Infof("OpsSight has been successfully Deleted!")
 		return nil
 	},
 }
@@ -246,6 +244,7 @@ func init() {
 
 	// Add Delete OpsSight Command
 	deleteOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(deleteBDBACmd.Flags(), "namespace")
 	deleteCmd.AddCommand(deleteOpsSightCmd)
 
 	// Add Delete Polaris Command

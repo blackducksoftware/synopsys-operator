@@ -68,42 +68,9 @@ var editAlertCmd = &cobra.Command{
 	},
 }
 
-// editOpsSightCmd edits an OpsSight instance by using the kube/oc editor
-var editOpsSightCmd = &cobra.Command{
-	Use:           "opssight NAME",
-	Example:       "synopsysctl edit opssight <name>\nsynopsysctl edit opssight <name> -n <namespace>",
-	Short:         "Edit an OpsSight instance",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName := args[0]
-		opsSightNamespace, _, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
-		if err != nil {
-			return err
-		}
-		log.Infof("editing OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-		err = RunKubeEditorCmd(restconfig, kubeClient, "edit", "opssight", opsSightName, "-n", opsSightNamespace)
-		if err != nil {
-			return fmt.Errorf("error editing OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-		}
-		log.Infof("successfully edited OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-		return nil
-	},
-}
-
 func init() {
 	rootCmd.AddCommand(editCmd)
 
 	editAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	editCmd.AddCommand(editAlertCmd)
-
-	editOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	editCmd.AddCommand(editOpsSightCmd)
 }
