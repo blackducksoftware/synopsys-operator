@@ -27,10 +27,13 @@ import (
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	alertctl "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+var stopAlertCobraHelper alertctl.HelmValuesFromCobraFlags
 
 // stopCmd stops a Synopsys resource in the cluster
 var stopCmd = &cobra.Command{
@@ -44,52 +47,44 @@ var stopCmd = &cobra.Command{
 // stopAlertCmd stops an Alert instance
 var stopAlertCmd = &cobra.Command{
 	Use:           "alert NAME",
-	Example:       "synopsysctl stop alert <name>\nsynopsysctl stop alert <name1> <name2>\nsynopsysctl stop alert <name> -n <namespace>\nsynopsysctl stop alert <name1> <name2> -n <namespace>",
+	Example:       "synopsysctl stop alert <name> -n <namespace>",
 	Short:         "Stop an Alert instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		if len(args) != 1 {
 			cmd.Help()
-			return fmt.Errorf("this command takes one or more arguments")
+			return fmt.Errorf("this command takes one argument but got %+v", len(args))
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		errors := []error{}
-		for _, alertName := range args {
-			alertNamespace, crdNamespace, scope, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
-			if err != nil {
-				if len(alertNamespace) == 0 && scope == apiextensions.ClusterScoped {
-					err = fmt.Errorf("%s %s doesn't appear to be running: %v", util.AlertName, alertName, err)
-				}
-				errors = append(errors, err)
-				continue
-			}
-			log.Infof("stopping Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+		alertName := args[0]
 
-			// Get the Alert
-			currAlert, err := util.GetAlert(alertClient, crdNamespace, alertName, metav1.GetOptions{})
-			if err != nil {
-				errors = append(errors, fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err))
-				continue
-			}
-
-			// Make changes to Spec
-			currAlert.Spec.DesiredState = "STOP"
-			// Update Alert
-			_, err = util.UpdateAlert(alertClient,
-				currAlert.Spec.Namespace, currAlert)
-			if err != nil {
-				errors = append(errors, fmt.Errorf("error stopping Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err))
-				continue
-			}
-
-			log.Infof("successfully submitted stop Alert '%s' in namespace '%s'", alertName, alertNamespace)
+		instance, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("couldn't find instance %s in namespace %s", args[0], namespace)
 		}
-		if len(errors) > 0 {
-			return fmt.Errorf("%v", errors)
+
+		// Update the Helm Chart Location
+		configAlertData := instance.Config["alert"].(map[string]interface{})
+		configAlertVersion := configAlertData["imageTag"]
+		chartLocationFlag := cmd.Flag("chart-location-path")
+		if chartLocationFlag.Changed {
+			alertChartRepository = chartLocationFlag.Value.String()
+		} else {
+			alertChartRepository = fmt.Sprintf("%s/charts/alert-%s.tgz", baseChartRepository, configAlertVersion)
 		}
+
+		helmValuesMap := map[string]interface{}{"status": "Stopped"}
+
+		err = util.UpdateWithHelm3(alertName, namespace, alertChartRepository, helmValuesMap, kubeConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to create Alert resources: %+v", err)
+		}
+
+		log.Infof("successfully submitted stop Alert '%s' in namespace '%s'", alertName, namespace)
+
 		return nil
 	},
 }
@@ -187,9 +182,13 @@ var stopOpsSightCmd = &cobra.Command{
 }
 
 func init() {
+	stopAlertCobraHelper = *alertctl.NewHelmValuesFromCobraFlags()
+
 	rootCmd.AddCommand(stopCmd)
 
 	stopAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	cobra.MarkFlagRequired(stopAlertCmd.Flags(), "namespace")
+	addChartLocationPathFlag(stopAlertCmd)
 	stopCmd.AddCommand(stopAlertCmd)
 
 	stopBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")

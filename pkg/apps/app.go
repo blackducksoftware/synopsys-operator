@@ -22,7 +22,6 @@ under the License.
 package apps
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"k8s.io/client-go/rest"
 )
@@ -36,9 +35,4 @@ type App struct {
 // NewApp will return an App
 func NewApp(config *protoform.Config, kubeConfig *rest.Config) *App {
 	return &App{config: config, kubeConfig: kubeConfig}
-}
-
-// Alert will return an Alert
-func (a *App) Alert() *alert.Alert {
-	return alert.NewAlert(a.config, a.kubeConfig)
 }

@@ -75,22 +75,26 @@ var getCmd = &cobra.Command{
 
 // getAlertCmd display one or many Alert instances
 var getAlertCmd = &cobra.Command{
-	Use:           "alert [NAME...]",
-	Example:       "synopsysctl get alerts\nsynopsysctl get alert <name>\nsynopsysctl get alerts <name1> <name2>\nsynopsysctl get alerts -n <namespace>\nsynopsysctl get alert <name> -n <namespace>\nsynopsysctl get alerts <name1> <name2> -n <namespace>",
+	Use:           "alert NAME",
+	Example:       "synopsysctl get alert <name> -n <namespace>",
 	Aliases:       []string{"alerts"},
-	Short:         "Display one or many Alert instances",
+	Short:         "Display an Alert instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument but got %+v", len(args))
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting Alert instances...")
-		out, err := RunKubeCmd(restconfig, kubeClient, generateKubectlGetCommand("alerts", args)...)
+		alertName := args[0]
+		helmRelease, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
 		if err != nil {
-			return fmt.Errorf("error getting Alert instances due to %+v - %s", out, err)
+			return fmt.Errorf("failed to get Alert values: %+v", err)
 		}
-		fmt.Printf("%+v", out)
+		helmSetValues := helmRelease.Config
+		PrintComponent(helmSetValues, "YAML")
 		return nil
 	},
 }
@@ -274,9 +278,7 @@ func init() {
 
 	// Alert
 	getAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
-	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-	getAlertCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
+	cobra.MarkFlagRequired(getAlertCmd.Flags(), "namespace")
 	getCmd.AddCommand(getAlertCmd)
 
 	// Black Duck

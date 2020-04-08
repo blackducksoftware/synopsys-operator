@@ -26,7 +26,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -101,9 +100,6 @@ func startController(deployer *protoform.Deployer, name string, stopCh chan stru
 	case util.BlackDuckCRDName:
 		blackduckController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetBlackDuckTemplate(), stopCh)
 		deployer.AddController(blackduckController)
-	case util.AlertCRDName:
-		alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetAlertTemplate(), stopCh)
-		deployer.AddController(alertController)
 	case util.OpsSightCRDName:
 		opsSightController := opssight.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetOpsSightDefault(), stopCh)
 		deployer.AddController(opsSightController)
