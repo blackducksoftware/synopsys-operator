@@ -22,7 +22,6 @@
 package blackduck
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -91,7 +90,7 @@ func GetCertsFromFlagsAndSetHelmValue(name string, namespace string, flagset *pf
 	if flagset.Lookup("certificate-file-path").Changed && flagset.Lookup("certificate-key-file-path").Changed {
 		certPath := flagset.Lookup("certificate-file-path").Value.String()
 		keyPath := flagset.Lookup("certificate-key-file-path").Value.String()
-		secretName := fmt.Sprintf("%s-blackduck-webserver-certificate", name)
+		secretName := util.GetResourceName(name, util.BlackDuckName, "webserver-certificate")
 
 		secret, err := GetCertificateSecretFromFile(secretName, namespace, certPath, keyPath)
 		if err != nil {
@@ -103,7 +102,7 @@ func GetCertsFromFlagsAndSetHelmValue(name string, namespace string, flagset *pf
 
 	if flagset.Lookup("proxy-certificate-file-path").Changed {
 		certPath := flagset.Lookup("proxy-certificate-file-path").Value.String()
-		secretName := fmt.Sprintf("%s-blackduck-proxy-certificate", name)
+		secretName := util.GetResourceName(name, util.BlackDuckName, "proxy-certificate")
 
 		cert, err := ioutil.ReadFile(certPath)
 		if err != nil {
@@ -120,7 +119,7 @@ func GetCertsFromFlagsAndSetHelmValue(name string, namespace string, flagset *pf
 
 	if flagset.Lookup("auth-custom-ca-file-path").Changed {
 		certPath := flagset.Lookup("auth-custom-ca-file-path").Value.String()
-		secretName := fmt.Sprintf("%s-blackduck-auth-custom-ca", name)
+		secretName := util.GetResourceName(name, util.BlackDuckName, "auth-custom-ca")
 
 		cert, err := ioutil.ReadFile(certPath)
 		if err != nil {
