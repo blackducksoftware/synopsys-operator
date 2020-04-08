@@ -39,7 +39,7 @@ import (
 func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) error {
 	// TODO ensure operator is installed and running a recent version that doesn't require additional migration
 
-	log.Info("Stopping Operator")
+	log.Info("stopping Synopsys Operator")
 	soOperatorDeploy, err := util.GetDeployment(kubeClient, operatorNamespace, "synopsys-operator")
 	if err != nil {
 		return err
@@ -65,13 +65,13 @@ func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) e
 		return err
 	}
 
-	log.Info("Deleting Blackduck resources")
+	log.Info("deleting existing Black Duck resources")
 	// TODO wait for resources to be deleted
 	if err := deleteComponents(bd); err != nil {
 		return err
 	}
 
-	log.Info("Upgrading Blackduck using Helm")
+	log.Info("upgrading Black Duck using Helm based deployment")
 	// Update the Helm Chart Location
 
 	chartLocationFlag := flags.Lookup("chart-location-path")
@@ -101,12 +101,12 @@ func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) e
 		return fmt.Errorf("failed to create Blackduck resources: %+v", err)
 	}
 
-	log.Info("Removing Black Duck custom resource")
+	log.Info("removing Black Duck custom resource")
 	if err := util.DeleteBlackduck(blackDuckClient, bd.Name, bd.Namespace, &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
-	log.Info("Starting Operator")
+	log.Info("starting Synopsys Operator")
 	if _, err := util.PatchDeploymentForReplicas(kubeClient, soOperatorDeploy, util.IntToInt32(1)); err != nil {
 		return err
 	}
@@ -347,7 +347,7 @@ func deleteComponents(blackduck *v1.Blackduck) error {
 	}
 
 	secret, err := kubeClient.CoreV1().Secrets(blackduck.Spec.Namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=blackduck, name=%s", blackduck.Name),
+		LabelSelector: fmt.Sprintf("app=blackduck, name=%s, component!=secret", blackduck.Name),
 	})
 	if err != nil {
 		return err
