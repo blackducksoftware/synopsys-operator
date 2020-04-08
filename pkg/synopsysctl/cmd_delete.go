@@ -111,7 +111,7 @@ var deleteBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to delete Blackduck resources: %+v", err)
 		}
-		secrets := []string{"-webserver-certificate", "-proxy-certificate", "-authca-certificate"}
+		secrets := []string{"-webserver-certificate", "-proxy-certificate", "-auth-custom-ca"}
 		for _, v := range secrets {
 			if err := kubeClient.CoreV1().Secrets(namespace).Delete(fmt.Sprintf("%s%s", args[0], v), &metav1.DeleteOptions{}); !k8serrors.IsNotFound(err) {
 				log.Warnf("couldn't delete secret %s", v)

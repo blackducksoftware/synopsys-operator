@@ -24,11 +24,12 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"net/http"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/ghodss/yaml"
 
 	log "github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
@@ -334,12 +335,12 @@ func LoadChart(chartURL string, actionConfig *action.Configuration) (*chart.Char
 	// Get full path - checks local machine and chart repository
 	chartFullPath, err := client.ChartPathOptions.LocateChart(chartURL, settings)
 	if err != nil {
-		return nil, fmt.Errorf("failed to locate chart with '%s': %s", chartURL, err)
+		return nil, fmt.Errorf("failed to locate chart '%s' due to %+v", chartURL, err)
 	}
 
 	chart, err := loader.Load(chartFullPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load chart from %s", chartFullPath)
+		return nil, fmt.Errorf("failed to load chart from %s due to %+v", chartFullPath, err)
 	}
 	return chart, nil
 }

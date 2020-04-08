@@ -23,6 +23,8 @@ package synopsysctl
 
 import (
 	"fmt"
+	"strings"
+
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -32,7 +34,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
 )
 
 func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) error {
@@ -100,7 +101,7 @@ func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) e
 		return fmt.Errorf("failed to create Blackduck resources: %+v", err)
 	}
 
-	log.Info("Removing CRD")
+	log.Info("Removing Black Duck custom resource")
 	if err := util.DeleteBlackduck(blackDuckClient, bd.Name, bd.Namespace, &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
@@ -153,10 +154,9 @@ func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]i
 	}
 
 	// Webserver
-	webserverSecretName := fmt.Sprintf("%s-webserver-certificate", bd.Name)
+	webserverSecretName := util.GetResourceName(bd.Name, util.BlackDuckName, "webserver-certificate")
 	var webserverSecret *corev1.Secret
 	var err error
-
 	if len(bd.Spec.Certificate) > 0 && len(bd.Spec.CertificateKey) > 0 {
 		webserverSecret, err = blackduck.GetCertificateSecret(webserverSecretName, bd.Spec.Namespace, []byte(bd.Spec.Certificate), []byte(bd.Spec.CertificateKey))
 		if err != nil {
@@ -179,7 +179,7 @@ func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]i
 
 	// Auth CA
 	if len(bd.Spec.AuthCustomCA) > 0 {
-		authSecretName := fmt.Sprintf("%s-authca-certificate", bd.Name)
+		authSecretName := util.GetResourceName(bd.Name, util.BlackDuckName, "auth-custom-ca")
 		authSecret, err := blackduck.GetAuthCertificateSecret(authSecretName, bd.Spec.Namespace, []byte(bd.Spec.AuthCustomCA))
 		if err != nil {
 			return nil, err
@@ -193,7 +193,7 @@ func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]i
 
 	// Proxy Cert
 	if len(bd.Spec.ProxyCertificate) > 0 {
-		proxySecretName := fmt.Sprintf("%s-proxy-certificate", bd.Name)
+		proxySecretName := util.GetResourceName(bd.Name, util.BlackDuckName, "proxy-certificate")
 		proxySecret, err := blackduck.GetProxyCertificateSecret(proxySecretName, bd.Spec.Namespace, []byte(bd.Spec.ProxyCertificate))
 		if err != nil {
 			return nil, err
