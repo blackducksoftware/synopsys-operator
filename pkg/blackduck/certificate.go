@@ -145,7 +145,9 @@ func GetCertificateSecret(secretName string, namespace string, cert []byte, key 
 			Name:      secretName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"environment": namespace,
+				"app":       "blackduck",
+				"component": "secret",
+				"name":      secretName,
 			},
 		},
 		Data: map[string][]byte{
@@ -166,7 +168,9 @@ func GetProxyCertificateSecret(secretName string, namespace string, cert []byte)
 			Name:      secretName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"environment": namespace,
+				"app":       "blackduck",
+				"component": "secret",
+				"name":      secretName,
 			},
 		},
 		Data: map[string][]byte{
@@ -186,7 +190,9 @@ func GetAuthCertificateSecret(secretName string, namespace string, cert []byte) 
 			Name:      secretName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"environment": namespace,
+				"app":       "blackduck",
+				"component": "secret",
+				"name":      secretName,
 			},
 		},
 		Data: map[string][]byte{

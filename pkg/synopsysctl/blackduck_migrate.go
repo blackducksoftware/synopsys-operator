@@ -23,6 +23,8 @@ package synopsysctl
 
 import (
 	"fmt"
+	"strings"
+
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -32,13 +34,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
 )
 
 func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) error {
 	// TODO ensure operator is installed and running a recent version that doesn't require additional migration
 
-	log.Info("Stopping Operator")
+	log.Info("stopping Synopsys Operator")
 	soOperatorDeploy, err := util.GetDeployment(kubeClient, operatorNamespace, "synopsys-operator")
 	if err != nil {
 		return err
@@ -64,13 +65,13 @@ func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) e
 		return err
 	}
 
-	log.Info("Deleting Blackduck resources")
+	log.Info("deleting existing Black Duck resources")
 	// TODO wait for resources to be deleted
-	if err := deleteComponents(bd); err != nil {
+	if err := deleteComponents(bd.Spec.Namespace, bd.Name, util.BlackDuckName); err != nil {
 		return err
 	}
 
-	log.Info("Upgrading Blackduck using Helm")
+	log.Info("upgrading Black Duck using Helm based deployment")
 	// Update the Helm Chart Location
 
 	chartLocationFlag := flags.Lookup("chart-location-path")
@@ -100,12 +101,12 @@ func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) e
 		return fmt.Errorf("failed to create Blackduck resources: %+v", err)
 	}
 
-	log.Info("Removing CRD")
+	log.Info("removing Black Duck custom resource")
 	if err := util.DeleteBlackduck(blackDuckClient, bd.Name, bd.Namespace, &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
-	log.Info("Starting Operator")
+	log.Info("starting Synopsys Operator")
 	if _, err := util.PatchDeploymentForReplicas(kubeClient, soOperatorDeploy, util.IntToInt32(1)); err != nil {
 		return err
 	}
@@ -153,10 +154,9 @@ func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]i
 	}
 
 	// Webserver
-	webserverSecretName := fmt.Sprintf("%s-webserver-certificate", bd.Name)
+	webserverSecretName := util.GetResourceName(bd.Name, util.BlackDuckName, "webserver-certificate")
 	var webserverSecret *corev1.Secret
 	var err error
-
 	if len(bd.Spec.Certificate) > 0 && len(bd.Spec.CertificateKey) > 0 {
 		webserverSecret, err = blackduck.GetCertificateSecret(webserverSecretName, bd.Spec.Namespace, []byte(bd.Spec.Certificate), []byte(bd.Spec.CertificateKey))
 		if err != nil {
@@ -179,7 +179,7 @@ func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]i
 
 	// Auth CA
 	if len(bd.Spec.AuthCustomCA) > 0 {
-		authSecretName := fmt.Sprintf("%s-authca-certificate", bd.Name)
+		authSecretName := util.GetResourceName(bd.Name, util.BlackDuckName, "auth-custom-ca")
 		authSecret, err := blackduck.GetAuthCertificateSecret(authSecretName, bd.Spec.Namespace, []byte(bd.Spec.AuthCustomCA))
 		if err != nil {
 			return nil, err
@@ -193,7 +193,7 @@ func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]i
 
 	// Proxy Cert
 	if len(bd.Spec.ProxyCertificate) > 0 {
-		proxySecretName := fmt.Sprintf("%s-proxy-certificate", bd.Name)
+		proxySecretName := util.GetResourceName(bd.Name, util.BlackDuckName, "proxy-certificate")
 		proxySecret, err := blackduck.GetProxyCertificateSecret(proxySecretName, bd.Spec.Namespace, []byte(bd.Spec.ProxyCertificate))
 		if err != nil {
 			return nil, err
@@ -289,83 +289,83 @@ func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]i
 	return helmConfig, nil
 }
 
-func deleteComponents(blackduck *v1.Blackduck) error {
-	deploy, err := kubeClient.AppsV1().Deployments(blackduck.Spec.Namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=blackduck, name=%s", blackduck.Name),
+func deleteComponents(namespace string, name string, app string) error {
+	deploy, err := kubeClient.AppsV1().Deployments(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
 	})
 	if err != nil {
 		return err
 	}
 	for _, v := range deploy.Items {
 		propagationPolicy := metav1.DeletePropagationBackground
-		if err := kubeClient.AppsV1().Deployments(blackduck.Spec.Namespace).Delete(v.Name, &metav1.DeleteOptions{
+		if err := kubeClient.AppsV1().Deployments(namespace).Delete(v.Name, &metav1.DeleteOptions{
 			PropagationPolicy: &propagationPolicy,
 		}); err != nil {
 			return err
 		}
 	}
 
-	rc, err := kubeClient.CoreV1().ReplicationControllers(blackduck.Spec.Namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=blackduck, name=%s", blackduck.Name),
+	rc, err := kubeClient.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
 	})
 	if err != nil {
 		return err
 	}
 	for _, v := range rc.Items {
 		propagationPolicy := metav1.DeletePropagationBackground
-		if err := kubeClient.CoreV1().ReplicationControllers(blackduck.Spec.Namespace).Delete(v.Name, &metav1.DeleteOptions{
+		if err := kubeClient.CoreV1().ReplicationControllers(namespace).Delete(v.Name, &metav1.DeleteOptions{
 			PropagationPolicy: &propagationPolicy,
 		}); err != nil {
 			return err
 		}
 	}
 
-	svc, err := kubeClient.CoreV1().Services(blackduck.Spec.Namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=blackduck, name=%s", blackduck.Name),
+	svc, err := kubeClient.CoreV1().Services(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
 	})
 	if err != nil {
 		return err
 	}
 	for _, v := range svc.Items {
-		if v.Name != util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed") {
-			if err := kubeClient.CoreV1().Services(blackduck.Spec.Namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+		if strings.Contains(v.Name, "-exposed") {
+			if err := kubeClient.CoreV1().Services(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
 				return err
 			}
 		}
 	}
 
-	cm, err := kubeClient.CoreV1().ConfigMaps(blackduck.Spec.Namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=blackduck, name=%s", blackduck.Name),
+	cm, err := kubeClient.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
 	})
 	if err != nil {
 		return err
 	}
 	for _, v := range cm.Items {
-		if err := kubeClient.CoreV1().ConfigMaps(blackduck.Spec.Namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := kubeClient.CoreV1().ConfigMaps(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
 
-	secret, err := kubeClient.CoreV1().Secrets(blackduck.Spec.Namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=blackduck, name=%s", blackduck.Name),
+	secret, err := kubeClient.CoreV1().Secrets(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s, name=%s, component!=secret", app, name),
 	})
 	if err != nil {
 		return err
 	}
 	for _, v := range secret.Items {
-		if err := kubeClient.CoreV1().Secrets(blackduck.Spec.Namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := kubeClient.CoreV1().Secrets(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
 
-	serviceAccounts, err := kubeClient.CoreV1().ServiceAccounts(blackduck.Spec.Namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=blackduck, name=%s", blackduck.Name),
+	serviceAccounts, err := kubeClient.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
 	})
 	if err != nil {
 		return err
 	}
 	for _, v := range serviceAccounts.Items {
-		if err := kubeClient.CoreV1().ServiceAccounts(blackduck.Spec.Namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := kubeClient.CoreV1().ServiceAccounts(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}

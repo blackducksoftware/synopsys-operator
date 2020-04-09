@@ -22,14 +22,14 @@
 package blackduck
 
 import (
-	"fmt"
+	"io/ioutil"
+	"strings"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/pflag"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
-	"strings"
 )
 
 func OperatorAffinityTok8sAffinity(opAffinity []v1.NodeAffinity) corev1.Affinity {
@@ -90,7 +90,7 @@ func GetCertsFromFlagsAndSetHelmValue(name string, namespace string, flagset *pf
 	if flagset.Lookup("certificate-file-path").Changed && flagset.Lookup("certificate-key-file-path").Changed {
 		certPath := flagset.Lookup("certificate-file-path").Value.String()
 		keyPath := flagset.Lookup("certificate-key-file-path").Value.String()
-		secretName := fmt.Sprintf("%s-webserver-certificate", name)
+		secretName := util.GetResourceName(name, util.BlackDuckName, "webserver-certificate")
 
 		secret, err := GetCertificateSecretFromFile(secretName, namespace, certPath, keyPath)
 		if err != nil {
@@ -102,7 +102,7 @@ func GetCertsFromFlagsAndSetHelmValue(name string, namespace string, flagset *pf
 
 	if flagset.Lookup("proxy-certificate-file-path").Changed {
 		certPath := flagset.Lookup("proxy-certificate-file-path").Value.String()
-		secretName := fmt.Sprintf("%s-proxy-certificate", name)
+		secretName := util.GetResourceName(name, util.BlackDuckName, "proxy-certificate")
 
 		cert, err := ioutil.ReadFile(certPath)
 		if err != nil {
@@ -119,7 +119,7 @@ func GetCertsFromFlagsAndSetHelmValue(name string, namespace string, flagset *pf
 
 	if flagset.Lookup("auth-custom-ca-file-path").Changed {
 		certPath := flagset.Lookup("auth-custom-ca-file-path").Value.String()
-		secretName := fmt.Sprintf("%s-authca-certificate", name)
+		secretName := util.GetResourceName(name, util.BlackDuckName, "auth-custom-ca")
 
 		cert, err := ioutil.ReadFile(certPath)
 		if err != nil {
