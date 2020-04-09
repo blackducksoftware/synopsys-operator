@@ -24,11 +24,12 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"net/http"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/ghodss/yaml"
 
 	log "github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
@@ -51,6 +52,13 @@ var settings = cli.New()
 // Modified from https://github.com/openshift/console/blob/cdf6b189b71e488033ecaba7d90258d9f9453478/pkg/helm/actions/install_chart.go
 // Helm Actions: https://github.com/helm/helm/tree/9bc7934f350233fa72a11d2d29065aa78ab62792/pkg/action
 func CreateWithHelm3(releaseName, namespace, chartURL string, vals map[string]interface{}, kubeConfig string, dryRun bool, extraFiles ...string) error {
+	// Check if resouce already exists
+	existingRelease, _ := GetWithHelm3(releaseName, namespace, kubeConfig)
+	if existingRelease != nil {
+		return fmt.Errorf("release '%+v' already exists in namespace '%+v'", existingRelease.Name, existingRelease.Namespace)
+	}
+
+	// Create the new Release
 	actionConfig, err := CreateHelmActionConfiguration(kubeConfig, "", namespace)
 	if err != nil {
 		return err
