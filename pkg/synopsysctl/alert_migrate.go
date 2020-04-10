@@ -31,12 +31,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSet) error {
 	// TODO ensure operator is installed and running a recent version that doesn't require additional migration
 
-	log.Debug("Stopping Operator")
+	log.Info("stopping Synopsys Operator")
 	soOperatorDeploy, err := util.GetDeployment(kubeClient, operatorNamespace, "synopsys-operator")
 	if err != nil {
 		return err
@@ -76,15 +77,15 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 		util.SetHelmValueInMap(helmValuesMap, []string{"persistentVolumeClaimName"}, pvcList.Items[0].Name)
 	}
 
-	log.Info("Upgrading Alert")
+	log.Info("upgrading Alert instance")
 
 	// Delete the Current Instance's Resources (except PVCs)
-	log.Debug("Cleaning Current Alert resources")
+	log.Info("cleaning Current Alert resources")
 	// TODO wait for resources to be deleted
 	// if len(alert.Namespace) == 0 {
 	// 	alert.Namespace = alert.Name
 	// }
-	if err := deleteAlertComponents(alert.Spec.Namespace, alert.Name); err != nil {
+	if err := deleteComponents(alert.Spec.Namespace, alert.Name, util.AlertName); err != nil {
 		return err
 	}
 
@@ -95,7 +96,7 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 	} else {
 		versionFlag := flags.Lookup("version")
 		if versionFlag.Changed {
-			alertChartRepository = fmt.Sprintf("%s/charts/blackduck-%s.tgz", baseChartRepository, versionFlag.Value.String())
+			alertChartRepository = fmt.Sprintf("%s/charts/synopys-alert-%s.tgz", baseChartRepository, versionFlag.Value.String())
 		}
 	}
 
@@ -135,8 +136,10 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 		}
 	}
 
+	newReleaseName := fmt.Sprintf("%s%s", alert.Name, AlertPostSuffix)
+
 	// Verify Alert can be created with Dry-Run before creating resources
-	err = util.CreateWithHelm3(alert.Name, alert.Spec.Namespace, alertChartRepository, helmValuesMap, kubeConfigPath, true)
+	err = util.CreateWithHelm3(newReleaseName, alert.Spec.Namespace, alertChartRepository, helmValuesMap, kubeConfigPath, true)
 	if err != nil {
 		return fmt.Errorf("failed to update Alert resources: %+v", err)
 	}
@@ -159,18 +162,30 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 		}
 	}
 
+	svc, _ := util.GetService(kubeClient, namespace, fmt.Sprintf("%s-exposed", newReleaseName))
+	if svc != nil {
+		svc.Kind = "Service"
+		svc.APIVersion = "v1"
+		svc.Labels["name"] = newReleaseName
+		svc.Spec.Selector["name"] = newReleaseName
+		err = KubectlApplyRuntimeObjects(map[string]runtime.Object{fmt.Sprintf("%s-exposed", newReleaseName): svc})
+		if err != nil {
+			return fmt.Errorf("failed to deploy the alert exposed service: %s", err)
+		}
+	}
+
 	// Deploy new Resources
-	err = util.CreateWithHelm3(alert.Name, alert.Spec.Namespace, alertChartRepository, helmValuesMap, kubeConfigPath, false)
+	err = util.CreateWithHelm3(newReleaseName, alert.Spec.Namespace, alertChartRepository, helmValuesMap, kubeConfigPath, false)
 	if err != nil {
 		return fmt.Errorf("failed to update Alert resources: %+v", err)
 	}
 
-	log.Debug("Removing CR")
+	log.Info("deleting Alert custom resource")
 	if err := util.DeleteAlert(alertClient, alert.Name, alert.Namespace, &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
-	log.Debug("Starting Operator")
+	log.Info("starting Synopsys Operator")
 	if _, err := util.PatchDeploymentForReplicas(kubeClient, soOperatorDeploy, util.IntToInt32(1)); err != nil {
 		return err
 	}
@@ -190,13 +205,13 @@ func AlertV1ToHelmValues(alert *v1.Alert, operatorNamespace string) (map[string]
 		switch alert.Spec.ExposeService {
 		case util.NODEPORT:
 			util.SetHelmValueInMap(helmValuesMap, []string{"exposedServiceType"}, "NodePort")
-			util.SetHelmValueInMap(helmValuesMap, []string{"exposeui"}, true)
+			util.SetHelmValueInMap(helmValuesMap, []string{"exposeui"}, false)
 		case util.LOADBALANCER:
 			util.SetHelmValueInMap(helmValuesMap, []string{"exposedServiceType"}, "LoadBalancer")
-			util.SetHelmValueInMap(helmValuesMap, []string{"exposeui"}, true)
+			util.SetHelmValueInMap(helmValuesMap, []string{"exposeui"}, false)
 		case util.NONE:
 			util.SetHelmValueInMap(helmValuesMap, []string{"exposedServiceType"}, "ClusterIP")
-			util.SetHelmValueInMap(helmValuesMap, []string{"exposeui"}, true)
+			util.SetHelmValueInMap(helmValuesMap, []string{"exposeui"}, false)
 		}
 	}
 

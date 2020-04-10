@@ -35,6 +35,17 @@ binary: clean ${OUTDIR}
 		echo "completed synopsysctl binary for $(p) platform" \
 	)
 
+local-binary: clean ${OUTDIR} 
+	$(foreach p,${PLATFORM}, \
+		echo "creating synopsysctl binary for $(p) platform" && \
+		if [[ $(p) = ${WINDOWS} ]]; then \
+			CGO_ENABLED=0 GOOS=$(p) GOARCH=amd64 go build -ldflags "-X main.version=${TAG}" -o ./${OUTDIR}/$(p)/synopsysctl.exe ./cmd/synopsysctl; \
+		else \
+			CGO_ENABLED=0 GOOS=$(p) GOARCH=amd64 go build -ldflags "-X main.version=${TAG}" -o ./${OUTDIR}/$(p)/synopsysctl ./cmd/synopsysctl; \
+		fi && \
+		echo "completed synopsysctl binary for $(p) platform" \
+	) 
+
 coverity: clean ${OUTDIR}
 	mkdir -p /go/src/github.com/blackducksoftware && ln -s `pwd` /go/src/github.com/blackducksoftware/synopsys-operator
 	$(foreach p,${PLATFORM}, \

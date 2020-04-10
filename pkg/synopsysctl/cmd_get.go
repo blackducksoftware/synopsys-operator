@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -88,10 +89,10 @@ var getAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName := args[0]
+		alertName := fmt.Sprintf("%s%s", args[0], AlertPostSuffix)
 		helmRelease, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
 		if err != nil {
-			return fmt.Errorf("failed to get Alert values: %+v", err)
+			return fmt.Errorf(strings.Replace(fmt.Sprintf("failed to get Alert values: %+v", err), fmt.Sprintf("instance '%s' ", alertName), fmt.Sprintf("instance '%s' ", args[0]), 0))
 		}
 		helmSetValues := helmRelease.Config
 		PrintComponent(helmSetValues, "YAML")

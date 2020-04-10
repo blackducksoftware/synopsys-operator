@@ -327,7 +327,7 @@ func deleteComponents(namespace string, name string, app string) error {
 		return err
 	}
 	for _, v := range svc.Items {
-		if strings.Contains(v.Name, "-exposed") {
+		if !strings.Contains(v.Name, "-exposed") {
 			if err := kubeClient.CoreV1().Services(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
 				return err
 			}

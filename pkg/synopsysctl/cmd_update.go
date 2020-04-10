@@ -110,13 +110,13 @@ var updateAlertCmd = &cobra.Command{
 
 		// TODO verity we can download the chart
 		isOperatorBased := false
-		instance, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
+		instance, err := util.GetWithHelm3(fmt.Sprintf("%s%s", alertName, AlertPostSuffix), namespace, kubeConfigPath)
 		if err != nil {
 			isOperatorBased = true
 		}
 
 		if !isOperatorBased && instance != nil {
-			err = updateAlertHelmBased(cmd, alertName)
+			err = updateAlertHelmBased(cmd, fmt.Sprintf("%s%s", alertName, AlertPostSuffix), alertName)
 		} else if isOperatorBased {
 			versionFlag := cmd.Flag("version")
 			if !versionFlag.Changed {
@@ -142,13 +142,13 @@ var updateAlertCmd = &cobra.Command{
 	},
 }
 
-func updateAlertHelmBased(cmd *cobra.Command, alertName string) error {
+func updateAlertHelmBased(cmd *cobra.Command, alertName string, customerReleaseName string) error {
 	mockMode := cmd.Flags().Lookup("mock").Changed
 
 	// Set flags from the current release in the updateAlertCobraHelper
 	helmRelease, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
 	if err != nil {
-		return fmt.Errorf("failed to get previous user defined values: %+v", err)
+		return fmt.Errorf(strings.Replace(fmt.Sprintf("failed to get previous user defined values: %+v", err), fmt.Sprintf("instance '%s' ", alertName), fmt.Sprintf("instance '%s' ", customerReleaseName), 0))
 	}
 	updateAlertCobraHelper.SetArgs(helmRelease.Config)
 

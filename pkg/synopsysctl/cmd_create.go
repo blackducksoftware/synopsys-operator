@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+	"strings"
 
 	alertctl "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/bdba"
@@ -89,7 +90,7 @@ var createAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		alertName := args[0]
+		alertName := fmt.Sprintf("%s%s", args[0], AlertPostSuffix)
 
 		// Get the flags to set Helm values
 		helmValuesMap, err := createAlertCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
@@ -111,7 +112,7 @@ var createAlertCmd = &cobra.Command{
 		// Check Dry Run before deploying any resources
 		err = util.CreateWithHelm3(alertName, namespace, alertChartRepository, helmValuesMap, kubeConfigPath, true)
 		if err != nil {
-			return fmt.Errorf("failed to create Alert resources: %+v", err)
+			return fmt.Errorf(strings.Replace(fmt.Sprintf("failed to create Alert resources: %+v", err), fmt.Sprintf("release '%s' ", alertName), fmt.Sprintf("release '%s' ", args[0]), 0))
 		}
 
 		// Create secrets for Alert
@@ -168,7 +169,7 @@ var createAlertCmd = &cobra.Command{
 		// Deploy Alert Resources
 		err = util.CreateWithHelm3(alertName, namespace, alertChartRepository, helmValuesMap, kubeConfigPath, false)
 		if err != nil {
-			return fmt.Errorf("failed to create Alert resources: %+v", err)
+			return fmt.Errorf(strings.Replace(fmt.Sprintf("failed to create Alert resources: %+v", err), fmt.Sprintf("release '%s' ", alertName), fmt.Sprintf("release '%s' ", args[0]), 0))
 		}
 
 		log.Infof("Alert has been successfully Created!")
@@ -192,7 +193,7 @@ var createAlertNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName := args[0]
+		alertName := fmt.Sprintf("%s%s", args[0], AlertPostSuffix)
 
 		// Get the flags to set Helm values
 		helmValuesMap, err := createAlertCobraHelper.GenerateHelmFlagsFromCobraFlags(cmd.Flags())
@@ -207,7 +208,7 @@ var createAlertNativeCmd = &cobra.Command{
 		} else {
 			versionFlag := cmd.Flag("version")
 			if versionFlag.Changed {
-				alertChartRepository = fmt.Sprintf("%s/charts/alert-helmchart-%s.tgz", baseChartRepository, versionFlag.Value.String())
+				alertChartRepository = fmt.Sprintf("%s/charts/synopsys-alert-%s.tgz", baseChartRepository, versionFlag.Value.String())
 			}
 		}
 

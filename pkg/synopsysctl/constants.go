@@ -56,6 +56,10 @@ var baseURL = "https://raw.githubusercontent.com/blackducksoftware/releases/mast
 var baseChartRepository = "https://chartmuseum.cloudnative.sig-clops.synopsys.com"
 
 // Alert
+
+// AlertPostSuffix adds "-alert" to the end of the release
+const AlertPostSuffix = "-alert"
+
 var alertChartRepository = fmt.Sprintf("%s/charts/alert-helmchart-5.3.0.tgz", baseChartRepository)
 
 // Black Duck
