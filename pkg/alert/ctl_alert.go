@@ -89,12 +89,12 @@ func (ctl *HelmValuesFromCobraFlags) SetArgs(args map[string]interface{}) {
 // master=true is used to add all flags for creating an instance
 // master=false is used to add a subset of flags for updating an instance
 func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, master bool) {
-	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", ctl.flagTree.Version, "Version of Alert")
+	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", "5.3.0", "Version of Alert")
 	if master {
 		cobra.MarkFlagRequired(cmd.Flags(), "version")
 	}
 
-	cmd.Flags().StringVar(&ctl.flagTree.StandAlone, "standalone", ctl.flagTree.StandAlone, "If true, Alert runs in standalone mode [true|false]")
+	cmd.Flags().StringVar(&ctl.flagTree.StandAlone, "standalone", "true", "If true, Alert runs in standalone mode [true|false]")
 	if master {
 		cmd.Flags().StringVar(&ctl.flagTree.ExposeService, "expose-ui", util.NONE, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	} else {
@@ -102,14 +102,14 @@ func (ctl *HelmValuesFromCobraFlags) AddCobraFlagsToCommand(cmd *cobra.Command, 
 	}
 	cmd.Flags().StringVar(&ctl.flagTree.EncryptionPassword, "encryption-password", ctl.flagTree.EncryptionPassword, "Encryption Password for Alert")
 	cmd.Flags().StringVar(&ctl.flagTree.EncryptionGlobalSalt, "encryption-global-salt", ctl.flagTree.EncryptionGlobalSalt, "Encryption Global Salt for Alert")
-	cmd.Flags().StringVar(&ctl.flagTree.PersistentStorage, "persistent-storage", ctl.flagTree.PersistentStorage, "If true, Alert has persistent storage [true|false]")
+	cmd.Flags().StringVar(&ctl.flagTree.PersistentStorage, "persistent-storage", "false", "If true, Alert has persistent storage [true|false]")
 	cmd.Flags().StringSliceVar(&ctl.flagTree.Environs, "environs", ctl.flagTree.Environs, "Environment variables of Alert")
 	cmd.Flags().StringVar(&ctl.flagTree.PVCName, "pvc-name", ctl.flagTree.PVCName, "Name of the persistent volume claim")
 	cmd.Flags().StringVar(&ctl.flagTree.PVCStorageClass, "pvc-storage-class", ctl.flagTree.PVCStorageClass, "Storage class for the persistent volume claim")
-	cmd.Flags().StringVar(&ctl.flagTree.PVCSize, "pvc-size", ctl.flagTree.PVCSize, "Memory allocation of the persistent volume claim")
-	cmd.Flags().StringVar(&ctl.flagTree.AlertMemory, "alert-memory", ctl.flagTree.AlertMemory, "Memory allocation of Alert")
-	cmd.Flags().StringVar(&ctl.flagTree.CfsslMemory, "cfssl-memory", ctl.flagTree.CfsslMemory, "Memory allocation of CFSSL")
-	cmd.Flags().StringVar(&ctl.flagTree.Registry, "registry", ctl.flagTree.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
+	cmd.Flags().StringVar(&ctl.flagTree.PVCSize, "pvc-size", "5G", "Memory allocation of the persistent volume claim")
+	cmd.Flags().StringVar(&ctl.flagTree.AlertMemory, "alert-memory", "2560Mi", "Memory allocation of Alert")
+	cmd.Flags().StringVar(&ctl.flagTree.CfsslMemory, "cfssl-memory", "640Mi", "Memory allocation of CFSSL")
+	cmd.Flags().StringVar(&ctl.flagTree.Registry, "registry", "docker.io/blackducksoftware", "Name of the registry to use for images")
 	cmd.Flags().StringSliceVar(&ctl.flagTree.PullSecrets, "pull-secret-name", ctl.flagTree.PullSecrets, "Only if the registry requires authentication")
 	cmd.Flags().StringVar(&ctl.flagTree.CertificateFilePath, "certificate-file-path", ctl.flagTree.CertificateFilePath, "Absolute path to the PEM certificate to use for Alert")
 	cmd.Flags().StringVar(&ctl.flagTree.CertificateKeyFilePath, "certificate-key-file-path", ctl.flagTree.CertificateKeyFilePath, "Absolute path to the PEM certificate key for Alert")
@@ -162,6 +162,9 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 	if err != nil {
 		return nil, err
 	}
+	// Set enabled defaults
+	util.SetHelmValueInMap(ctl.args, []string{"enableStandalone"}, true)
+
 	flagset.VisitAll(ctl.AddHelmValueByCobraFlag)
 
 	return ctl.args, nil
