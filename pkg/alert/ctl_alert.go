@@ -179,7 +179,7 @@ func (ctl *HelmValuesFromCobraFlags) AddHelmValueByCobraFlag(f *pflag.Flag) {
 			standAloneVal := strings.ToUpper(ctl.flagTree.StandAlone) == "TRUE"
 			util.SetHelmValueInMap(ctl.args, []string{"enableStandalone"}, standAloneVal)
 		case "expose-ui":
-			util.SetHelmValueInMap(ctl.args, []string{"exposeui"}, true)
+			util.SetHelmValueInMap(ctl.args, []string{"exposeui"}, false)
 			switch ctl.flagTree.ExposeService {
 			case util.NODEPORT:
 				util.SetHelmValueInMap(ctl.args, []string{"exposedServiceType"}, "NodePort")

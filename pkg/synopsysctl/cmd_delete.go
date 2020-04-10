@@ -23,13 +23,13 @@ package synopsysctl
 
 import (
 	"fmt"
-
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"strings"
 
 	polarisreporting "github.com/blackducksoftware/synopsys-operator/pkg/polaris-reporting"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -59,12 +59,12 @@ var deleteAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName := args[0]
+		alertName := fmt.Sprintf("%s%s", args[0], AlertPostSuffix)
 
 		// Delete the Secrets
 		helmRelease, err := util.GetWithHelm3(alertName, namespace, kubeConfigPath)
 		if err != nil {
-			return fmt.Errorf("failed to get Alert values: %+v", err)
+			return fmt.Errorf(strings.Replace(fmt.Sprintf("failed to get Alert values: %+v", err), fmt.Sprintf("instance '%s' ", alertName), fmt.Sprintf("instance '%s' ", args[0]), 0))
 		}
 		var name interface{}
 		var ok bool
