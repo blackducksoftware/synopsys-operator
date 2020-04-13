@@ -69,14 +69,12 @@ var deleteAlertCmd = &cobra.Command{
 		var name interface{}
 		var ok bool
 		if name, ok = helmRelease.Config["webserverCustomCertificatesSecretName"]; ok {
-			err := kubeClient.CoreV1().Secrets(namespace).Delete(name.(string), &metav1.DeleteOptions{})
-			if err != nil {
+			if err := util.DeleteSecret(kubeClient, namespace, name.(string)); err != nil {
 				return fmt.Errorf("failed to delete Alert custom certiface secret: %+v", err)
 			}
 		}
 		if name, ok = helmRelease.Config["javaKeystoreSecretName"]; ok {
-			err := kubeClient.CoreV1().Secrets(namespace).Delete(name.(string), &metav1.DeleteOptions{})
-			if err != nil {
+			if err := util.DeleteSecret(kubeClient, namespace, name.(string)); err != nil {
 				return fmt.Errorf("failed to delete Alert javaKeystore secret: %+v", err)
 			}
 		}
@@ -85,6 +83,29 @@ var deleteAlertCmd = &cobra.Command{
 		err = util.DeleteWithHelm3(alertName, namespace, kubeConfigPath)
 		if err != nil {
 			return fmt.Errorf("failed to delete Alert resources: %+v", err)
+		}
+
+		labelSelector := fmt.Sprintf("app=%s, name=%s", util.AlertName, alertName)
+		svcs, err := util.ListServices(kubeClient, namespace, labelSelector)
+		if err != nil {
+			return err
+		}
+		for _, svc := range svcs.Items {
+			if strings.HasSuffix(svc.Name, "-exposed") {
+				if err := util.DeleteService(kubeClient, namespace, svc.Name); !k8serrors.IsNotFound(err) {
+					return err
+				}
+			}
+		}
+
+		pvcs, err := util.ListPVCs(kubeClient, namespace, labelSelector)
+		if err != nil {
+			return err
+		}
+		for _, pvc := range pvcs.Items {
+			if err := util.DeletePVC(kubeClient, namespace, pvc.Name); !k8serrors.IsNotFound(err) {
+				return err
+			}
 		}
 
 		log.Infof("Alert has been successfully Deleted!")
@@ -113,8 +134,31 @@ var deleteBlackDuckCmd = &cobra.Command{
 		}
 		secrets := []string{"-webserver-certificate", "-proxy-certificate", "-auth-custom-ca"}
 		for _, v := range secrets {
-			if err := kubeClient.CoreV1().Secrets(namespace).Delete(fmt.Sprintf("%s%s", args[0], v), &metav1.DeleteOptions{}); !k8serrors.IsNotFound(err) {
+			if err := util.DeleteSecret(kubeClient, namespace, fmt.Sprintf("%s%s", args[0], v)); !k8serrors.IsNotFound(err) {
 				log.Warnf("couldn't delete secret %s", v)
+			}
+		}
+
+		labelSelector := fmt.Sprintf("app=%s, name=%s", util.BlackDuckName, args[0])
+		svcs, err := util.ListServices(kubeClient, namespace, labelSelector)
+		if err != nil {
+			return err
+		}
+		for _, svc := range svcs.Items {
+			if strings.HasSuffix(svc.Name, "-exposed") {
+				if err := util.DeleteService(kubeClient, namespace, svc.Name); !k8serrors.IsNotFound(err) {
+					return err
+				}
+			}
+		}
+
+		pvcs, err := util.ListPVCs(kubeClient, namespace, labelSelector)
+		if err != nil {
+			return err
+		}
+		for _, pvc := range pvcs.Items {
+			if err := util.DeletePVC(kubeClient, namespace, pvc.Name); !k8serrors.IsNotFound(err) {
+				return err
 			}
 		}
 
