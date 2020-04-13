@@ -59,6 +59,9 @@ func destroyOperator(namespace string, crdNamespace string) error {
 		if err != nil {
 			log.Debugf("%s. It is not recommended to destroy the Synopsys Operator so these resources will continue to be managed by synopsys operator.", err.Error())
 			err = restartSynopsysOperator(namespace)
+			if err != nil {
+				return err
+			}
 		} else {
 			isDelete, err := isCustomResourceInstancesExist(crdNamespace, crds)
 			if err != nil {
@@ -67,7 +70,7 @@ func destroyOperator(namespace string, crdNamespace string) error {
 			if isDelete {
 				deleteSynopsysOperatorResources(namespace, crds)
 			} else {
-				err = restartSynopsysOperator(namespace)
+				return restartSynopsysOperator(namespace)
 			}
 		}
 	} else {
