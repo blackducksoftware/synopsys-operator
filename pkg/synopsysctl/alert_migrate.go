@@ -30,6 +30,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -162,8 +163,8 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 		}
 	}
 
-	svc, _ := util.GetService(kubeClient, namespace, fmt.Sprintf("%s-exposed", newReleaseName))
-	if svc != nil {
+	svc, err := util.GetService(kubeClient, namespace, fmt.Sprintf("%s-exposed", newReleaseName))
+	if svc != nil && !k8serrors.IsNotFound(err) {
 		svc.Kind = "Service"
 		svc.APIVersion = "v1"
 		if svc.Labels == nil {

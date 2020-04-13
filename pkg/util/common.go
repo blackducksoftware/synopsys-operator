@@ -655,11 +655,7 @@ func FilterPodByNamePrefix(pods *corev1.PodList, prefix string) *corev1.Pod {
 
 // GetService will get the service information for the input service name inside the input namespace
 func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*corev1.Service, error) {
-	svc, err := clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return svc, nil
+	return clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 }
 
 // ListServices will list the service information for the input service name inside the input namespace
