@@ -10,19 +10,17 @@ require (
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/gin-gonic/gin v1.4.0
-	github.com/gobuffalo/envy v1.9.0 // indirect
-	github.com/gobuffalo/packd v1.0.0 // indirect
-	github.com/gobuffalo/packr v1.30.1
 	github.com/google/go-cmp v0.4.0
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.3.0 // indirect
-	github.com/gorilla/handlers v1.4.2
-	github.com/gorilla/mux v1.7.3
+	github.com/gorilla/handlers v1.4.2 // indirect
+	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/imdario/mergo v0.3.7
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
 	github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
@@ -32,8 +30,6 @@ require (
 	github.com/onsi/gomega v1.7.1
 	github.com/openshift/api v0.0.0-20200217161739-c99157bc6492
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
-	github.com/pkg/errors v0.9.1
-	github.com/rogpeppe/go-internal v1.5.2 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5

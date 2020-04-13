@@ -34,7 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSet) error {
+func migrateAlert(alert *v1.Alert, operatorNamespace string, crdNamespace string, flags *pflag.FlagSet) error {
 	// TODO ensure operator is installed and running a recent version that doesn't require additional migration
 
 	log.Info("stopping Synopsys Operator")
@@ -185,12 +185,12 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 		return err
 	}
 
-	log.Info("starting Synopsys Operator")
-	if _, err := util.PatchDeploymentForReplicas(kubeClient, soOperatorDeploy, util.IntToInt32(1)); err != nil {
-		return err
+	_, err = util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alert.Spec.Namespace, alert.Name, "", true)
+	if err != nil {
+		log.Warnf("unable to patch the namespace to remove an app labels due to %+v", err)
 	}
 
-	return nil
+	return destroyOperator(operatorNamespace, crdNamespace)
 }
 
 // AlertV1ToHelmValues converts an Alert v1 Spec to a Helm Values Map
@@ -288,96 +288,4 @@ func AlertV1ToHelmValues(alert *v1.Alert, operatorNamespace string) (map[string]
 	}
 
 	return helmValuesMap, nil
-}
-
-// deleteAlertComponents deletes Alert's resources besides PVCs
-// deletes: Deployments, Replication Controllers, Services, ConfigMaps, Secrets, Service Accounts
-func deleteAlertComponents(altNamespace, altName string) error {
-	appName := "alert"
-
-	// Deployments
-	deploy, err := kubeClient.AppsV1().Deployments(altNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", appName, altName),
-	})
-	if err != nil {
-		return err
-	}
-	for _, v := range deploy.Items {
-		propagationPolicy := metav1.DeletePropagationBackground
-		if err := kubeClient.AppsV1().Deployments(altNamespace).Delete(v.Name, &metav1.DeleteOptions{
-			PropagationPolicy: &propagationPolicy,
-		}); err != nil {
-			return err
-		}
-	}
-
-	// Replication Controllers
-	rc, err := kubeClient.CoreV1().ReplicationControllers(altNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", appName, altName),
-	})
-	if err != nil {
-		return err
-	}
-	for _, v := range rc.Items {
-		propagationPolicy := metav1.DeletePropagationBackground
-		if err := kubeClient.CoreV1().ReplicationControllers(altNamespace).Delete(v.Name, &metav1.DeleteOptions{
-			PropagationPolicy: &propagationPolicy,
-		}); err != nil {
-			return err
-		}
-	}
-
-	// Services
-	svc, err := kubeClient.CoreV1().Services(altNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", appName, altName),
-	})
-	if err != nil {
-		return err
-	}
-	for _, v := range svc.Items {
-		if err := kubeClient.CoreV1().Services(altNamespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
-			return err
-		}
-	}
-
-	// ConfigMaps
-	cm, err := kubeClient.CoreV1().ConfigMaps(altNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", appName, altName),
-	})
-	if err != nil {
-		return err
-	}
-	for _, v := range cm.Items {
-		if err := kubeClient.CoreV1().ConfigMaps(altNamespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
-			return err
-		}
-	}
-
-	// Secrets
-	secret, err := kubeClient.CoreV1().Secrets(altNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", appName, altName),
-	})
-	if err != nil {
-		return err
-	}
-	for _, v := range secret.Items {
-		if err := kubeClient.CoreV1().Secrets(altNamespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
-			return err
-		}
-	}
-
-	// Service Accounts
-	serviceAccounts, err := kubeClient.CoreV1().ServiceAccounts(altNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", appName, altName),
-	})
-	if err != nil {
-		return err
-	}
-	for _, v := range serviceAccounts.Items {
-		if err := kubeClient.CoreV1().ServiceAccounts(altNamespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

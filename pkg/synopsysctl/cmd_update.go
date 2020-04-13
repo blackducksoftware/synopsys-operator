@@ -277,7 +277,7 @@ func updateAlertOperatorBased(cmd *cobra.Command, alertName string) error {
 		return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, crdNamespace, err)
 	}
 
-	if err := migrateAlert(currAlert, operatorNamespace, cmd.Flags()); err != nil {
+	if err := migrateAlert(currAlert, operatorNamespace, crdNamespace, cmd.Flags()); err != nil {
 		// TODO restart operator if migration failed?
 		return err
 	}
@@ -383,7 +383,7 @@ var updateBlackDuckCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, crdNamespace, err)
 			}
-			if err := migrate(currBlackDuck, operatorNamespace, cmd.Flags()); err != nil {
+			if err := migrate(currBlackDuck, operatorNamespace, crdNamespace, cmd.Flags()); err != nil {
 				// TODO restart operator if migration failed?
 				return err
 			}
