@@ -37,7 +37,7 @@ import (
 )
 
 // migrate migrates from synopsys operator to Helm based deployment
-func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) error {
+func migrate(bd *v1.Blackduck, operatorNamespace string, crdNamespace string, flags *pflag.FlagSet) error {
 	// TODO ensure operator is installed and running a recent version that doesn't require additional migration
 
 	log.Info("stopping Synopsys Operator")
@@ -112,7 +112,7 @@ func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) e
 		log.Warnf("unable to patch the namespace to remove an app labels due to %+v", err)
 	}
 
-	return destroyOperator(operatorNamespace)
+	return destroyOperator(operatorNamespace, crdNamespace)
 }
 
 // isFeatureEnabled check whether the feature is enabled by reading through the Black Duck environment variables

@@ -8,14 +8,7 @@ ifdef SHA_SUM
 SHA_SUM_CMD="$(SHA_SUM)"
 endif
 
-ifneq (, $(findstring gcr.io,$(REGISTRY)))
-PREFIX_CMD="gcloud"
-DOCKER_OPTS="--"
-endif
-
 CURRENT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUILD_TIME:=$(shell date)
-LAST_COMMIT=$(shell git rev-parse HEAD)
 
 OUTDIR = _output
 LINUX = linux
@@ -32,8 +25,7 @@ binary: clean ${OUTDIR}
 		else \
 			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.13 go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl; \
 		fi && \
-		echo "completed synopsysctl binary for $(p) platform" \
-	)
+		echo "completed synopsysctl binary for $(p) platform\n")
 
 local-binary: clean ${OUTDIR} 
 	$(foreach p,${PLATFORM}, \
@@ -43,8 +35,7 @@ local-binary: clean ${OUTDIR}
 		else \
 			CGO_ENABLED=0 GOOS=$(p) GOARCH=amd64 go build -ldflags "-X main.version=${TAG}" -o ./${OUTDIR}/$(p)/synopsysctl ./cmd/synopsysctl; \
 		fi && \
-		echo "completed synopsysctl binary for $(p) platform" \
-	) 
+		echo "completed synopsysctl binary for $(p) platform\n") 
 
 coverity: clean ${OUTDIR}
 	mkdir -p /go/src/github.com/blackducksoftware && ln -s `pwd` /go/src/github.com/blackducksoftware/synopsys-operator

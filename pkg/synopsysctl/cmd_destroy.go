@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func destroyOperator(namespace string) error {
+func destroyOperator(namespace string, crdNamespace string) error {
 	// delete namespace
 	isNamespaceExist, err := util.CheckResourceNamespace(kubeClient, namespace, "", true)
 	if isNamespaceExist {
@@ -58,38 +58,55 @@ func destroyOperator(namespace string) error {
 
 		if err != nil {
 			log.Debugf("%s. It is not recommended to destroy the Synopsys Operator so these resources will continue to be managed by synopsys operator.", err.Error())
-			log.Info("re-starting Synopsys Operator")
-			soOperatorDeploy, err := util.GetDeployment(kubeClient, namespace, "synopsys-operator")
+			err = restartSynopsysOperator(namespace)
+		} else {
+			isDelete, err := isDeleteOperatorResources(crdNamespace, crds)
 			if err != nil {
 				return err
 			}
-			if _, err := util.PatchDeploymentForReplicas(kubeClient, soOperatorDeploy, util.IntToInt32(1)); err != nil {
-				return err
-			}
-		} else {
-			log.Debugf("deleting the Synopsys Operator resources in namespace '%s'", namespace)
-			// delete synopsys operator resources
-			commonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespace, "", &api.ComponentList{}, "app=synopsys-operator", false)
-			_, crudErrors := commonConfig.CRUDComponents()
-			if len(crudErrors) > 0 {
-				log.Errorf("unable to delete the Synopsys Operator resources in namespace '%s' due to %+v", namespace, crudErrors)
+			if isDelete {
+				deleteSynopsysOperatorResources(namespace, crds)
 			} else {
-				log.Infof("successfully destroyed Synopsys Operator resources in namespace '%s'", namespace)
+				err = restartSynopsysOperator(namespace)
 			}
-			// delete custom resource definitions
-			deleteCrds(crds, namespace)
-
-			// delete synopsys operator cluster role bindings
-			deleteClusterRoleBinding(namespace)
-
-			// delete synopsys operator cluster role
-			deleteClusterRole(namespace)
 		}
 	} else {
 		log.Error(err)
 	}
 
 	return nil
+}
+
+func restartSynopsysOperator(namespace string) error {
+	log.Info("re-starting Synopsys Operator")
+	soOperatorDeploy, err := util.GetDeployment(kubeClient, namespace, "synopsys-operator")
+	if err != nil {
+		return err
+	}
+	if _, err := util.PatchDeploymentForReplicas(kubeClient, soOperatorDeploy, util.IntToInt32(1)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteSynopsysOperatorResources(namespace string, crds []string) {
+	log.Debugf("deleting the Synopsys Operator resources in namespace '%s'", namespace)
+	// delete synopsys operator resources
+	commonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespace, "", &api.ComponentList{}, "app=synopsys-operator", false)
+	_, crudErrors := commonConfig.CRUDComponents()
+	if len(crudErrors) > 0 {
+		log.Errorf("unable to delete the Synopsys Operator resources in namespace '%s' due to %+v", namespace, crudErrors)
+	} else {
+		log.Infof("successfully destroyed Synopsys Operator resources in namespace '%s'", namespace)
+	}
+	// delete custom resource definitions
+	deleteCrds(crds, namespace)
+
+	// delete synopsys operator cluster role bindings
+	deleteClusterRoleBinding(namespace)
+
+	// delete synopsys operator cluster role
+	deleteClusterRole(namespace)
 }
 
 // isOtherNamespaceExistInCRDLabel return whether any other namespace exist in the Synopsys CRD namespace label
@@ -262,4 +279,37 @@ func deleteClusterRole(namespace string) {
 			}
 		}
 	}
+}
+
+// isDeleteOperatorResources check whether there is any custom resources are existing
+func isDeleteOperatorResources(crdNamespace string, crdNames []string) (bool, error) {
+	for _, crdName := range crdNames {
+		switch crdName {
+		case util.BlackDuckCRDName:
+			blackDucks, err := util.ListBlackduck(blackDuckClient, crdNamespace, metav1.ListOptions{})
+			if err != nil {
+				return false, fmt.Errorf("unable to list Black Duck custom resource definition due to %+v", err)
+			}
+			if len(blackDucks.Items) > 0 {
+				return false, nil
+			}
+		case util.AlertCRDName:
+			alerts, err := util.ListAlerts(alertClient, crdNamespace, metav1.ListOptions{})
+			if err != nil {
+				return false, fmt.Errorf("unable to list Alert custom resource definition due to %+v", err)
+			}
+			if len(alerts.Items) > 0 {
+				return false, nil
+			}
+		case util.OpsSightCRDName:
+			opsSights, err := util.ListOpsSights(opsSightClient, crdNamespace, metav1.ListOptions{})
+			if err != nil {
+				return false, fmt.Errorf("unable to list OpsSight custom resource definition due to %+v", err)
+			}
+			if len(opsSights.Items) > 0 {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
 }

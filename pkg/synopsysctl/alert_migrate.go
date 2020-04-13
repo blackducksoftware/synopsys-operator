@@ -34,7 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSet) error {
+func migrateAlert(alert *v1.Alert, operatorNamespace string, crdNamespace string, flags *pflag.FlagSet) error {
 	// TODO ensure operator is installed and running a recent version that doesn't require additional migration
 
 	log.Info("stopping Synopsys Operator")
@@ -190,7 +190,7 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 		log.Warnf("unable to patch the namespace to remove an app labels due to %+v", err)
 	}
 
-	return destroyOperator(operatorNamespace)
+	return destroyOperator(operatorNamespace, crdNamespace)
 }
 
 // AlertV1ToHelmValues converts an Alert v1 Spec to a Helm Values Map
