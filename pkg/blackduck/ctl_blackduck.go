@@ -24,10 +24,11 @@ package blackduck
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	corev1 "k8s.io/api/core/v1"
-	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -124,11 +125,11 @@ const (
 func (ctl *HelmValuesFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	if master {
 		cmd.Flags().StringVar(&ctl.flagTree.PvcStorageClass, "pvc-storage-class", ctl.flagTree.PvcStorageClass, "Name of Storage Class for the PVC")
-		cmd.Flags().StringVar(&ctl.flagTree.PersistentStorage, "persistent-storage", ctl.flagTree.PersistentStorage, "If true, Black Duck has persistent storage [true|false]")
+		cmd.Flags().StringVar(&ctl.flagTree.PersistentStorage, "persistent-storage", "true", "If true, Black Duck has persistent storage [true|false]")
 		cmd.Flags().StringVar(&ctl.flagTree.PVCFilePath, "pvc-file-path", ctl.flagTree.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	}
 	cmd.Flags().StringVar(&ctl.flagTree.Size, "size", ctl.flagTree.Size, "Size of Black Duck [small|medium|large|x-large]")
-	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", ctl.flagTree.Version, "Version of Black Duck")
+	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", "2020.4.0", "Version of Black Duck")
 	if master {
 		cmd.Flags().StringVar(&ctl.flagTree.ExposeService, "expose-ui", util.NONE, "Service type of Black Duck webserver's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	} else {
@@ -136,14 +137,14 @@ func (ctl *HelmValuesFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command,
 	}
 
 	cmd.Flags().StringVar(&ctl.flagTree.ExternalPostgresHost, "external-postgres-host", ctl.flagTree.ExternalPostgresHost, "Host of external Postgres")
-	cmd.Flags().IntVar(&ctl.flagTree.ExternalPostgresPort, "external-postgres-port", ctl.flagTree.ExternalPostgresPort, "Port of external Postgres")
+	cmd.Flags().IntVar(&ctl.flagTree.ExternalPostgresPort, "external-postgres-port", 5432, "Port of external Postgres")
 	cmd.Flags().StringVar(&ctl.flagTree.ExternalPostgresAdmin, "external-postgres-admin", ctl.flagTree.ExternalPostgresAdmin, "Name of 'admin' of external Postgres database")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPostgresUser, "external-postgres-user", ctl.flagTree.ExternalPostgresUser, "Name of 'user' of external Postgres database")
-	cmd.Flags().StringVar(&ctl.flagTree.ExternalPostgresSsl, "external-postgres-ssl", ctl.flagTree.ExternalPostgresSsl, "If true, Black Duck uses SSL for external Postgres connection [true|false]")
+	cmd.Flags().StringVar(&ctl.flagTree.ExternalPostgresUser, "external-postgres-user", "blackduck_user", "Name of 'user' of external Postgres database")
+	cmd.Flags().StringVar(&ctl.flagTree.ExternalPostgresSsl, "external-postgres-ssl", "true", "If true, Black Duck uses SSL for external Postgres connection [true|false]")
 	cmd.Flags().StringVar(&ctl.flagTree.ExternalPostgresAdminPassword, "external-postgres-admin-password", ctl.flagTree.ExternalPostgresAdminPassword, "'admin' password of external Postgres database")
 	cmd.Flags().StringVar(&ctl.flagTree.ExternalPostgresUserPassword, "external-postgres-user-password", ctl.flagTree.ExternalPostgresUserPassword, "'user' password of external Postgres database")
 	cmd.Flags().StringVar(&ctl.flagTree.LivenessProbes, "liveness-probes", ctl.flagTree.LivenessProbes, "If true, Black Duck uses liveness probes [true|false]")
-	cmd.Flags().StringVar(&ctl.flagTree.PostgresClaimSize, "postgres-claim-size", ctl.flagTree.PostgresClaimSize, "Size of the blackduck-postgres PVC")
+	cmd.Flags().StringVar(&ctl.flagTree.PostgresClaimSize, "postgres-claim-size", "150Gi", "Size of the blackduck-postgres PVC")
 	cmd.Flags().StringVar(&ctl.flagTree.CertificateName, "certificate-name", ctl.flagTree.CertificateName, "Name of Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.flagTree.CertificateFilePath, "certificate-file-path", ctl.flagTree.CertificateFilePath, "Absolute path to a file for the Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.flagTree.CertificateKeyFilePath, "certificate-key-file-path", ctl.flagTree.CertificateKeyFilePath, "Absolute path to a file for the Black Duck nginx certificate key")
@@ -153,21 +154,19 @@ func (ctl *HelmValuesFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command,
 	if !strings.Contains(cmd.CommandPath(), "native") {
 		cmd.Flags().BoolVar(&ctl.flagTree.MigrationMode, "migration-mode", ctl.flagTree.MigrationMode, "Create Black Duck in the database-migration state")
 	}
-	cmd.Flags().StringSliceVar(&ctl.flagTree.Environs, "environs", ctl.flagTree.Environs, "List of environment variables (NAME:VALUE,NAME:VALUE)")
+	cmd.Flags().StringSliceVar(&ctl.flagTree.Environs, "environs", ctl.flagTree.Environs, "List of environment variables")
 
 	cmd.Flags().StringVar(&ctl.flagTree.AdminPassword, "admin-password", ctl.flagTree.AdminPassword, "'admin' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.flagTree.UserPassword, "user-password", ctl.flagTree.UserPassword, "'user' password of Postgres database")
-	cmd.Flags().BoolVar(&ctl.flagTree.EnableBinaryAnalysis, "enable-binary-analysis", ctl.flagTree.EnableBinaryAnalysis, "If true, enable binary analysis by setting the environment variable (this takes priority over environs flag values)")
-	cmd.Flags().BoolVar(&ctl.flagTree.EnableSourceCodeUpload, "enable-source-code-upload", ctl.flagTree.EnableSourceCodeUpload, "If true, enable source code upload by setting the environment variable (this takes priority over environs flag values)")
+	cmd.Flags().BoolVar(&ctl.flagTree.EnableBinaryAnalysis, "enable-binary-analysis", false, "If true, enable binary analysis by setting the environment variable (this takes priority over environs flag values)")
+	cmd.Flags().BoolVar(&ctl.flagTree.EnableSourceCodeUpload, "enable-source-code-upload", false, "If true, enable source code upload by setting the environment variable (this takes priority over environs flag values)")
 	cmd.Flags().StringVar(&ctl.flagTree.NodeAffinityFilePath, "node-affinity-file-path", ctl.flagTree.NodeAffinityFilePath, "Absolute path to a file containing a list of node affinities")
 	cmd.Flags().StringVar(&ctl.flagTree.SecurityContextFilePath, "security-context-file-path", ctl.flagTree.SecurityContextFilePath, "Absolute path to a file containing a map of pod names to security contexts runAsUser, fsGroup, and runAsGroup")
-	cmd.Flags().StringVar(&ctl.flagTree.Registry, "registry", ctl.flagTree.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
+	cmd.Flags().StringVar(&ctl.flagTree.Registry, "registry", "docker.io/blackducksoftware", "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.flagTree.PullSecrets, "pull-secret-name", ctl.flagTree.PullSecrets, "Only if the registry requires authentication")
 	if master {
 		cmd.Flags().StringVar(&ctl.flagTree.SealKey, "seal-key", ctl.flagTree.SealKey, "Seal key to encrypt the master key when Source code upload is enabled and it should be of length 32")
 	}
-	// TODO: Remove this flag in next release
-	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
 }
 
 func isValidSize(size string) bool {
