@@ -892,7 +892,6 @@ func init() {
 	createAlertCmd.AddCommand(createAlertNativeCmd)
 
 	// Add Black Duck Command
-	createBlackDuckCmd.PersistentFlags().StringVar(&baseBlackDuckSpec, "template", baseBlackDuckSpec, "Base resource configuration to modify with flags [empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled]")
 	createBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	cobra.MarkFlagRequired(createBlackDuckCmd.PersistentFlags(), "namespace")
 	addChartLocationPathFlag(createBlackDuckCmd)
