@@ -167,13 +167,15 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 		svc.Kind = "Service"
 		svc.APIVersion = "v1"
 		if svc.Labels == nil {
-			svc.Labels = make(map[string]string)
+			svc.Labels = util.InitLabels(map[string]string{"name": newReleaseName})
+		} else {
+			svc.Labels["name"] = newReleaseName
 		}
-		svc.Labels["name"] = newReleaseName
 		if svc.Spec.Selector == nil {
-			svc.Spec.Selector = make(map[string]string)
+			svc.Spec.Selector = util.InitLabels(map[string]string{"name": newReleaseName})
+		} else {
+			svc.Spec.Selector["name"] = newReleaseName
 		}
-		svc.Spec.Selector["name"] = newReleaseName
 		err = KubectlApplyRuntimeObjects(map[string]runtime.Object{fmt.Sprintf("%s-exposed", newReleaseName): svc})
 		if err != nil {
 			return fmt.Errorf("failed to deploy the alert exposed service: %s", err)
