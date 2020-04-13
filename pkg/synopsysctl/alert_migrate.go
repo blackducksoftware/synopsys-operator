@@ -185,12 +185,12 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 		return err
 	}
 
-	log.Info("starting Synopsys Operator")
-	if _, err := util.PatchDeploymentForReplicas(kubeClient, soOperatorDeploy, util.IntToInt32(1)); err != nil {
-		return err
+	_, err = util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alert.Spec.Namespace, alert.Name, "", true)
+	if err != nil {
+		log.Warnf("unable to patch the namespace to remove an app labels due to %+v", err)
 	}
 
-	return nil
+	return destroyOperator(operatorNamespace)
 }
 
 // AlertV1ToHelmValues converts an Alert v1 Spec to a Helm Values Map

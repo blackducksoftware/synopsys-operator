@@ -1779,6 +1779,19 @@ func updateLabelsInNamespace(kubeClient *kubernetes.Clientset, ns *corev1.Namesp
 		// delete from labels
 		delete(ns.Labels, fmt.Sprintf("synopsys.com/%s.%s", resourceName, name))
 		isLabelUpdated = true
+
+		// delete owner label
+		isDeleteOwnerLabel := true
+		for key := range ns.Labels {
+			if strings.Contains(key, "synopsys.com/") {
+				isDeleteOwnerLabel = false
+			}
+		}
+		if isDeleteOwnerLabel {
+			if val, ok := ns.Labels["owner"]; ok && strings.EqualFold(val, "synopsys-operator") {
+				delete(ns.Labels, "owner")
+			}
+		}
 	} else {
 		// add or update the label
 		if existingVersion, ok := ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)]; !ok || existingVersion != version {

@@ -1,16 +1,8 @@
-cmd/operator-build
-install/secured-registry/dockercfg.json
 cmd/synopsysctl/synopsysctl
 pkg/.DS_Store
 pkg/api/.DS_Store
 .DS_Store
-cmd/operator/operator
 .idea/
-build
 .vscode/*
 cmd/synopsysctl/*.key
 _output/*
-
-*node_modules/
-pkg/operator-ui-ember/
-

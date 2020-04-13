@@ -36,6 +36,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// migrate migrates from synopsys operator to Helm based deployment
 func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) error {
 	// TODO ensure operator is installed and running a recent version that doesn't require additional migration
 
@@ -106,14 +107,15 @@ func migrate(bd *v1.Blackduck, operatorNamespace string, flags *pflag.FlagSet) e
 		return err
 	}
 
-	log.Info("starting Synopsys Operator")
-	if _, err := util.PatchDeploymentForReplicas(kubeClient, soOperatorDeploy, util.IntToInt32(1)); err != nil {
-		return err
+	_, err = util.CheckAndUpdateNamespace(kubeClient, util.BlackDuckName, bd.Spec.Namespace, bd.Name, "", true)
+	if err != nil {
+		log.Warnf("unable to patch the namespace to remove an app labels due to %+v", err)
 	}
 
-	return nil
+	return destroyOperator(operatorNamespace)
 }
 
+// isFeatureEnabled check whether the feature is enabled by reading through the Black Duck environment variables
 func isFeatureEnabled(environs []string, featureName string, expectedValue string) bool {
 	for _, value := range environs {
 		if strings.Contains(value, featureName) {
@@ -130,6 +132,7 @@ func isFeatureEnabled(environs []string, featureName string, expectedValue strin
 	return false
 }
 
+// BlackduckV1ToHelm converts Black Duck custom resources to helm flags
 func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]interface{}, error) {
 	helmConfig := make(map[string]interface{})
 
@@ -289,83 +292,67 @@ func BlackduckV1ToHelm(bd *v1.Blackduck, operatorNamespace string) (map[string]i
 	return helmConfig, nil
 }
 
+// deleteComponents delete all the resources based on name and application type
 func deleteComponents(namespace string, name string, app string) error {
-	deploy, err := kubeClient.AppsV1().Deployments(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
-	})
+	labelSelector := fmt.Sprintf("app=%s, name=%s", app, name)
+	deploy, err := util.ListDeployments(kubeClient, namespace, labelSelector)
 	if err != nil {
 		return err
 	}
 	for _, v := range deploy.Items {
-		propagationPolicy := metav1.DeletePropagationBackground
-		if err := kubeClient.AppsV1().Deployments(namespace).Delete(v.Name, &metav1.DeleteOptions{
-			PropagationPolicy: &propagationPolicy,
-		}); err != nil {
+		if err := util.DeleteDeployment(kubeClient, namespace, v.Name); err != nil {
 			return err
 		}
 	}
 
-	rc, err := kubeClient.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
-	})
+	rc, err := util.ListReplicationControllers(kubeClient, namespace, labelSelector)
 	if err != nil {
 		return err
 	}
 	for _, v := range rc.Items {
-		propagationPolicy := metav1.DeletePropagationBackground
-		if err := kubeClient.CoreV1().ReplicationControllers(namespace).Delete(v.Name, &metav1.DeleteOptions{
-			PropagationPolicy: &propagationPolicy,
-		}); err != nil {
+		if err := util.DeleteReplicationController(kubeClient, namespace, v.Name); err != nil {
 			return err
 		}
 	}
 
-	svc, err := kubeClient.CoreV1().Services(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
-	})
+	svc, err := util.ListServices(kubeClient, namespace, labelSelector)
 	if err != nil {
 		return err
 	}
 	for _, v := range svc.Items {
 		if !strings.Contains(v.Name, "-exposed") {
-			if err := kubeClient.CoreV1().Services(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+			if err := util.DeleteService(kubeClient, namespace, v.Name); err != nil {
 				return err
 			}
 		}
 	}
 
-	cm, err := kubeClient.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
-	})
+	cm, err := util.ListConfigMaps(kubeClient, namespace, labelSelector)
 	if err != nil {
 		return err
 	}
 	for _, v := range cm.Items {
-		if err := kubeClient.CoreV1().ConfigMaps(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := util.DeleteConfigMap(kubeClient, namespace, v.Name); err != nil {
 			return err
 		}
 	}
 
-	secret, err := kubeClient.CoreV1().Secrets(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s, component!=secret", app, name),
-	})
+	secret, err := util.ListSecrets(kubeClient, namespace, fmt.Sprintf("%s, component!=secret", labelSelector))
 	if err != nil {
 		return err
 	}
 	for _, v := range secret.Items {
-		if err := kubeClient.CoreV1().Secrets(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := util.DeleteSecret(kubeClient, namespace, v.Name); err != nil {
 			return err
 		}
 	}
 
-	serviceAccounts, err := kubeClient.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s, name=%s", app, name),
-	})
+	serviceAccounts, err := util.ListServiceAccounts(kubeClient, namespace, labelSelector)
 	if err != nil {
 		return err
 	}
 	for _, v := range serviceAccounts.Items {
-		if err := kubeClient.CoreV1().ServiceAccounts(namespace).Delete(v.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := util.DeleteServiceAccount(kubeClient, namespace, v.Name); err != nil {
 			return err
 		}
 	}
