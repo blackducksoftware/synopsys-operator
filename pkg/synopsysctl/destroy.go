@@ -63,11 +63,11 @@ func destroyOperator(namespace string, crdNamespace string) error {
 				return err
 			}
 		} else {
-			isDelete, err := isCustomResourceInstancesExist(crdNamespace, crds)
+			isCustomResourceInstancesNotExist, err := isCustomResourceInstancesNotExist(crdNamespace, crds)
 			if err != nil {
 				return err
 			}
-			if isDelete {
+			if isCustomResourceInstancesNotExist {
 				deleteSynopsysOperatorResources(namespace, crds)
 			} else {
 				return restartSynopsysOperator(namespace)
@@ -287,8 +287,8 @@ func deleteClusterRole(namespace string) {
 	}
 }
 
-// isCustomResourceInstancesExist checks whether there is any custom resources are existing
-func isCustomResourceInstancesExist(crdNamespace string, crdNames []string) (bool, error) {
+// isCustomResourceInstancesNotExist checks whether there is no other custom resources exist
+func isCustomResourceInstancesNotExist(crdNamespace string, crdNames []string) (bool, error) {
 	for _, crdName := range crdNames {
 		switch crdName {
 		case util.BlackDuckCRDName:
