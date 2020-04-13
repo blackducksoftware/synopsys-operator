@@ -60,7 +60,7 @@ func destroyOperator(namespace string, crdNamespace string) error {
 			log.Debugf("%s. It is not recommended to destroy the Synopsys Operator so these resources will continue to be managed by synopsys operator.", err.Error())
 			err = restartSynopsysOperator(namespace)
 		} else {
-			isDelete, err := isDeleteOperatorResources(crdNamespace, crds)
+			isDelete, err := isCustomResourceInstancesExist(crdNamespace, crds)
 			if err != nil {
 				return err
 			}
@@ -109,24 +109,29 @@ func deleteSynopsysOperatorResources(namespace string, crds []string) {
 	deleteClusterRole(namespace)
 }
 
-// isOtherNamespaceExistInCRDLabel return whether any other namespace exist in the Synopsys CRD namespace label
-func isOtherNamespaceExistInCRDLabel(crd *apiextensions.CustomResourceDefinition, namespace string) (bool, error) {
-	for key, value := range crd.Labels {
-		if strings.HasPrefix(key, "synopsys.com/operator.") {
-			if value != namespace {
-				delete(crd.Labels, fmt.Sprintf("synopsys.com/operator.%s", namespace))
-				_, err := util.UpdateCustomResourceDefinition(apiExtensionClient, crd)
-				if err != nil {
-					return true, fmt.Errorf("unable to update the labels for %s custom resource definition due to %+v", crd, err)
-				}
-				return true, fmt.Errorf("%s custom resource definition is already in use by other namespaces and hence removed the namespace operator label from the CRD", crd.Name)
-			}
-		}
+// deleteCrds will check and delete multiple custom resource definition
+func deleteCrds(crds []string, namespace string) {
+	for _, crd := range crds {
+		deleteCrd(strings.TrimSpace(crd), namespace)
 	}
-	return false, nil
 }
 
-func isDeleteCrd(crd string, namespace string) error {
+// deleteCrd will check and delete the custom resource definition
+func deleteCrd(crd string, namespace string) {
+	err := isCrdNotUsedInAnyNamespaces(crd, namespace)
+	if err != nil {
+		log.Warn(err)
+	} else {
+		log.Infof("deleting Custom Resource Definition '%s'", crd)
+		err := util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
+		if err != nil {
+			log.Errorf("unable to delete Custom Resource Definition '%s' due to %+v", crd, err)
+		}
+	}
+}
+
+// isCrdNotUsedInAnyNamespaces checks whether the CRD is not used in other namespaces
+func isCrdNotUsedInAnyNamespaces(crd string, namespace string) error {
 	switch crd {
 	case util.AlertCRDName:
 		// check custom resource definition exist
@@ -195,27 +200,24 @@ func isDeleteCrd(crd string, namespace string) error {
 	return nil
 }
 
-// deleteCrds will check and delete multiple custom resource definition
-func deleteCrds(crds []string, namespace string) {
-	for _, crd := range crds {
-		deleteCrd(strings.TrimSpace(crd), namespace)
-	}
-}
-
-// deleteCrd will check and delete the custom resource definition
-func deleteCrd(crd string, namespace string) {
-	err := isDeleteCrd(crd, namespace)
-	if err != nil {
-		log.Warn(err)
-	} else {
-		log.Infof("deleting Custom Resource Definition '%s'", crd)
-		err := util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
-		if err != nil {
-			log.Errorf("unable to delete Custom Resource Definition '%s' due to %+v", crd, err)
+// isOtherNamespaceExistInCRDLabel return whether any other namespace exist in the Synopsys CRD namespace label
+func isOtherNamespaceExistInCRDLabel(crd *apiextensions.CustomResourceDefinition, namespace string) (bool, error) {
+	for key, value := range crd.Labels {
+		if strings.HasPrefix(key, "synopsys.com/operator.") {
+			if value != namespace {
+				delete(crd.Labels, fmt.Sprintf("synopsys.com/operator.%s", namespace))
+				_, err := util.UpdateCustomResourceDefinition(apiExtensionClient, crd)
+				if err != nil {
+					return true, fmt.Errorf("unable to update the labels for %s custom resource definition due to %+v", crd, err)
+				}
+				return true, fmt.Errorf("%s custom resource definition is already in use by other namespaces and hence removed the namespace operator label from the CRD", crd.Name)
+			}
 		}
 	}
+	return false, nil
 }
 
+// deleteClusterRoleBinding deletes the synopsys operator cluster role binding
 func deleteClusterRoleBinding(namespace string) {
 	// delete cluster role bindings
 	clusterRoleBindings, _, err := util.GetOperatorRoleBindings(kubeClient, namespace)
@@ -254,6 +256,7 @@ func deleteClusterRoleBinding(namespace string) {
 	}
 }
 
+// deleteClusterRole deletes the synopsys operator cluster role
 func deleteClusterRole(namespace string) {
 	// delete cluster roles
 	clusterRoles, _, err := util.GetOperatorRoles(kubeClient, namespace)
@@ -281,8 +284,8 @@ func deleteClusterRole(namespace string) {
 	}
 }
 
-// isDeleteOperatorResources check whether there is any custom resources are existing
-func isDeleteOperatorResources(crdNamespace string, crdNames []string) (bool, error) {
+// isCustomResourceInstancesExist checks whether there is any custom resources are existing
+func isCustomResourceInstancesExist(crdNamespace string, crdNames []string) (bool, error) {
 	for _, crdName := range crdNames {
 		switch crdName {
 		case util.BlackDuckCRDName:
