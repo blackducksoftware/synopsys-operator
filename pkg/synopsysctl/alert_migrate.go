@@ -30,7 +30,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -164,19 +163,13 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, crdNamespace string
 	}
 
 	svc, err := util.GetService(kubeClient, namespace, fmt.Sprintf("%s-exposed", newReleaseName))
-	if svc != nil && !k8serrors.IsNotFound(err) {
+	if err != nil {
 		svc.Kind = "Service"
 		svc.APIVersion = "v1"
-		if svc.Labels == nil {
-			svc.Labels = util.InitLabels(map[string]string{"name": newReleaseName})
-		} else {
-			svc.Labels["name"] = newReleaseName
-		}
-		if svc.Spec.Selector == nil {
-			svc.Spec.Selector = util.InitLabels(map[string]string{"name": newReleaseName})
-		} else {
-			svc.Spec.Selector["name"] = newReleaseName
-		}
+		svc.Labels = util.InitLabels(svc.Labels)
+		svc.Labels["name"] = newReleaseName
+		svc.Spec.Selector = util.InitLabels(svc.Spec.Selector)
+		svc.Spec.Selector["name"] = newReleaseName
 		err = KubectlApplyRuntimeObjects(map[string]runtime.Object{fmt.Sprintf("%s-exposed", newReleaseName): svc})
 		if err != nil {
 			return fmt.Errorf("failed to deploy the alert exposed service: %s", err)
