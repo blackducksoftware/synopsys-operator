@@ -129,7 +129,7 @@ func (ctl *HelmValuesFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command,
 		cmd.Flags().StringVar(&ctl.flagTree.PVCFilePath, "pvc-file-path", ctl.flagTree.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	}
 	cmd.Flags().StringVar(&ctl.flagTree.Size, "size", ctl.flagTree.Size, "Size of Black Duck [small|medium|large|x-large]")
-	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", "2019.12.0", "Version of Black Duck")
+	cmd.Flags().StringVar(&ctl.flagTree.Version, "version", "2020.4.0", "Version of Black Duck")
 	if master {
 		cmd.Flags().StringVar(&ctl.flagTree.ExposeService, "expose-ui", util.NONE, "Service type of Black Duck webserver's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	} else {
