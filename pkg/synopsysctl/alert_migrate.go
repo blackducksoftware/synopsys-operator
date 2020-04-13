@@ -166,7 +166,13 @@ func migrateAlert(alert *v1.Alert, operatorNamespace string, flags *pflag.FlagSe
 	if svc != nil {
 		svc.Kind = "Service"
 		svc.APIVersion = "v1"
+		if svc.Labels == nil {
+			svc.Labels = make(map[string]string)
+		}
 		svc.Labels["name"] = newReleaseName
+		if svc.Spec.Selector == nil {
+			svc.Spec.Selector = make(map[string]string)
+		}
 		svc.Spec.Selector["name"] = newReleaseName
 		err = KubectlApplyRuntimeObjects(map[string]runtime.Object{fmt.Sprintf("%s-exposed", newReleaseName): svc})
 		if err != nil {
@@ -215,7 +221,7 @@ func AlertV1ToHelmValues(alert *v1.Alert, operatorNamespace string) (map[string]
 		}
 	}
 
-	util.SetHelmValueInMap(helmValuesMap, []string{"enableStandalone"}, alert.Spec.StandAlone)
+	util.SetHelmValueInMap(helmValuesMap, []string{"enableStandalone"}, *alert.Spec.StandAlone)
 
 	if alert.Spec.Port != nil {
 		util.SetHelmValueInMap(helmValuesMap, []string{"alert", "port"}, *alert.Spec.Port)

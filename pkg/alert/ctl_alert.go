@@ -162,8 +162,6 @@ func (ctl *HelmValuesFromCobraFlags) GenerateHelmFlagsFromCobraFlags(flagset *pf
 	if err != nil {
 		return nil, err
 	}
-	// Set enabled defaults
-	util.SetHelmValueInMap(ctl.args, []string{"enableStandalone"}, true)
 
 	flagset.VisitAll(ctl.AddHelmValueByCobraFlag)
 
