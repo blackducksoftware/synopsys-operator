@@ -1,3 +1,8 @@
+# Moved !!!
+Since the Synopsys Operator is decommissioned and it is no longer used to manage and deploy Alert applications from version 5.3.1 and later and Black Duck 2020.4.0 and later, we have renamed the source code repository as Synopsysctl which can be found [here] https://github.com/blackducksoftware/synopsysctl
+
+Please refer to [Synopsysctl] (https://synopsys.atlassian.net/wiki/spaces/BDLM/pages/34373652/Synopsysctl) for an instructions to manage and deploy Synopsys application
+
 # Overview
 
 **Synopsys Operator** is a cloud-native administration utility for Synopsys software.  Synopsys Operator assists in the deployment and management of Synopsys software in cloud-native environments (i.e., **Kubernetes** and **OpenShift**). 
